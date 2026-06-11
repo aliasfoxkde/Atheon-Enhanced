@@ -4,7 +4,7 @@
 ![Java](https://img.shields.io/badge/Java-17%2B-orange)
 ![Build](https://img.shields.io/badge/build-Maven-red)
 ![License](https://img.shields.io/badge/license-proprietary-lightgrey)
-![Exit Codes](https://img.shields.io/badge/exit%20codes-CI%20ready-informational)
+
 
 **A secret and credential scanner — a Java library you embed in your code and a CLI tool you run anywhere.**
 

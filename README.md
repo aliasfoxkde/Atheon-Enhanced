@@ -165,18 +165,6 @@ List<Finding> findings = runner.scanEnv();
 
 Each `Finding` exposes: `scanner`, `severity`, `file`, `line`, `description`, `match`.
 
----
-
-## Registered Scanners
-
-<!-- SCANNER COUNT: add new rows here and update the badge count at the top of this file -->
-| Scanner | Detects | Severity |
-|---|---|---|
-| `aws-access-key` | AWS access key IDs (`AKIA...`) | CRITICAL |
-| `github-pat` | GitHub personal access tokens (`ghp_...`) | HIGH |
-| `stripe-secret-key` | Stripe secret keys (`sk_live_...`) | CRITICAL |
-| `slack-bot-token` | Slack bot tokens (`xoxb-...`) | HIGH |
-| `twilio-account-sid` | Twilio account SIDs (`AC...`) | MEDIUM |
 
 ---
 

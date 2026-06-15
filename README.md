@@ -23,6 +23,20 @@ The problem isn't that people are careless. The problem is there's no systematic
 Atheon is that system. A pattern matching engine you define, run anywhere, and trust completely — because you wrote the rules.
 
 ---
+## Atheons Mission
+Atheon isn't trying to be the next big GitLeaks or anything of that nature, really. It's not competing to be this super giant; it's trying to be a platform.
+
+Imagine this: a CLI tool that a team of devs can use, right? And for some reason, in their code, they're working with sensitive data. They add their own pattern to Atheon, then push it to the codebase. Now Atheon's new release and their local version have this pattern registered.
+
+They find the sensitive info they were looking for, and now it's not committed.
+
+But imagine that now Atheon has this pattern, and another group of devs decides to use it because they're in a similar situation. The pattern is already registered. Now they run it on their codebase and boom—the pattern is found, day is saved.
+
+That's the idea. That's Atheon: a community-driven CLI tool that lets me, you, and Billy Bob add our own patterns that others can use as well.
+
+Refer to the contributing guide to add your own pattern, but do keep in mind that the creator, HoraDomu, made the architecture sound for simple, easy additions.
+
+---
 
 ## What pattern matching means
 

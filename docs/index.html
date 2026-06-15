@@ -121,6 +121,15 @@
 
     footer a { color: #bbb; text-decoration: none; }
     footer a:hover { color: #111; }
+
+    code {
+      font-family: ui-monospace, monospace;
+      font-size: 0.85em;
+      background: #f5f5f5;
+      padding: 0.1em 0.35em;
+      border-radius: 3px;
+      color: #333;
+    }
   </style>
 </head>
 <body>
@@ -134,7 +143,7 @@
 
   <div class="hero">
     <h1>Atheon</h1>
-    <p>A pattern matching engine. Define what you're looking for. Point it at anything. No runtime required.</p>
+    <p>Scan your code, configs, and environment for leaked secrets before they become a problem.</p>
     <a class="download" href="https://github.com/HoraDomu/Atheon/releases/latest" target="_blank">Download</a>
     <span class="sub">Windows &nbsp;·&nbsp; macOS &nbsp;·&nbsp; Linux &nbsp;·&nbsp; no install</span>
   </div>
@@ -143,7 +152,8 @@
 
   <section>
     <h2>What it is</h2>
-    <p>Atheon is an infinitely extensible platform whose goal is to identify anything you need to find inside text — files, directories, environment variables, or stdin. The engine doesn't care what you're looking for. You define the patterns, it finds the matches.</p>
+    <p>Atheon is a command-line tool that scans files, directories, environment variables, or piped input and flags any lines that match known secret patterns — API keys, tokens, credentials. It tells you exactly which file, which line, and what was found.</p>
+    <p>It ships with patterns for the most common providers out of the box, and adding your own takes a single Go file.</p>
     <pre>atheon ./src
 atheon --file config.yaml
 atheon --env
@@ -153,18 +163,37 @@ cat pipeline.log | atheon -</pre>
   <hr />
 
   <section>
+    <h2>Example</h2>
+    <p>You're about to push a feature branch. You want to make sure no credentials slipped into the diff.</p>
+    <pre>$ atheon ./src
+
+[aws-access-key] config/deploy.yaml:14  →  AWS_KEY=AKIAIOSFODNN7EXAMPLE
+[openai-api-key] .env.local:3           →  OPENAI_API_KEY=sk-proj-abc123...</pre>
+    <p>Two findings, two lines. Fix them before the push. Exit code <code>1</code> means something was found — wire that into your CI pipeline and the check runs automatically on every commit.</p>
+  </section>
+
+  <hr />
+
+  <section>
+    <h2>Built-in patterns</h2>
+    <p>Atheon ships with detection for the most commonly leaked credentials: AWS access keys, GitHub personal access tokens, OpenAI API keys, Slack tokens, Stripe keys, and Twilio tokens. Run <code>atheon list</code> to see everything loaded.</p>
+  </section>
+
+  <hr />
+
+  <section>
     <h2>Extend it</h2>
-    <p>The plugin contract is two methods. If you can write a regex or any boolean expression, you can add a pattern. Drop the file in, rebuild, done.</p>
+    <p>The pattern contract is two methods. If you can write a regex or any boolean check, you can add a pattern. Drop the file in <code>patterns/</code>, rebuild, and it shows up in <code>atheon list</code> automatically.</p>
     <pre>func (p *myPattern) Name() string             { return "my-pattern" }
 func (p *myPattern) Matches(line string) bool { return p.re.MatchString(line) }</pre>
-    <p>There is no configuration format, no DSL, no plugin manager. It is just Go code — readable, testable, and version-controlled alongside the engine.</p>
+    <p>No config format, no DSL, no plugin manager — just Go code alongside the engine.</p>
   </section>
 
   <hr />
 
   <section>
     <h2>Have something specific in mind?</h2>
-    <p>If there's something you want Atheon to detect — a token format, an internal convention, a compliance rule, anything — reach out. Patterns are small and fast to add.</p>
+    <p>If there's a token format, internal convention, or compliance rule you want Atheon to detect, reach out. Patterns are small and fast to add.</p>
     <p>
       Email: <a class="inline" href="mailto:dommcpro@gmail.com">dommcpro@gmail.com</a><br />
       GitHub: <a class="inline" href="https://github.com/HoraDomu/Atheon" target="_blank">github.com/HoraDomu/Atheon</a>

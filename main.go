@@ -1,14 +1,21 @@
 package main
 
 import (
-	"atheon/core"
-	_ "atheon/patterns"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
+
+	"atheon/core"
+	_ "atheon/patterns"
 )
 
 func main() {
+	jsonOutput := len(os.Args) > 1 && os.Args[1] == "--json"
+	if jsonOutput {
+		os.Args = append([]string{os.Args[0]}, os.Args[2:]...)
+	}
+
 	if len(os.Args) < 2 {
 		printHelp()
 		return
@@ -23,7 +30,7 @@ func main() {
 
 	case "--env":
 		findings := core.ScanEnv()
-		printFindings(findings, nil)
+		printFindings(findings, nil, jsonOutput)
 		if len(findings) > 0 {
 			os.Exit(1)
 		}
@@ -35,7 +42,7 @@ func main() {
 			os.Exit(1)
 		}
 		findings := core.ScanString(string(data), "stdin")
-		printFindings(findings, nil)
+		printFindings(findings, nil, jsonOutput)
 		if len(findings) > 0 {
 			os.Exit(1)
 		}
@@ -50,7 +57,7 @@ func main() {
 			fmt.Fprintln(os.Stderr, "error:", err)
 			os.Exit(1)
 		}
-		printFindings(findings, stats)
+		printFindings(findings, stats, jsonOutput)
 		if len(findings) > 0 {
 			os.Exit(1)
 		}
@@ -73,14 +80,18 @@ func main() {
 			fmt.Fprintln(os.Stderr, "error:", err)
 			os.Exit(1)
 		}
-		printFindings(findings, stats)
+		printFindings(findings, stats, jsonOutput)
 		if len(findings) > 0 {
 			os.Exit(1)
 		}
 	}
 }
 
-func printFindings(findings []core.Finding, stats *core.Stats) {
+func printFindings(findings []core.Finding, stats *core.Stats, jsonOutput bool) {
+	if jsonOutput {
+		printJSONFindings(findings)
+		return
+	}
 	if len(findings) == 0 {
 		fmt.Println("no findings.")
 	} else {
@@ -102,6 +113,16 @@ func printFindings(findings []core.Finding, stats *core.Stats) {
 	}
 }
 
+func printJSONFindings(findings []core.Finding) {
+	items := make([]map[string]any, 0, len(findings))
+	for _, f := range findings {
+		items = append(items, map[string]any{"pattern": f.Pattern, "file": f.File, "line": f.Line, "match": f.Content})
+	}
+	if err := json.NewEncoder(os.Stdout).Encode(items); err != nil {
+		fmt.Fprintln(os.Stderr, "error:", err)
+	}
+}
+
 func cmdList() {
 	for _, p := range core.All() {
 		fmt.Println(p.Name())
@@ -116,6 +137,7 @@ usage:
   atheon <path>          scan a directory
   atheon --file <path>   scan a single file
   atheon --env           scan environment variables
+  atheon --json <path>   print findings as JSON
   atheon list            list loaded patterns
   atheon --help          show this message
 `)

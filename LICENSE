@@ -19,3 +19,32 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+Additional Terms
+
+The following restrictions apply in addition to the MIT License above and
+take precedence where they conflict:
+
+1. No re-distribution as a separate product. You may not distribute this
+   software, or any derivative work based on it, as a standalone product,
+   tool, service, or library under a different name or brand — whether
+   commercially or for free — without explicit prior written permission from
+   the copyright holder (Dominick Yanez).
+
+2. Attribution is mandatory and irremovable. You may not remove, alter,
+   obscure, or replace the copyright notice, the author's name (Dominick
+   Yanez), or any attribution present in the source code, documentation,
+   or compiled output. This applies to all copies, forks, modifications,
+   and derivative works.
+
+3. Forks and personal use are welcome. You are free to fork this repository,
+   clone the source, study it, modify it for personal or internal use, and
+   contribute patterns or bug fixes back to the original project.
+
+Violation of these Additional Terms constitutes copyright infringement and
+breach of license. The copyright holder reserves the right to pursue all
+available legal remedies.
+
+For permissions beyond the scope of this license, contact: dommcpro@gmail.com

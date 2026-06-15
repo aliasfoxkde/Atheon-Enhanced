@@ -8,3 +8,5 @@ EXAMPLE_KEY_3=sk_live_aaaaaaaaaaaaaaaaaaaaaaaa
 EXAMPLE_KEY_4=xoxb-12345678901-12345678901-aaaaaaaaaaaaaaaaaaaaaaaa
 EXAMPLE_KEY_5=ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 EXAMPLE_KEY_6=sk-4u8d9f8g7h6j5k4l3m2n1o0p
+
+EXAMPLE_KEY_7=4111-1111-1111-1111

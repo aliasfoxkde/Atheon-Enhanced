@@ -32,14 +32,14 @@ Atheon grows through patterns. Every pattern is one file with two methods, so ke
 
 4. **Build and confirm it loaded**
    ```sh
-   go build -o atheon .
+   go build -o atheon . || go build .
    atheon list
    ```
 
 5. **Test the pattern**
    Create sample lines that should match and should not match, then run:
    ```sh
-   atheon --file test.txt
+   atheon "scan file path" 
    ```
    Every expected match should appear, with no unexpected matches.
 

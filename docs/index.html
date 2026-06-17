@@ -260,9 +260,13 @@
 
   <section>
     <h2>What it is</h2>
-    <p>Atheon is a CLI tool. You define a pattern — a name and a match function. You point Atheon at a file, a directory, your environment variables, or any stream of text piped through it. It finds every match and tells you the file, the line, and exactly what was found.</p>
-    <p>The engine has no opinions about what matters. You do. So you write the rule, and Atheon enforces it — everywhere, every time, returning exit code <code>1</code> the moment something is found.</p>
-    <p>Directory scans automatically respect <code>.gitignore</code>. Drop a <code>.atheonignore</code> in your project root to exclude additional paths — test fixtures, generated files, <code>.env</code> files, anything else. Native binaries ship for Windows, macOS (Intel + Apple Silicon), and Linux with no runtime or dependencies.</p>
+    <p>Atheon is a CLI tool. You point it at a file, a directory, your environment variables, or any stream of text piped through it. It finds every match and tells you the file, the line, and exactly what was found.</p>
+    <p>The engine has no opinions about what matters. You do. Patterns live in plain YAML files — one file per rule, no Go required. Organize them into categories and scan only what you need:</p>
+    <pre>atheon --categories=secrets .
+atheon --categories=secrets,pii .
+atheon --all .</pre>
+    <p>Run <code>atheon update</code> to pull the latest community bundle. Drop it in a pre-commit hook and it blocks bad pushes before they leave the machine. Wire it into an MCP-compatible AI tool and the assistant can scan code mid-generation.</p>
+    <p>Directory scans automatically respect <code>.gitignore</code>. Drop a <code>.atheonignore</code> in your project root to exclude additional paths. Native binaries ship for Windows, macOS (Intel + Apple Silicon), and Linux with no runtime or dependencies.</p>
   </section>
 
   <hr />
@@ -317,7 +321,11 @@ scoop install atheon</pre>
 
   <section>
     <h2>Contribute</h2>
-    <p>Patterns are the heart of Atheon. Every pattern is one file, two methods — small, fast to review, and immediately useful to every user once merged. If there's a domain you work in, a format you know, or a rule that would have saved your team time — that belongs here.</p>
+    <p>Patterns are the heart of Atheon. Every pattern is one YAML file — no Go required, no engine changes, fast to review, and immediately useful to every user once merged. If there's a domain you work in, a format you know, or a rule that would have saved your team time — that belongs here.</p>
+    <pre><span style="color:#555"># community/secrets/my-service.yaml</span>
+name: my-service-api-key
+match: '\bmsvc_[A-Za-z0-9]{32}\b'</pre>
+    <p>The folder name is the category. Run <code>go run ./bundler</code> to rebuild the bundle, then open a PR.</p>
     <div class="contribute-box">
       <p>Want to add a pattern or have one in mind?</p>
       <p>

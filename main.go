@@ -5,25 +5,38 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"atheon/core"
-	_ "atheon/patterns"
 )
 
 func main() {
-	jsonOutput := len(os.Args) > 1 && os.Args[1] == "--json"
+	args := os.Args[1:]
+
+	jsonOutput := len(args) > 0 && args[0] == "--json"
 	if jsonOutput {
-		os.Args = append([]string{os.Args[0]}, os.Args[2:]...)
+		args = args[1:]
 	}
 
-	if len(os.Args) < 2 {
+	cats, args := parseCategories(args)
+	core.SetActiveCategories(cats)
+
+	if len(args) == 0 {
 		printHelp()
 		return
 	}
 
-	switch os.Args[1] {
+	switch args[0] {
+	case "update":
+		fmt.Println("downloading patterns bundle...")
+		if err := core.DownloadBundle(); err != nil {
+			fmt.Fprintln(os.Stderr, "error:", err)
+			os.Exit(1)
+		}
+		fmt.Println("patterns updated.")
+
 	case "list":
-		cmdList()
+		cmdList(args[1:])
 
 	case "--help", "help", "-h":
 		printHelp()
@@ -48,11 +61,11 @@ func main() {
 		}
 
 	case "--file":
-		if len(os.Args) < 3 {
+		if len(args) < 2 {
 			fmt.Fprintln(os.Stderr, "error: --file requires a path")
 			os.Exit(1)
 		}
-		findings, stats, err := core.ScanFile(os.Args[2])
+		findings, stats, err := core.ScanFile(args[1])
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "error:", err)
 			os.Exit(1)
@@ -63,7 +76,7 @@ func main() {
 		}
 
 	default:
-		path := os.Args[1]
+		path := args[0]
 		info, err := os.Stat(path)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "error: path not found:", path)
@@ -85,6 +98,31 @@ func main() {
 			os.Exit(1)
 		}
 	}
+}
+
+func parseCategories(args []string) ([]string, []string) {
+	var cats []string
+	var rest []string
+	all := false
+	for _, a := range args {
+		switch {
+		case strings.HasPrefix(a, "--categories="):
+			val := strings.TrimPrefix(a, "--categories=")
+			for _, c := range strings.Split(val, ",") {
+				if c = strings.TrimSpace(c); c != "" {
+					cats = append(cats, c)
+				}
+			}
+		case a == "--all":
+			all = true
+		default:
+			rest = append(rest, a)
+		}
+	}
+	if all {
+		return nil, rest
+	}
+	return cats, rest
 }
 
 func printFindings(findings []core.Finding, stats *core.Stats, jsonOutput bool) {
@@ -123,7 +161,13 @@ func printJSONFindings(findings []core.Finding) {
 	}
 }
 
-func cmdList() {
+func cmdList(args []string) {
+	if len(args) > 0 && args[0] == "categories" {
+		for _, c := range core.Categories() {
+			fmt.Println(c)
+		}
+		return
+	}
 	for _, p := range core.All() {
 		fmt.Println(p.Name())
 	}
@@ -134,12 +178,16 @@ func printHelp() {
 	fmt.Print(`atheon - pattern matching engine
 
 usage:
-  atheon <path>          scan a directory
-  atheon --file <path>   scan a single file
-  atheon --env           scan environment variables
-  atheon --json <path>   print findings as JSON
-  atheon list            list loaded patterns
-  atheon --help          show this message
+  atheon <path>                      scan a directory
+  atheon --file <path>               scan a single file
+  atheon --env                       scan environment variables
+  atheon --json <path>               print findings as JSON
+  atheon --categories=<c1,c2> <path> scan specific categories
+  atheon --all <path>                scan all categories
+  atheon list                        list loaded patterns
+  atheon list categories             list available categories
+  atheon update                      download latest patterns bundle
+  atheon --help                      show this message
 `)
 }
 

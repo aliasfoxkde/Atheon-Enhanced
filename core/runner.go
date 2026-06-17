@@ -21,7 +21,6 @@ var binaryExts = map[string]bool{
 	".exe": true, ".bin": true, ".so": true, ".dylib": true,
 }
 
-// loadIgnorePatterns reads .atheonignore and .gitignore from root and returns glob patterns to skip.
 func loadIgnorePatterns(root string) []string {
 	var patterns []string
 	for _, name := range []string{".atheonignore", ".gitignore"} {
@@ -35,7 +34,6 @@ func loadIgnorePatterns(root string) []string {
 			if line == "" || strings.HasPrefix(line, "#") || strings.HasPrefix(line, "!") {
 				continue
 			}
-			// Strip leading / — gitignore anchors to root, our matcher handles that already.
 			line = strings.TrimPrefix(line, "/")
 			if line != "" {
 				patterns = append(patterns, line)
@@ -46,22 +44,16 @@ func loadIgnorePatterns(root string) []string {
 	return patterns
 }
 
-// isIgnored reports whether path matches any of the ignore patterns.
 func isIgnored(path string, patterns []string) bool {
-	// Normalise to forward slashes for consistent glob matching.
 	clean := filepath.ToSlash(path)
 	for _, pat := range patterns {
 		pat = filepath.ToSlash(pat)
-		// Match against the full path and against each suffix so that
-		// patterns like "demo/" or "test/fixtures.txt" work without
-		// requiring a leading "./" from the caller.
 		if matched, _ := filepath.Match(pat, clean); matched {
 			return true
 		}
 		if matched, _ := filepath.Match(pat, filepath.Base(clean)); matched {
 			return true
 		}
-		// Prefix match: "demo/" ignores everything under demo/.
 		if strings.HasSuffix(pat, "/") && strings.HasPrefix(clean+"/", pat) {
 			return true
 		}
@@ -157,13 +149,18 @@ func ScanEnv() []Finding {
 			continue
 		}
 		key, val := parts[0], parts[1]
-		for _, p := range registry {
-			if p.Matches(val) {
-				findings = append(findings, Finding{
-					Pattern: p.Name(),
-					File:    "env:" + key,
-					Content: val,
-				})
+		for _, cs := range activeScanners {
+			if !cs.combined.MatchString(val) {
+				continue
+			}
+			for _, p := range cs.patterns {
+				if p.Matches(val) {
+					findings = append(findings, Finding{
+						Pattern: p.Name(),
+						File:    "env:" + key,
+						Content: val,
+					})
+				}
 			}
 		}
 	}
@@ -181,14 +178,19 @@ func scanLines(content, file string) []Finding {
 		if strings.Contains(line, "atheon:ignore") {
 			continue
 		}
-		for _, p := range registry {
-			if p.Matches(line) {
-				findings = append(findings, Finding{
-					Pattern: p.Name(),
-					File:    file,
-					Line:    i + 1,
-					Content: strings.TrimSpace(line),
-				})
+		for _, cs := range activeScanners {
+			if !cs.combined.MatchString(line) {
+				continue
+			}
+			for _, p := range cs.patterns {
+				if p.Matches(line) {
+					findings = append(findings, Finding{
+						Pattern: p.Name(),
+						File:    file,
+						Line:    i + 1,
+						Content: strings.TrimSpace(line),
+					})
+				}
 			}
 		}
 	}

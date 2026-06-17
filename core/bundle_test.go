@@ -1,4 +1,4 @@
-package patterns
+package core_test
 
 import (
 	"atheon/core"
@@ -75,24 +75,23 @@ func TestRegisteredPatterns(t *testing.T) {
 	}
 
 	registered := map[string]core.Pattern{}
-	for _, pattern := range core.All() {
-		registered[pattern.Name()] = pattern
+	for _, p := range core.All() {
+		registered[p.Name()] = p
 	}
 
-	for name, pattern := range registered {
-		tc, ok := cases[name]
+	for name, tc := range cases {
+		p, ok := registered[name]
 		if !ok {
-			t.Fatalf("missing test case for registered pattern %q", name)
+			t.Fatalf("pattern %q not registered", name)
 		}
-
 		t.Run(name, func(t *testing.T) {
 			for _, line := range tc.matches {
-				if !pattern.Matches(line) {
+				if !p.Matches(line) {
 					t.Errorf("expected %q to match %q", name, line)
 				}
 			}
 			for _, line := range tc.nonMatches {
-				if pattern.Matches(line) {
+				if p.Matches(line) {
 					t.Errorf("expected %q not to match %q", name, line)
 				}
 			}
@@ -101,7 +100,7 @@ func TestRegisteredPatterns(t *testing.T) {
 
 	for name := range cases {
 		if _, ok := registered[name]; !ok {
-			t.Fatalf("test case %q does not map to a registered pattern", name)
+			t.Fatalf("test case %q has no registered pattern", name)
 		}
 	}
 }

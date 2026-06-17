@@ -37,7 +37,6 @@ release:
   github:
     owner: HoraDomu
     name: Atheon
-  generate_release_notes: true
 
 brews:
   - name: atheon

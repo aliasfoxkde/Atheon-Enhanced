@@ -1,13 +1,14 @@
 package core
 
 import (
-	"bufio"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
+
+	ignore "github.com/sabhiram/go-gitignore"
 )
 
 var skipDirs = map[string]bool{
@@ -22,46 +23,27 @@ var binaryExts = map[string]bool{
 }
 
 func loadIgnorePatterns(root string) []string {
-	var patterns []string
+	// This function is no longer needed, but kept for compatibility
+	return []string{}
+}
+
+func loadIgnorePatternsMatcher(root string) *ignore.GitIgnore {
 	for _, name := range []string{".atheonignore", ".gitignore"} {
-		f, err := os.Open(filepath.Join(root, name))
+		gitIgnore, err := ignore.CompileIgnoreFile(filepath.Join(root, name))
 		if err != nil {
 			continue
 		}
-		sc := bufio.NewScanner(f)
-		for sc.Scan() {
-			line := strings.TrimSpace(sc.Text())
-			if line == "" || strings.HasPrefix(line, "#") || strings.HasPrefix(line, "!") {
-				continue
-			}
-			line = strings.TrimPrefix(line, "/")
-			if line != "" {
-				patterns = append(patterns, line)
-			}
-		}
-		f.Close()
+		return gitIgnore
 	}
-	return patterns
+	return nil
 }
 
-func isIgnored(path string, patterns []string) bool {
-	clean := filepath.ToSlash(path)
-	for _, pat := range patterns {
-		pat = filepath.ToSlash(pat)
-		if matched, _ := filepath.Match(pat, clean); matched {
-			return true
-		}
-		if matched, _ := filepath.Match(pat, filepath.Base(clean)); matched {
-			return true
-		}
-		if strings.HasSuffix(pat, "/") && strings.HasPrefix(clean+"/", pat) {
-			return true
-		}
-		if strings.HasPrefix(clean+"/", pat+"/") {
-			return true
-		}
+func isIgnored(path string, gitIgnore *ignore.GitIgnore) bool {
+	if gitIgnore == nil {
+		return false
 	}
-	return false
+	clean := filepath.ToSlash(path)
+	return gitIgnore.MatchesPath(clean)
 }
 
 func ScanFile(path string) ([]Finding, *Stats, error) {
@@ -80,7 +62,7 @@ func ScanFile(path string) ([]Finding, *Stats, error) {
 
 func ScanDir(root string) ([]Finding, *Stats, error) {
 	start := time.Now()
-	ignorePatterns := loadIgnorePatterns(root)
+	ignoreMatcher := loadIgnorePatternsMatcher(root)
 	var paths []string
 
 	if err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
@@ -89,12 +71,12 @@ func ScanDir(root string) ([]Finding, *Stats, error) {
 		}
 		rel, _ := filepath.Rel(root, path)
 		if d.IsDir() {
-			if skipDirs[d.Name()] || isIgnored(rel, ignorePatterns) {
+			if skipDirs[d.Name()] || isIgnored(rel, ignoreMatcher) {
 				return filepath.SkipDir
 			}
 			return nil
 		}
-		if isIgnored(rel, ignorePatterns) {
+		if isIgnored(rel, ignoreMatcher) {
 			return nil
 		}
 		ext := strings.ToLower(filepath.Ext(path))

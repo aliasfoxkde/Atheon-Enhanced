@@ -38,6 +38,9 @@ func (p *bundlePattern) Matches(line string) bool { return p.enabled && p.re.Mat
 func (p *bundlePattern) Enabled() bool            { return p.enabled }
 func (p *bundlePattern) SetEnabled(enabled bool)  { p.enabled = enabled }
 
+func (p *bundlePattern) Matches(line string) bool { return p.enabled && p.re.MatchString(line) }
+func (p *bundlePattern) Enabled() bool             { return p.enabled }
+func (p *bundlePattern) SetEnabled(enabled bool)  { p.enabled = enabled }
 type categoryScanner struct {
 	combined *regexp.Regexp
 	patterns []Pattern

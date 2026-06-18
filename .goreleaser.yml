@@ -67,12 +67,14 @@ brews:
       name: homebrew-atheon
       token: "{{ .Env.GH_PAT }}"
     homepage: "https://github.com/HoraDomu/Atheon"
-    description: "One tool. All patterns. Any input."
+    description: "Pattern matching engine for secrets/PII detection with MCP server support"
     license: "MIT"
     install: |
       bin.install "atheon"
+      bin.install "atheon-mcp"
     test: |
       system "#{bin}/atheon", "--help"
+      system "#{bin}/atheon-mcp", "--help"
 
 scoops:
   - repository:
@@ -80,5 +82,12 @@ scoops:
       name: scoop-atheon
       token: "{{ .Env.GH_PAT }}"
     homepage: "https://github.com/HoraDomu/Atheon"
-    description: "One tool. All patterns. Any input."
+    description: "Pattern matching engine for secrets/PII detection with MCP server support"
     license: MIT
+    persistence:
+      - ".atheon"
+    post_install: |
+      Write-Host "Pattern detection tool installed. Run 'atheon update' to download latest patterns."
+    bin:
+      - atheon
+      - atheon-mcp

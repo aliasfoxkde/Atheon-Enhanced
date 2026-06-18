@@ -1,0 +1,966 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>bundler: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">atheon/bundler/main.go (0.0%)</option>
+				
+				<option value="file1">atheon/cmd/mcp/main.go (0.0%)</option>
+				
+				<option value="file2">atheon/core/bundle.go (53.6%)</option>
+				
+				<option value="file3">atheon/core/pattern.go (100.0%)</option>
+				
+				<option value="file4">atheon/core/runner.go (91.0%)</option>
+				
+				<option value="file5">atheon/main.go (0.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package main
+
+import (
+        "bytes"
+        "compress/gzip"
+        "encoding/json"
+        "fmt"
+        "io/fs"
+        "os"
+        "path/filepath"
+        "strings"
+
+        "gopkg.in/yaml.v3"
+)
+
+type patternFile struct {
+        Name  string `yaml:"name"`
+        Match string `yaml:"match"`
+}
+
+type patternDef struct {
+        Name     string `json:"name"`
+        Category string `json:"category"`
+        Match    string `json:"match"`
+}
+
+func main() <span class="cov0" title="0">{
+        communityDir := "community"
+        outPath := filepath.Join("core", "patterns.bundle")
+        if len(os.Args) &gt; 1 </span><span class="cov0" title="0">{
+                communityDir = os.Args[1]
+        }</span>
+        <span class="cov0" title="0">if len(os.Args) &gt; 2 </span><span class="cov0" title="0">{
+                outPath = os.Args[2]
+        }</span>
+
+        <span class="cov0" title="0">var defs []patternDef
+        err := filepath.WalkDir(communityDir, func(path string, d fs.DirEntry, err error) error </span><span class="cov0" title="0">{
+                if err != nil || d.IsDir() || !strings.HasSuffix(path, ".yaml") </span><span class="cov0" title="0">{
+                        return err
+                }</span>
+                <span class="cov0" title="0">data, err := os.ReadFile(path)
+                if err != nil </span><span class="cov0" title="0">{
+                        return err
+                }</span>
+                <span class="cov0" title="0">var pf patternFile
+                if err := yaml.Unmarshal(data, &amp;pf); err != nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf("%s: %w", path, err)
+                }</span>
+                <span class="cov0" title="0">if pf.Name == "" || pf.Match == "" </span><span class="cov0" title="0">{
+                        return fmt.Errorf("%s: missing name or match", path)
+                }</span>
+                <span class="cov0" title="0">category := filepath.Base(filepath.Dir(path))
+                defs = append(defs, patternDef{
+                        Name:     pf.Name,
+                        Category: category,
+                        Match:    pf.Match,
+                })
+                return nil</span>
+        })
+        <span class="cov0" title="0">if err != nil </span><span class="cov0" title="0">{
+                fmt.Fprintln(os.Stderr, "error:", err)
+                os.Exit(1)
+        }</span>
+
+        <span class="cov0" title="0">jsonBytes, err := json.Marshal(defs)
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Fprintln(os.Stderr, "error:", err)
+                os.Exit(1)
+        }</span>
+
+        <span class="cov0" title="0">var buf bytes.Buffer
+        gz := gzip.NewWriter(&amp;buf)
+        gz.Write(jsonBytes)
+        gz.Close()
+
+        if err := os.WriteFile(outPath, buf.Bytes(), 0o644); err != nil </span><span class="cov0" title="0">{
+                fmt.Fprintln(os.Stderr, "error:", err)
+                os.Exit(1)
+        }</span>
+        <span class="cov0" title="0">fmt.Printf("bundled %d patterns → %s\n", len(defs), outPath)</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package main
+
+import (
+        "bufio"
+        "encoding/json"
+        "fmt"
+        "os"
+        "strings"
+
+        "atheon/core"
+)
+
+type request struct {
+        JSONRPC string          `json:"jsonrpc"`
+        ID      any             `json:"id"`
+        Method  string          `json:"method"`
+        Params  json.RawMessage `json:"params"`
+}
+
+type response struct {
+        JSONRPC string    `json:"jsonrpc"`
+        ID      any       `json:"id"`
+        Result  any       `json:"result,omitempty"`
+        Error   *rpcError `json:"error,omitempty"`
+}
+
+type rpcError struct {
+        Code    int    `json:"code"`
+        Message string `json:"message"`
+}
+
+func main() <span class="cov0" title="0">{
+        sc := bufio.NewScanner(os.Stdin)
+        sc.Buffer(make([]byte, 1&lt;&lt;20), 1&lt;&lt;20)
+        enc := json.NewEncoder(os.Stdout)
+
+        for sc.Scan() </span><span class="cov0" title="0">{
+                var req request
+                if err := json.Unmarshal(sc.Bytes(), &amp;req); err != nil </span><span class="cov0" title="0">{
+                        continue</span>
+                }
+                <span class="cov0" title="0">if req.Method == "initialized" </span><span class="cov0" title="0">{
+                        continue</span>
+                }
+
+                <span class="cov0" title="0">var result any
+                var rerr *rpcError
+
+                switch req.Method </span>{
+                case "initialize":<span class="cov0" title="0">
+                        result = map[string]any{
+                                "protocolVersion": "2024-11-05",
+                                "capabilities":    map[string]any{"tools": map[string]any{}},
+                                "serverInfo":      map[string]any{"name": "atheon", "version": "1.0.0"},
+                        }</span>
+                case "tools/list":<span class="cov0" title="0">
+                        result = map[string]any{"tools": toolList()}</span>
+                case "tools/call":<span class="cov0" title="0">
+                        result, rerr = handleCall(req.Params)</span>
+                default:<span class="cov0" title="0">
+                        rerr = &amp;rpcError{Code: -32601, Message: "method not found"}</span>
+                }
+
+                <span class="cov0" title="0">resp := response{JSONRPC: "2.0", ID: req.ID}
+                if rerr != nil </span><span class="cov0" title="0">{
+                        resp.Error = rerr
+                }</span> else<span class="cov0" title="0"> {
+                        resp.Result = result
+                }</span>
+                <span class="cov0" title="0">enc.Encode(resp)</span> //nolint:errcheck
+        }
+}
+
+func toolList() []map[string]any <span class="cov0" title="0">{
+        schema := func(required []string, props map[string]any) map[string]any </span><span class="cov0" title="0">{
+                return map[string]any{"type": "object", "properties": props, "required": required}
+        }</span>
+        <span class="cov0" title="0">str := map[string]any{"type": "string"}
+        cats := map[string]any{"type": "array", "items": str, "description": "categories to scan (omit for all)"}
+
+        return []map[string]any{
+                {
+                        "name":        "scan_string",
+                        "description": "Scan a string for pattern matches",
+                        "inputSchema": schema([]string{"content"}, map[string]any{
+                                "content":    map[string]any{"type": "string"},
+                                "source":     str,
+                                "categories": cats,
+                        }),
+                },
+                {
+                        "name":        "scan_file",
+                        "description": "Scan a file for pattern matches",
+                        "inputSchema": schema([]string{"path"}, map[string]any{
+                                "path":       map[string]any{"type": "string"},
+                                "categories": cats,
+                        }),
+                },
+                {
+                        "name":        "scan_dir",
+                        "description": "Scan a directory for pattern matches",
+                        "inputSchema": schema([]string{"path"}, map[string]any{
+                                "path":       map[string]any{"type": "string"},
+                                "categories": cats,
+                        }),
+                },
+        }</span>
+}
+
+func handleCall(params json.RawMessage) (any, *rpcError) <span class="cov0" title="0">{
+        var p struct {
+                Name      string          `json:"name"`
+                Arguments json.RawMessage `json:"arguments"`
+        }
+        if err := json.Unmarshal(params, &amp;p); err != nil </span><span class="cov0" title="0">{
+                return nil, &amp;rpcError{Code: -32602, Message: "invalid params"}
+        }</span>
+
+        <span class="cov0" title="0">switch p.Name </span>{
+        case "scan_string":<span class="cov0" title="0">
+                var args struct {
+                        Content    string   `json:"content"`
+                        Source     string   `json:"source"`
+                        Categories []string `json:"categories"`
+                }
+                json.Unmarshal(p.Arguments, &amp;args) //nolint:errcheck
+                if args.Source == "" </span><span class="cov0" title="0">{
+                        args.Source = "stdin"
+                }</span>
+                <span class="cov0" title="0">core.SetActiveCategories(args.Categories)
+                return textResult(core.ScanString(args.Content, args.Source)), nil</span>
+
+        case "scan_file":<span class="cov0" title="0">
+                var args struct {
+                        Path       string   `json:"path"`
+                        Categories []string `json:"categories"`
+                }
+                json.Unmarshal(p.Arguments, &amp;args) //nolint:errcheck
+                core.SetActiveCategories(args.Categories)
+                findings, _, err := core.ScanFile(args.Path)
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, &amp;rpcError{Code: -32603, Message: err.Error()}
+                }</span>
+                <span class="cov0" title="0">return textResult(findings), nil</span>
+
+        case "scan_dir":<span class="cov0" title="0">
+                var args struct {
+                        Path       string   `json:"path"`
+                        Categories []string `json:"categories"`
+                }
+                json.Unmarshal(p.Arguments, &amp;args) //nolint:errcheck
+                core.SetActiveCategories(args.Categories)
+                findings, _, err := core.ScanDir(args.Path)
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, &amp;rpcError{Code: -32603, Message: err.Error()}
+                }</span>
+                <span class="cov0" title="0">return textResult(findings), nil</span>
+
+        default:<span class="cov0" title="0">
+                return nil, &amp;rpcError{Code: -32601, Message: "unknown tool: " + p.Name}</span>
+        }
+}
+
+func textResult(findings []core.Finding) map[string]any <span class="cov0" title="0">{
+        var sb strings.Builder
+        if len(findings) == 0 </span><span class="cov0" title="0">{
+                sb.WriteString("no findings")
+        }</span> else<span class="cov0" title="0"> {
+                for _, f := range findings </span><span class="cov0" title="0">{
+                        fmt.Fprintf(&amp;sb, "%s  %s:%d\n", f.Pattern, f.File, f.Line)
+                }</span>
+                <span class="cov0" title="0">fmt.Fprintf(&amp;sb, "\n%d finding(s)", len(findings))</span>
+        }
+        <span class="cov0" title="0">return map[string]any{
+                "content": []map[string]any{{"type": "text", "text": sb.String()}},
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package core
+
+import (
+        "bytes"
+        "compress/gzip"
+        _ "embed"
+        "encoding/json"
+        "fmt"
+        "io"
+        "net/http"
+        "os"
+        "path/filepath"
+        "regexp"
+        "strings"
+)
+
+//go:embed patterns.bundle
+var embeddedBundle []byte
+
+type PatternDef struct {
+        Name     string `json:"name"`
+        Category string `json:"category"`
+        Match    string `json:"match"`
+}
+
+type bundlePattern struct {
+        name     string
+        category string
+        match    string
+        re       *regexp.Regexp
+}
+
+func (p *bundlePattern) Name() string             <span class="cov8" title="1">{ return p.name }</span>
+func (p *bundlePattern) Matches(line string) bool <span class="cov8" title="1">{ return p.re.MatchString(line) }</span>
+
+type categoryScanner struct {
+        combined *regexp.Regexp
+        patterns []Pattern
+}
+
+var (
+        allPatterns    []*bundlePattern
+        activeScanners []categoryScanner
+)
+
+func init() <span class="cov8" title="1">{
+        data := embeddedBundle
+        home, _ := os.UserHomeDir()
+        if b, err := os.ReadFile(filepath.Join(home, ".atheon", "patterns.bundle")); err == nil </span><span class="cov8" title="1">{
+                data = b
+        }</span>
+        <span class="cov8" title="1">if err := loadBundle(data); err != nil </span><span class="cov0" title="0">{
+                fmt.Fprintf(os.Stderr, "atheon: bundle load failed: %v\n", err)
+        }</span>
+        <span class="cov8" title="1">SetActiveCategories(nil)</span>
+}
+
+func loadBundle(data []byte) error <span class="cov8" title="1">{
+        r, err := gzip.NewReader(bytes.NewReader(data))
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov8" title="1">defer r.Close()
+
+        var defs []PatternDef
+        if err := json.NewDecoder(r).Decode(&amp;defs); err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov8" title="1">registry = nil
+        allPatterns = nil
+
+        for _, def := range defs </span><span class="cov8" title="1">{
+                re, err := regexp.Compile(def.Match)
+                if err != nil </span><span class="cov0" title="0">{
+                        fmt.Fprintf(os.Stderr, "atheon: skipping %q: %v\n", def.Name, err)
+                        continue</span>
+                }
+                <span class="cov8" title="1">bp := &amp;bundlePattern{name: def.Name, category: def.Category, match: def.Match, re: re}
+                allPatterns = append(allPatterns, bp)
+                Register(bp)</span>
+        }
+        <span class="cov8" title="1">return nil</span>
+}
+
+func SetActiveCategories(cats []string) <span class="cov8" title="1">{
+        catSet := map[string]bool{}
+        for _, c := range cats </span><span class="cov0" title="0">{
+                catSet[strings.TrimSpace(c)] = true
+        }</span>
+
+        <span class="cov8" title="1">byCategory := map[string][]Pattern{}
+        for _, p := range allPatterns </span><span class="cov8" title="1">{
+                if len(cats) &gt; 0 &amp;&amp; !catSet[p.category] </span><span class="cov0" title="0">{
+                        continue</span>
+                }
+                <span class="cov8" title="1">byCategory[p.category] = append(byCategory[p.category], p)</span>
+        }
+
+        <span class="cov8" title="1">activeScanners = nil
+        for _, patterns := range byCategory </span><span class="cov8" title="1">{
+                parts := make([]string, 0, len(patterns))
+                for _, p := range patterns </span><span class="cov8" title="1">{
+                        if bp, ok := p.(*bundlePattern); ok </span><span class="cov8" title="1">{
+                                parts = append(parts, "(?:"+bp.match+")")
+                        }</span>
+                }
+                <span class="cov8" title="1">combined, err := regexp.Compile(strings.Join(parts, "|"))
+                if err != nil </span><span class="cov0" title="0">{
+                        continue</span>
+                }
+                <span class="cov8" title="1">activeScanners = append(activeScanners, categoryScanner{
+                        combined: combined,
+                        patterns: patterns,
+                })</span>
+        }
+}
+
+func Categories() []string <span class="cov0" title="0">{
+        seen := map[string]bool{}
+        var cats []string
+        for _, p := range allPatterns </span><span class="cov0" title="0">{
+                if !seen[p.category] </span><span class="cov0" title="0">{
+                        seen[p.category] = true
+                        cats = append(cats, p.category)
+                }</span>
+        }
+        <span class="cov0" title="0">return cats</span>
+}
+
+func DownloadBundle() error <span class="cov0" title="0">{
+        const url = "https://github.com/HoraDomu/Atheon/releases/latest/download/patterns.bundle"
+        resp, err := http.Get(url) //nolint:gosec
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov0" title="0">defer resp.Body.Close()
+        if resp.StatusCode != http.StatusOK </span><span class="cov0" title="0">{
+                return fmt.Errorf("server returned %d", resp.StatusCode)
+        }</span>
+        <span class="cov0" title="0">data, err := io.ReadAll(resp.Body)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov0" title="0">home, err := os.UserHomeDir()
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov0" title="0">dir := filepath.Join(home, ".atheon")
+        if err := os.MkdirAll(dir, 0o755); err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov0" title="0">return os.WriteFile(filepath.Join(dir, "patterns.bundle"), data, 0o644)</span>
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package core
+
+import "sort"
+
+type Pattern interface {
+        Name() string
+        Matches(line string) bool
+}
+
+var registry []Pattern
+
+func Register(p Pattern) <span class="cov8" title="1">{
+        registry = append(registry, p)
+}</span>
+
+func All() []Pattern <span class="cov8" title="1">{
+        sorted := make([]Pattern, len(registry))
+        copy(sorted, registry)
+        sort.Slice(sorted, func(i, j int) bool </span><span class="cov8" title="1">{
+                return sorted[i].Name() &lt; sorted[j].Name()
+        }</span>)
+        <span class="cov8" title="1">return sorted</span>
+}
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package core
+
+import (
+        "bufio"
+        "io/fs"
+        "os"
+        "path/filepath"
+        "strings"
+        "sync"
+        "time"
+)
+
+var skipDirs = map[string]bool{
+        ".git": true, "node_modules": true, "vendor": true,
+        ".terraform": true, "dist": true, "build": true, "__pycache__": true,
+}
+
+var binaryExts = map[string]bool{
+        ".png": true, ".jpg": true, ".jpeg": true, ".gif": true,
+        ".pdf": true, ".zip": true, ".tar": true, ".gz": true,
+        ".exe": true, ".bin": true, ".so": true, ".dylib": true,
+}
+
+func loadIgnorePatterns(root string) []string <span class="cov8" title="1">{
+        var patterns []string
+        for _, name := range []string{".atheonignore", ".gitignore"} </span><span class="cov8" title="1">{
+                f, err := os.Open(filepath.Join(root, name))
+                if err != nil </span><span class="cov8" title="1">{
+                        continue</span>
+                }
+                <span class="cov8" title="1">sc := bufio.NewScanner(f)
+                for sc.Scan() </span><span class="cov8" title="1">{
+                        line := strings.TrimSpace(sc.Text())
+                        if line == "" || strings.HasPrefix(line, "#") || strings.HasPrefix(line, "!") </span><span class="cov8" title="1">{
+                                continue</span>
+                        }
+                        <span class="cov8" title="1">line = strings.TrimPrefix(line, "/")
+                        if line != "" </span><span class="cov8" title="1">{
+                                patterns = append(patterns, line)
+                        }</span>
+                }
+                <span class="cov8" title="1">f.Close()</span>
+        }
+        <span class="cov8" title="1">return patterns</span>
+}
+
+func isIgnored(path string, patterns []string) bool <span class="cov8" title="1">{
+        clean := filepath.ToSlash(path)
+        for _, pat := range patterns </span><span class="cov8" title="1">{
+                pat = filepath.ToSlash(pat)
+                if matched, _ := filepath.Match(pat, clean); matched </span><span class="cov8" title="1">{
+                        return true
+                }</span>
+                <span class="cov8" title="1">if matched, _ := filepath.Match(pat, filepath.Base(clean)); matched </span><span class="cov0" title="0">{
+                        return true
+                }</span>
+                <span class="cov8" title="1">if strings.HasSuffix(pat, "/") &amp;&amp; strings.HasPrefix(clean+"/", pat) </span><span class="cov0" title="0">{
+                        return true
+                }</span>
+                <span class="cov8" title="1">if strings.HasPrefix(clean+"/", pat+"/") </span><span class="cov0" title="0">{
+                        return true
+                }</span>
+        }
+        <span class="cov8" title="1">return false</span>
+}
+
+func ScanFile(path string) ([]Finding, *Stats, error) <span class="cov8" title="1">{
+        start := time.Now()
+        data, err := os.ReadFile(path)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, nil, err
+        }</span>
+        <span class="cov8" title="1">findings := scanLines(string(data), path)
+        return findings, &amp;Stats{
+                Files:     1,
+                Bytes:     int64(len(data)),
+                ElapsedMs: time.Since(start).Milliseconds(),
+        }, nil</span>
+}
+
+func ScanDir(root string) ([]Finding, *Stats, error) <span class="cov8" title="1">{
+        start := time.Now()
+        ignorePatterns := loadIgnorePatterns(root)
+        var paths []string
+
+        if err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error </span><span class="cov8" title="1">{
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil
+                }</span>
+                <span class="cov8" title="1">rel, _ := filepath.Rel(root, path)
+                if d.IsDir() </span><span class="cov8" title="1">{
+                        if skipDirs[d.Name()] || isIgnored(rel, ignorePatterns) </span><span class="cov8" title="1">{
+                                return filepath.SkipDir
+                        }</span>
+                        <span class="cov8" title="1">return nil</span>
+                }
+                <span class="cov8" title="1">if isIgnored(rel, ignorePatterns) </span><span class="cov8" title="1">{
+                        return nil
+                }</span>
+                <span class="cov8" title="1">ext := strings.ToLower(filepath.Ext(path))
+                if !binaryExts[ext] </span><span class="cov8" title="1">{
+                        paths = append(paths, path)
+                }</span>
+                <span class="cov8" title="1">return nil</span>
+        }); err != nil <span class="cov0" title="0">{
+                return nil, nil, err
+        }</span>
+
+        <span class="cov8" title="1">results := make([][]Finding, len(paths))
+        sizes := make([]int64, len(paths))
+        var wg sync.WaitGroup
+        sem := make(chan struct{}, 256)
+
+        for i, p := range paths </span><span class="cov8" title="1">{
+                wg.Add(1)
+                sem &lt;- struct{}{}
+                go func(i int, p string) </span><span class="cov8" title="1">{
+                        defer wg.Done()
+                        defer func() </span><span class="cov8" title="1">{ &lt;-sem }</span>()
+                        <span class="cov8" title="1">data, err := os.ReadFile(p)
+                        if err != nil </span><span class="cov0" title="0">{
+                                return
+                        }</span>
+                        <span class="cov8" title="1">results[i] = scanLines(string(data), p)
+                        sizes[i] = int64(len(data))</span>
+                }(i, p)
+        }
+        <span class="cov8" title="1">wg.Wait()
+
+        var findings []Finding
+        var totalBytes int64
+        for i := range results </span><span class="cov8" title="1">{
+                findings = append(findings, results[i]...)
+                totalBytes += sizes[i]
+        }</span>
+
+        <span class="cov8" title="1">return findings, &amp;Stats{
+                Files:     len(paths),
+                Bytes:     totalBytes,
+                ElapsedMs: time.Since(start).Milliseconds(),
+        }, nil</span>
+}
+
+func ScanEnv() []Finding <span class="cov8" title="1">{
+        var findings []Finding
+        for _, env := range os.Environ() </span><span class="cov8" title="1">{
+                parts := strings.SplitN(env, "=", 2)
+                if len(parts) != 2 </span><span class="cov0" title="0">{
+                        continue</span>
+                }
+                <span class="cov8" title="1">key, val := parts[0], parts[1]
+                for _, cs := range activeScanners </span><span class="cov8" title="1">{
+                        if !cs.combined.MatchString(val) </span><span class="cov8" title="1">{
+                                continue</span>
+                        }
+                        <span class="cov8" title="1">for _, p := range cs.patterns </span><span class="cov8" title="1">{
+                                if p.Matches(val) </span><span class="cov8" title="1">{
+                                        findings = append(findings, Finding{
+                                                Pattern: p.Name(),
+                                                File:    "env:" + key,
+                                                Content: val,
+                                        })
+                                }</span>
+                        }
+                }
+        }
+        <span class="cov8" title="1">return findings</span>
+}
+
+func ScanString(content, source string) []Finding <span class="cov8" title="1">{
+        return scanLines(content, source)
+}</span>
+
+func scanLines(content, file string) []Finding <span class="cov8" title="1">{
+        var findings []Finding
+        lines := strings.Split(content, "\n")
+        for i, line := range lines </span><span class="cov8" title="1">{
+                if strings.Contains(line, "atheon:ignore") </span><span class="cov0" title="0">{
+                        continue</span>
+                }
+                <span class="cov8" title="1">for _, cs := range activeScanners </span><span class="cov8" title="1">{
+                        if !cs.combined.MatchString(line) </span><span class="cov8" title="1">{
+                                continue</span>
+                        }
+                        <span class="cov8" title="1">for _, p := range cs.patterns </span><span class="cov8" title="1">{
+                                if p.Matches(line) </span><span class="cov8" title="1">{
+                                        findings = append(findings, Finding{
+                                                Pattern: p.Name(),
+                                                File:    file,
+                                                Line:    i + 1,
+                                                Content: strings.TrimSpace(line),
+                                        })
+                                }</span>
+                        }
+                }
+        }
+        <span class="cov8" title="1">return findings</span>
+}
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package main
+
+import (
+        "encoding/json"
+        "fmt"
+        "io"
+        "os"
+        "strings"
+
+        "atheon/core"
+)
+
+func main() <span class="cov0" title="0">{
+        args := os.Args[1:]
+
+        jsonOutput := len(args) &gt; 0 &amp;&amp; args[0] == "--json"
+        if jsonOutput </span><span class="cov0" title="0">{
+                args = args[1:]
+        }</span>
+
+        <span class="cov0" title="0">cats, args := parseCategories(args)
+        core.SetActiveCategories(cats)
+
+        if len(args) == 0 </span><span class="cov0" title="0">{
+                printHelp()
+                return
+        }</span>
+
+        <span class="cov0" title="0">switch args[0] </span>{
+        case "update":<span class="cov0" title="0">
+                fmt.Println("downloading patterns bundle...")
+                if err := core.DownloadBundle(); err != nil </span><span class="cov0" title="0">{
+                        fmt.Fprintln(os.Stderr, "error:", err)
+                        os.Exit(1)
+                }</span>
+                <span class="cov0" title="0">fmt.Println("patterns updated.")</span>
+
+        case "list":<span class="cov0" title="0">
+                cmdList(args[1:])</span>
+
+        case "--help", "help", "-h":<span class="cov0" title="0">
+                printHelp()</span>
+
+        case "--env":<span class="cov0" title="0">
+                findings := core.ScanEnv()
+                printFindings(findings, nil, jsonOutput)
+                if len(findings) &gt; 0 </span><span class="cov0" title="0">{
+                        os.Exit(1)
+                }</span>
+
+        case "-", "--stdin":<span class="cov0" title="0">
+                data, err := io.ReadAll(os.Stdin)
+                if err != nil </span><span class="cov0" title="0">{
+                        fmt.Fprintln(os.Stderr, "error: reading stdin:", err)
+                        os.Exit(1)
+                }</span>
+                <span class="cov0" title="0">findings := core.ScanString(string(data), "stdin")
+                printFindings(findings, nil, jsonOutput)
+                if len(findings) &gt; 0 </span><span class="cov0" title="0">{
+                        os.Exit(1)
+                }</span>
+
+        case "--file":<span class="cov0" title="0">
+                if len(args) &lt; 2 </span><span class="cov0" title="0">{
+                        fmt.Fprintln(os.Stderr, "error: --file requires a path")
+                        os.Exit(1)
+                }</span>
+                <span class="cov0" title="0">findings, stats, err := core.ScanFile(args[1])
+                if err != nil </span><span class="cov0" title="0">{
+                        fmt.Fprintln(os.Stderr, "error:", err)
+                        os.Exit(1)
+                }</span>
+                <span class="cov0" title="0">printFindings(findings, stats, jsonOutput)
+                if len(findings) &gt; 0 </span><span class="cov0" title="0">{
+                        os.Exit(1)
+                }</span>
+
+        default:<span class="cov0" title="0">
+                path := args[0]
+                info, err := os.Stat(path)
+                if err != nil </span><span class="cov0" title="0">{
+                        fmt.Fprintln(os.Stderr, "error: path not found:", path)
+                        os.Exit(1)
+                }</span>
+                <span class="cov0" title="0">var findings []core.Finding
+                var stats *core.Stats
+                if info.IsDir() </span><span class="cov0" title="0">{
+                        findings, stats, err = core.ScanDir(path)
+                }</span> else<span class="cov0" title="0"> {
+                        findings, stats, err = core.ScanFile(path)
+                }</span>
+                <span class="cov0" title="0">if err != nil </span><span class="cov0" title="0">{
+                        fmt.Fprintln(os.Stderr, "error:", err)
+                        os.Exit(1)
+                }</span>
+                <span class="cov0" title="0">printFindings(findings, stats, jsonOutput)
+                if len(findings) &gt; 0 </span><span class="cov0" title="0">{
+                        os.Exit(1)
+                }</span>
+        }
+}
+
+func parseCategories(args []string) ([]string, []string) <span class="cov0" title="0">{
+        var cats []string
+        var rest []string
+        all := false
+        for _, a := range args </span><span class="cov0" title="0">{
+                switch </span>{
+                case strings.HasPrefix(a, "--categories="):<span class="cov0" title="0">
+                        val := strings.TrimPrefix(a, "--categories=")
+                        for _, c := range strings.Split(val, ",") </span><span class="cov0" title="0">{
+                                if c = strings.TrimSpace(c); c != "" </span><span class="cov0" title="0">{
+                                        cats = append(cats, c)
+                                }</span>
+                        }
+                case a == "--all":<span class="cov0" title="0">
+                        all = true</span>
+                default:<span class="cov0" title="0">
+                        rest = append(rest, a)</span>
+                }
+        }
+        <span class="cov0" title="0">if all </span><span class="cov0" title="0">{
+                return nil, rest
+        }</span>
+        <span class="cov0" title="0">return cats, rest</span>
+}
+
+func printFindings(findings []core.Finding, stats *core.Stats, jsonOutput bool) <span class="cov0" title="0">{
+        if jsonOutput </span><span class="cov0" title="0">{
+                printJSONFindings(findings)
+                return
+        }</span>
+        <span class="cov0" title="0">if len(findings) == 0 </span><span class="cov0" title="0">{
+                fmt.Println("no findings.")
+        }</span> else<span class="cov0" title="0"> {
+                for _, f := range findings </span><span class="cov0" title="0">{
+                        loc := f.File
+                        if f.Line &gt; 0 </span><span class="cov0" title="0">{
+                                loc = fmt.Sprintf("%s:%d", f.File, f.Line)
+                        }</span>
+                        <span class="cov0" title="0">fmt.Printf("%s  %s\n", f.Pattern, loc)
+                        if f.Content != "" </span><span class="cov0" title="0">{
+                                fmt.Println(" ", redact(f.Content))
+                        }</span>
+                }
+                <span class="cov0" title="0">fmt.Printf("\n%d finding(s)\n", len(findings))</span>
+        }
+        <span class="cov0" title="0">if stats != nil &amp;&amp; stats.Files &gt; 0 </span><span class="cov0" title="0">{
+                fmt.Printf("scanned %d file(s)  %s  %dms\n",
+                        stats.Files, formatBytes(stats.Bytes), stats.ElapsedMs)
+        }</span>
+}
+
+func printJSONFindings(findings []core.Finding) <span class="cov0" title="0">{
+        items := make([]map[string]any, 0, len(findings))
+        for _, f := range findings </span><span class="cov0" title="0">{
+                items = append(items, map[string]any{"pattern": f.Pattern, "file": f.File, "line": f.Line, "match": f.Content})
+        }</span>
+        <span class="cov0" title="0">if err := json.NewEncoder(os.Stdout).Encode(items); err != nil </span><span class="cov0" title="0">{
+                fmt.Fprintln(os.Stderr, "error:", err)
+        }</span>
+}
+
+func cmdList(args []string) <span class="cov0" title="0">{
+        if len(args) &gt; 0 &amp;&amp; args[0] == "categories" </span><span class="cov0" title="0">{
+                for _, c := range core.Categories() </span><span class="cov0" title="0">{
+                        fmt.Println(c)
+                }</span>
+                <span class="cov0" title="0">return</span>
+        }
+        <span class="cov0" title="0">for _, p := range core.All() </span><span class="cov0" title="0">{
+                fmt.Println(p.Name())
+        }</span>
+        <span class="cov0" title="0">fmt.Printf("\n%d pattern(s) loaded\n", len(core.All()))</span>
+}
+
+func printHelp() <span class="cov0" title="0">{
+        fmt.Print(`atheon - pattern matching engine
+
+usage:
+  atheon &lt;path&gt;                      scan a directory
+  atheon --file &lt;path&gt;               scan a single file
+  atheon --env                       scan environment variables
+  atheon --json &lt;path&gt;               print findings as JSON
+  atheon --categories=&lt;c1,c2&gt; &lt;path&gt; scan specific categories
+  atheon --all &lt;path&gt;                scan all categories
+  atheon list                        list loaded patterns
+  atheon list categories             list available categories
+  atheon update                      download latest patterns bundle
+  atheon --help                      show this message
+`)
+}</span>
+
+func redact(s string) string <span class="cov0" title="0">{
+        if len(s) &lt;= 8 </span><span class="cov0" title="0">{
+                return "***"
+        }</span>
+        <span class="cov0" title="0">return s[:4] + "****" + s[len(s)-4:]</span>
+}
+
+func formatBytes(b int64) string <span class="cov0" title="0">{
+        if b &gt;= 1&lt;&lt;20 </span><span class="cov0" title="0">{
+                return fmt.Sprintf("%.1f MB", float64(b)/(1&lt;&lt;20))
+        }</span>
+        <span class="cov0" title="0">if b &gt;= 1&lt;&lt;10 </span><span class="cov0" title="0">{
+                return fmt.Sprintf("%.1f KB", float64(b)/(1&lt;&lt;10))
+        }</span>
+        <span class="cov0" title="0">return fmt.Sprintf("%d B", b)</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

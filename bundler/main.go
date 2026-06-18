@@ -14,8 +14,9 @@ import (
 )
 
 type patternFile struct {
-	Name  string `yaml:"name"`
-	Match string `yaml:"match"`
+	Name    string `yaml:"name"`
+	Match   string `yaml:"match"`
+	Enabled *bool  `yaml:"enabled,omitempty"`
 }
 
 type patternDef struct {
@@ -51,10 +52,15 @@ func main() {
 			return fmt.Errorf("%s: missing name or match", path)
 		}
 		category := filepath.Base(filepath.Dir(path))
+		enabled := true
+		if pf.Enabled != nil {
+			enabled = *pf.Enabled
+		}
 		defs = append(defs, patternDef{
 			Name:     pf.Name,
 			Category: category,
 			Match:    pf.Match,
+			Enabled:  enabled,
 		})
 		return nil
 	})

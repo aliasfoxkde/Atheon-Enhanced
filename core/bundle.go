@@ -21,18 +21,21 @@ type PatternDef struct {
 	Name     string `json:"name"`
 	Category string `json:"category"`
 	Match    string `json:"match"`
+	Enabled  bool   `json:"enabled"`
 }
 
 type bundlePattern struct {
 	name     string
 	category string
 	match    string
+	enabled  bool
 	re       *regexp.Regexp
 }
 
 func (p *bundlePattern) Name() string             { return p.name }
-func (p *bundlePattern) Matches(line string) bool { return p.re.MatchString(line) }
-
+func (p *bundlePattern) Matches(line string) bool { return p.enabled && p.re.MatchString(line) }
+func (p *bundlePattern) Enabled() bool             { return p.enabled }
+func (p *bundlePattern) SetEnabled(enabled bool)  { p.enabled = enabled }
 type categoryScanner struct {
 	combined *regexp.Regexp
 	patterns []Pattern

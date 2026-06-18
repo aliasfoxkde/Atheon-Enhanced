@@ -202,19 +202,128 @@ Wire it into whatever hook runner you already use (pre-commit, Husky, Lefthook).
 
 **MCP server**
 
-Atheon ships a separate `atheon-mcp` binary that speaks the Model Context Protocol over stdio. Drop it into any MCP-compatible AI tool to let the assistant scan code directly:
+Atheon ships a separate `atheon-mcp` binary that speaks the Model Context Protocol over stdio. Drop it into any MCP-compatible AI tool to let the assistant scan code, files, and directories for pattern matches.
 
+### Installation
+
+**Download releases:**
+- Linux: `atheon-mcp-linux-amd64` or `atheon-mcp-linux-arm64`
+- macOS: `atheon-mcp-darwin-amd64` or `atheon-mcp-darwin-arm64`
+- Windows: `atheon-mcp-windows-amd64.exe`
+
+**Homebrew:**
+```bash
+brew install HoraDomu/homebrew-atheon
+# Installs both atheon and atheon-mcp binaries
+```
+
+**Scoop (Windows):**
+```powershell
+scoop bucket add HoraDomu/scoop-atheon
+scoop install atheon
+# Includes both atheon and atheon-mcp
+```
+
+**Build from source:**
+```bash
+go build -o atheon-mcp ./cmd/mcp
+```
+
+### Configuration
+
+**Claude Code:**
 ```json
 {
   "mcpServers": {
     "atheon": {
-      "command": "atheon-mcp"
+      "command": "/path/to/atheon-mcp"
     }
   }
 }
 ```
 
-Available tools: `scan_string`, `scan_file`, `scan_dir`. All accept an optional `categories` array.
+**Cursor:**
+```json
+{
+  "mcpServers": {
+    "atheon": {
+      "command": "atheon-mcp",
+      "args": []
+    }
+  }
+}
+```
+
+**Windsurf:**
+```json
+{
+  "mcpServers": {
+    "atheon": {
+      "command": "/usr/local/bin/atheon-mcp"
+    }
+  }
+}
+```
+
+### Available Tools
+
+**`scan_string`** - Scan text content for patterns:
+```json
+{
+  "name": "scan_string",
+  "arguments": {
+    "content": "API_KEY=sk-1234567890abcdef",
+    "source": "environment",
+    "categories": ["secrets"]
+  }
+}
+```
+
+**`scan_file`** - Scan a single file:
+```json
+{
+  "name": "scan_file",
+  "arguments": {
+    "path": "/path/to/config.yaml",
+    "categories": ["secrets", "pii"]
+  }
+}
+```
+
+**`scan_dir`** - Scan entire directories:
+```json
+{
+  "name": "scan_dir",
+  "arguments": {
+    "path": "/path/to/project",
+    "categories": ["secrets", "pii", "code-quality"]
+  }
+}
+```
+
+### Usage Examples
+
+**Claude Code Example:**
+```
+User: "Can you scan the current directory for security issues?"
+Assistant: [Uses scan_dir tool] "I found 3 security issues in your codebase..."
+```
+
+**Cursor Example:**
+```
+User: "@Atheon scan this file"
+Assistant: [Uses scan_file tool] "Found 2 patterns in config.yaml..."
+```
+
+### Categories
+
+Available categories for filtering:
+- `secrets` - API keys, tokens, credentials
+- `pii` - Personal information (SSN, credit cards, etc.)
+- `code-quality` - Debug statements, TODOs, technical debt
+- `healthcare` - Medical identifiers, PHI patterns
+
+Omit the `categories` parameter to scan all categories.
 
 ---
 

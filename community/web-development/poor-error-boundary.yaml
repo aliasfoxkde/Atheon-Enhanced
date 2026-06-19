@@ -1,0 +1,5 @@
+name: poor-error-boundary
+match: 'componentDidCatch.*console\.log|ErrorBoundary.*return.*null|catch.*error.*render.*null'
+severity: high
+language: javascript
+category: web-development

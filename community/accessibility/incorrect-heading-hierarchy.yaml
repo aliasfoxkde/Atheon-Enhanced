@@ -1,0 +1,5 @@
+name: incorrect-heading-hierarchy
+match: '<h1>.*<h3>|<h2>.*<h4>|skipped.*heading.*level|h[1-6].*followed.*h[4-6]'
+severity: medium
+language: html
+category: accessibility

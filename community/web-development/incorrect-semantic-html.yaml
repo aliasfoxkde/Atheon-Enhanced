@@ -1,0 +1,5 @@
+name: incorrect-semantic-html
+match: '<div\s+class=".*container.*"><div\s+class=".*row.*"><div\s+class=".*col.*"|<div\s+role="navigation"|<div\s+role="main"'
+severity: medium
+language: html
+category: web-development

@@ -1,0 +1,5 @@
+name: python-command-injection
+match: 'os\.system\(.*\}|subprocess\.call\(.*\}|eval\(.*request\.|exec\(.*request\.'
+severity: critical
+language: python
+category: security-hardening

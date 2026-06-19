@@ -1,0 +1,5 @@
+name: innerhtml-user-input
+match: 'innerHTML.*=.*(user|input|params|query|window\.location|document\.cookie)'
+severity: critical
+language: javascript
+category: web-security

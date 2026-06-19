@@ -1,0 +1,5 @@
+name: missing-language-attribute
+match: '<html.*(?!lang=)|<html.*(?!xml:lang=)|document\.documentElement\.lang'
+severity: low
+language: html
+category: accessibility

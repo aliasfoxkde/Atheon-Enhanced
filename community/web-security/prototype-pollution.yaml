@@ -1,0 +1,5 @@
+name: prototype-pollution
+match: '__proto__|constructor\.prototype|Object\.merge.*extend|Object\.assign.*user\.|\.merge\(|\.extend\(.*req\.'
+severity: critical
+language: javascript
+category: web-security

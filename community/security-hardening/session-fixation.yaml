@@ -1,0 +1,5 @@
+name: session-fixation
+match: 'session\[.*\]\s*=\s*request\..*|session_id.*request\.|set_cookie.*session.*httponly.*false|cookie.*secure.*false'
+severity: high
+language: python
+category: security-hardening

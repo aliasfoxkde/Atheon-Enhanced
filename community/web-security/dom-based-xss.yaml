@@ -1,0 +1,5 @@
+name: dom-based-xss
+match: 'document\.write.*user|location\.hash.*innerHTML|document\.location.*=.*input|window\.name.*innerHTML'
+severity: critical
+language: javascript
+category: web-security

@@ -1,0 +1,5 @@
+name: missing-caching-opportunities
+match: 'for.*range.*query|while.*database.*query|repeated.*api.*call|cache.*miss.*repeated'
+severity: medium
+language: text
+category: performance

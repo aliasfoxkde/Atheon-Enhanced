@@ -1,0 +1,5 @@
+name: inefficient-css
+match: '@import.*css|style.*attribute.*important|\*.*\{.*display.*none|animation.*no.*hardware'
+severity: low
+language: css
+category: web-development

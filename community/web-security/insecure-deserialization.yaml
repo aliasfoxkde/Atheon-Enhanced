@@ -1,0 +1,5 @@
+name: insecure-deserialization
+match: 'pickle\.loads\(|yaml\.load\(|json\.loads\(|eval\(.*str\(|marshal\.loads\('
+severity: critical
+language: python
+category: web-security

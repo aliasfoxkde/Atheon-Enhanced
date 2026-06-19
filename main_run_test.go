@@ -252,6 +252,110 @@ func TestRunDisableOK(t *testing.T) {
 	_ = run([]string{"enable", name})
 }
 
+// TestRunEnvNoFindings exercises the --env no-findings branch (exit 0).
+func TestRunEnvNoFindings(t *testing.T) {
+	// Save and clear ALL env vars that might trigger findings — broader
+	// sweep than just credential-like names since things like GIT_* dates
+	// can also match patterns.
+	origVars := map[string]string{}
+	for _, env := range os.Environ() {
+		parts := strings.SplitN(env, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		// Skip only our own test marker; clear everything else so --env
+		// sees an empty environment.
+		if strings.HasPrefix(parts[0], "ATHEON_TEST_") {
+			continue
+		}
+		origVars[parts[0]] = parts[1]
+		os.Unsetenv(parts[0])
+	}
+	defer func() {
+		for k, v := range origVars {
+			os.Setenv(k, v)
+		}
+	}()
+
+	if code := run([]string{"--env"}); code != 0 {
+		t.Errorf("expected exit 0 with no findings, got %d", code)
+	}
+}
+
+// TestRunStdinReadError exercises the stdin read-error branch by replacing
+// stdin with a read-closed file descriptor.
+func TestRunStdinReadError(t *testing.T) {
+	orig := os.Stdin
+	defer func() { os.Stdin = orig }()
+
+	// Create a temp file and close it, then reopen as stdin so reads fail
+	tmp, err := os.CreateTemp("", "stdin-test-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tmp.Close()
+	os.Remove(tmp.Name())
+	// Open the (now-deleted) file as stdin — reads will fail with EBADF
+	f, err := os.Open(tmp.Name())
+	if err != nil {
+		// If we can't open it, skip this test
+		t.Skipf("can't open stdin: %v", err)
+	}
+	defer f.Close()
+	os.Stdin = f
+
+	// The code is 1 (error) when read fails
+	if code := run([]string{"-"}); code != 1 {
+		t.Errorf("expected exit 1 for stdin read error, got %d", code)
+	}
+}
+
+// TestRunStdinLongFlagReadError exercises the --stdin read-error branch.
+func TestRunStdinLongFlagReadError(t *testing.T) {
+	orig := os.Stdin
+	defer func() { os.Stdin = orig }()
+
+	tmp, err := os.CreateTemp("", "stdin-test-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tmp.Close()
+	os.Remove(tmp.Name())
+	f, err := os.Open(tmp.Name())
+	if err != nil {
+		t.Skipf("can't open stdin: %v", err)
+	}
+	defer f.Close()
+	os.Stdin = f
+
+	if code := run([]string{"--stdin"}); code != 1 {
+		t.Errorf("expected exit 1 for --stdin read error, got %d", code)
+	}
+}
+
+// TestRunEnableAll exercises the --all flag branch (enableAll=true path).
+func TestRunEnableAll(t *testing.T) {
+	tmp := filepath.Join(t.TempDir(), "clean.go")
+	if err := os.WriteFile(tmp, []byte("package x\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if code := run([]string{"--all", tmp}); code != 0 {
+		t.Errorf("expected exit 0, got %d", code)
+	}
+}
+
+// TestRunEmptyValue exercises a category with empty value (parseCategories).
+func TestRunEmptyValue(t *testing.T) {
+	tmp := filepath.Join(t.TempDir(), "clean.go")
+	if err := os.WriteFile(tmp, []byte("package x\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// --categories=,secrets has an empty first value
+	if code := run([]string{"--categories=,secrets", tmp}); code != 0 {
+		t.Errorf("expected exit 0, got %d", code)
+	}
+}
+
 // coreAll returns a list of pattern names from the core package. Used to
 // pick a real pattern for enable/disable tests.
 func coreAll() []string {

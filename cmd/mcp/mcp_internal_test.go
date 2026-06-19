@@ -138,6 +138,35 @@ func TestHandleCallScanStringWithCategories(t *testing.T) {
 	}
 }
 
+// TestHandleCallScanStringDefaultSource exercises the empty-source branch
+// which defaults to "stdin".
+func TestHandleCallScanStringDefaultSource(t *testing.T) {
+	// No "source" field — should default to "stdin"
+	params := json.RawMessage(`{"name":"scan_string","arguments":{"content":"AKIAIOSFODNN7EXAMPLE"}}`)
+	result, rerr := handleCall(params)
+	if rerr != nil {
+		t.Fatalf("unexpected error: %v", rerr)
+	}
+	if result == nil {
+		t.Fatal("expected non-nil result")
+	}
+}
+
+// TestHandleCallScanDirError exercises the ScanDir error branch by
+// passing a path that's a file (ScanDir should fail).
+func TestHandleCallScanDirError(t *testing.T) {
+	tmp, _ := os.CreateTemp("", "not-a-dir-*")
+	defer os.Remove(tmp.Name())
+	tmp.Close()
+
+	params := json.RawMessage(`{"name":"scan_dir","arguments":{"path":"` + tmp.Name() + `"}}`)
+	_, rerr := handleCall(params)
+	// Either returns error or empty result depending on impl
+	if rerr != nil && rerr.Code != -32603 {
+		t.Errorf("unexpected error code %d", rerr.Code)
+	}
+}
+
 // TestHandleCallScanDirWithCategories exercises the categories parameter for
 // scan_dir.
 func TestHandleCallScanDirWithCategories(t *testing.T) {

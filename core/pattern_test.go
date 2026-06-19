@@ -19,6 +19,11 @@ func TestPatternInterfaceCategory(t *testing.T) {
 		"code-quality": true,
 		"healthcare":   true,
 		"finance":      true,
+		"ai-detection": true,
+		"devops":       true,
+		"django":       true,
+		"nodejs":       true,
+		"react":        true,
 	}
 
 	for _, p := range patterns {

@@ -1,0 +1,2 @@
+name: skip-hooks
+match: '(?i)(--no-verify|skip.*hook|hook.*skip|--no-hooks)'

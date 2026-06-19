@@ -1,0 +1,2 @@
+name: git-hard-reset
+match: '(?i)git reset.*--hard|hard.*reset.*git'

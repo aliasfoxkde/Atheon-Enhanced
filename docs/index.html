@@ -260,13 +260,16 @@
 
   <section>
     <h2>What it is</h2>
-    <p>Atheon is a CLI tool. You point it at a file, a directory, your environment variables, or any stream of text piped through it. It finds every match and tells you the file, the line, and exactly what was found.</p>
-    <p>The engine has no opinions about what matters. You do. Patterns live in plain YAML files — one file per rule, no Go required. Organize them into categories and scan only what you need:</p>
+    <p>Atheon is a community-driven pattern matching engine. You define the rules. You point it at anything — a file, a directory, environment variables, or any stream of text. It finds every match and tells you exactly where.</p>
+    <p>Three ways people use it:</p>
+    <p><strong>Pre-commit hook.</strong> Drop Atheon into a git hook and it blocks bad commits before they leave the machine. Exit code <code>1</code> on any finding — that's all a hook needs to abort.</p>
+    <p><strong>MCP server.</strong> <code>atheon-mcp</code> speaks the Model Context Protocol. Wire it into Claude, Cursor, or Windsurf and the AI can scan code mid-generation, before it ever reaches a file.</p>
+    <p><strong>CI pipeline.</strong> Run <code>atheon --categories=secrets .</code> in any pipeline. Native binary, no runtime, no dependencies, runs in milliseconds regardless of how many patterns are loaded.</p>
+    <p>Patterns live in plain YAML files — one file per rule, no Go required. Organize them into categories and scan only what you need:</p>
     <pre>atheon --categories=secrets .
 atheon --categories=secrets,pii .
 atheon --all .</pre>
-    <p>Run <code>atheon update</code> to pull the latest community bundle. Drop it in a pre-commit hook and it blocks bad pushes before they leave the machine. Wire it into an MCP-compatible AI tool and the assistant can scan code mid-generation.</p>
-    <p>Directory scans automatically respect <code>.gitignore</code>. Drop a <code>.atheonignore</code> in your project root to exclude additional paths. Native binaries ship for Windows, macOS (Intel + Apple Silicon), and Linux with no runtime or dependencies.</p>
+    <p>Directory scans automatically respect <code>.gitignore</code> and <code>.atheonignore</code>. Native binaries ship for Windows, macOS (Intel + Apple Silicon), and Linux with no runtime or dependencies.</p>
   </section>
 
   <hr />
@@ -295,7 +298,7 @@ openai-api-key  config/app.yaml:47
   # de****a8f3c
 
 1 finding(s)
-scanned 14 file(s)  22.1 KB  3ms</pre>
+scanned 23 file(s)  41.3 KB  4ms</pre>
     <p>Exit code <code>1</code>. The push never happens. The key never leaves the machine. The incident never occurs.</p>
     <p>That's it. That's Atheon.</p>
   </section>

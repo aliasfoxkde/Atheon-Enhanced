@@ -190,7 +190,7 @@ func TestLoadIgnorePatterns(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	gitignorePath := filepath.Join(tmpDir, ".gitignore")
-	gitignoreContent := "# Comment line\n*.log\ntemp_*\n\n!important.log\n"
+	gitignoreContent := "# Comment line\n*.log\ntemp_*\n**/*.generated.go\n\n!important.log\n"
 	if err := os.WriteFile(gitignorePath, []byte(gitignoreContent), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -208,6 +208,9 @@ func TestLoadIgnorePatterns(t *testing.T) {
 	}
 	if isIgnored("main.go", matchers) {
 		t.Error("expected main.go to not be ignored")
+	}
+	if !isIgnored("pkg/api/handler.generated.go", matchers) {
+		t.Error("expected **/*.generated.go to match nested path")
 	}
 }
 

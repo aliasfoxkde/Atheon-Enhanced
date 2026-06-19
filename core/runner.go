@@ -7,8 +7,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	ignore "github.com/sabhiram/go-gitignore"
 )
 
 var skipDirs = map[string]bool{
@@ -22,22 +20,22 @@ var binaryExts = map[string]bool{
 	".exe": true, ".bin": true, ".so": true, ".dylib": true,
 }
 
-func loadIgnorePatternsMatcher(root string) []*ignore.GitIgnore {
-	var matchers []*ignore.GitIgnore
+func loadIgnorePatternsMatcher(root string) []*ignoreMatcher {
+	var matchers []*ignoreMatcher
 	for _, name := range []string{".atheonignore", ".gitignore"} {
-		gi, err := ignore.CompileIgnoreFile(filepath.Join(root, name))
+		m, err := compileIgnoreFile(filepath.Join(root, name))
 		if err != nil {
 			continue
 		}
-		matchers = append(matchers, gi)
+		matchers = append(matchers, m)
 	}
 	return matchers
 }
 
-func isIgnored(path string, matchers []*ignore.GitIgnore) bool {
+func isIgnored(path string, matchers []*ignoreMatcher) bool {
 	clean := filepath.ToSlash(path)
 	for _, m := range matchers {
-		if m.MatchesPath(clean) {
+		if m.matchesPath(clean) {
 			return true
 		}
 	}

@@ -1,2 +1,2 @@
 name: todo-comment
-match: '(?i)\b(TODO|FIXME|XXX|HACK)\b'
+match: '(?i)\bTODO\b'

@@ -9,33 +9,33 @@ import (
 
 func TestParseCategories(t *testing.T) {
 	tests := []struct {
-		name     string
-		args     []string
-		expected []string
+		name      string
+		args      []string
+		expected  []string
 		remaining int
 	}{
 		{
-			name:     "no categories",
-			args:     []string{"scan", "."},
-			expected: nil,
+			name:      "no categories",
+			args:      []string{"scan", "."},
+			expected:  nil,
 			remaining: 2,
 		},
 		{
-			name:     "single category",
-			args:     []string{"--categories=secrets", "scan", "."},
-			expected: []string{"secrets"},
+			name:      "single category",
+			args:      []string{"--categories=secrets", "scan", "."},
+			expected:  []string{"secrets"},
 			remaining: 2,
 		},
 		{
-			name:     "multiple categories",
-			args:     []string{"--categories=secrets,pii", "scan", "."},
-			expected: []string{"secrets", "pii"},
+			name:      "multiple categories",
+			args:      []string{"--categories=secrets,pii", "scan", "."},
+			expected:  []string{"secrets", "pii"},
 			remaining: 2,
 		},
 		{
-			name:     "all flag",
-			args:     []string{"--all", "scan", "."},
-			expected: nil,
+			name:      "all flag",
+			args:      []string{"--all", "scan", "."},
+			expected:  nil,
 			remaining: 2,
 		},
 	}
@@ -257,9 +257,9 @@ func TestPrintFindingsWithEmptyFindings(t *testing.T) {
 
 func TestParseCategoriesEdgeCases(t *testing.T) {
 	tests := []struct {
-		name     string
-		args     []string
-		check    func([]string) bool
+		name  string
+		args  []string
+		check func([]string) bool
 	}{
 		{
 			name: "empty category value",

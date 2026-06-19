@@ -79,7 +79,9 @@ func TestHandleCallScanFile(t *testing.T) {
 }
 
 func TestHandleCallScanDir(t *testing.T) {
-	params := json.RawMessage(`{"name":"scan_dir","arguments":{"path":"/tmp","categories":["secrets"]}}`)
+	dir := t.TempDir()
+	pathJSON, _ := json.Marshal(dir)
+	params := json.RawMessage(`{"name":"scan_dir","arguments":{"path":` + string(pathJSON) + `,"categories":["secrets"]}}`)
 
 	result, err := handleCall(params)
 

@@ -18,6 +18,12 @@ Atheon is a CLI tool built around a single idea: **any pattern, any domain, any 
 
 The engine itself is deliberately minimal. It has no opinions about what matters. That knowledge lives in the patterns, and the patterns come from the community.
 
+**Three ways people use Atheon:**
+
+- **Pre-commit / pre-push hook** — blocks bad commits before they leave the machine. Exit code `1` on any finding, which is all a hook needs to abort.
+- **MCP server** — `atheon-mcp` speaks the Model Context Protocol. Wire it into Claude, Cursor, or Windsurf and the AI can scan code mid-generation, before it ever reaches a file.
+- **CI pipeline** — drop `atheon --categories=secrets .` into any pipeline. Native binary, no runtime, no dependencies, runs in milliseconds regardless of pattern count.
+
 ---
 
 ## The Mission
@@ -55,7 +61,7 @@ openai-api-key  config/app.yaml:47
   # de****4f59
 
 1 finding(s)
-scanned 14 file(s)  22.1 KB  3ms
+scanned 23 file(s)  41.3 KB  4ms
 ```
 
 Exit code `1`. The push never happens. The key never leaves the machine.

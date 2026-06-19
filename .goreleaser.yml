@@ -84,10 +84,3 @@ scoops:
     homepage: "https://github.com/HoraDomu/Atheon"
     description: "Pattern matching engine for secrets/PII detection with MCP server support"
     license: MIT
-    persistence:
-      - ".atheon"
-    post_install: |
-      Write-Host "Pattern detection tool installed. Run 'atheon update' to download latest patterns."
-    bin:
-      - atheon
-      - atheon-mcp

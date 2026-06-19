@@ -1,1 +1,196 @@
-../.git/hooks/pre-commit-verification
+#!/bin/bash
+# Enhanced Pre-commit Hook - Comprehensive Quality Validation
+# This hook ensures comprehensive quality standards before allowing commits
+
+set -e
+
+echo "=== ENHANCED PRE-COMMIT VALIDATION ==="
+
+# Minimum coverage threshold
+MIN_COVERAGE=54
+
+# Check if this is a commit worth validating
+if git diff --cached --name-only | grep -E '\.go$' > /dev/null; then
+    echo "=== 📝 Go Code Changes Detected ==="
+
+    # Check commit message for conventional format
+    commit_msg=$(git log -1 --pretty=%s 2>/dev/null || echo "")
+    if [ -n "$commit_msg" ]; then
+        if [[ ! "$commit_msg" =~ ^(feat|fix|docs|test|refactor|chore|style|infra|patterns|ci): ]]; then
+            echo "WARNING: Commit doesn't follow conventional format: '$commit_msg'"
+            echo "Consider using: feat:, fix:, docs:, test:, refactor:, chore:, style:, infra:, patterns:, ci:"
+        fi
+    fi
+
+    # Check for EXACT user attribution
+    author=$(git config user.name)
+    email=$(git config user.email)
+
+    if [ "$author" != "Micheal Kinney" ]; then
+        echo "ERROR: Commit author is '$author' (must be 'Micheal Kinney')"
+        echo "Run: git config user.name 'Micheal Kinney' && git config user.email 'micheal.l.c.kinney@gmail.com'"
+        exit 1
+    fi
+
+    if [ "$email" != "micheal.l.c.kinney@gmail.com" ]; then
+        echo "ERROR: Commit email is '$email' (must be 'micheal.l.c.kinney@gmail.com')"
+        echo "Run: git config user.email 'micheal.l.c.kinney@gmail.com'"
+        exit 1
+    fi
+
+    echo "✓ Author: $author <$email>"
+
+    # Check for Go formatting
+    echo "=== 🔤 Checking code formatting ==="
+    UNFORMATTED=$(gofmt -l . 2>/dev/null || true)
+    if [ -n "$UNFORMATTED" ]; then
+        echo "ERROR: Go code is not formatted:"
+        echo "$UNFORMATTED"
+        echo "Run: gofmt -w ."
+        exit 1
+    fi
+    echo "✓ Code is properly formatted"
+
+    # Check for import optimization
+    echo "=== 📦 Checking import optimization ==="
+    if command -v goimports >/dev/null 2>&1; then
+        goimports -w . 2>/dev/null || true
+        if [ -n "$(git diff --name-only)" ]; then
+            echo "✓ Imports optimized"
+            git add .
+        fi
+    else
+        echo "⚠️  goimports not found, skipping import optimization"
+    fi
+
+    # Run go vet with detailed output
+    echo "=== 🔍 Running go vet static analysis ==="
+    if ! go vet ./... 2>&1 | tee /tmp/vet_output.txt; then
+        echo "ERROR: go vet found issues:"
+        cat /tmp/vet_output.txt
+        exit 1
+    fi
+    echo "✓ go vet passed"
+
+    # Run staticcheck if available
+    echo "=== 🔬 Running staticcheck analysis ==="
+    if command -v staticcheck >/dev/null 2>&1; then
+        if ! staticcheck ./... 2>&1 | tee /tmp/staticcheck_output.txt; then
+            echo "WARNING: staticcheck found issues:"
+            cat /tmp/staticcheck_output.txt
+            echo "Consider fixing these issues for better code quality"
+        else
+            echo "✓ staticcheck passed"
+        fi
+    else
+        echo "⚠️  staticcheck not found, install with: go install honnef.co/go/tools/cmd/staticcheck@latest"
+    fi
+
+    # Check for common security issues
+    echo "=== 🔒 Security checks ==="
+
+    # Check for hardcoded secrets in Go files
+    if grep -r "sk-[A-Za-z0-9]" core/*.go 2>/dev/null | grep -v "test" | grep -v "example"; then
+        echo "WARNING: Possible fake secrets found in code"
+        echo "Ensure these are test patterns only"
+    fi
+
+    # Check for dangerous functions
+    if grep -r "exec\|system\|eval" core/*.go | grep -v "test" | grep -v "RunExec"; then
+        echo "WARNING: Dangerous functions found in core code"
+        echo "Ensure these are properly validated"
+    fi
+
+    echo "✓ Security checks completed"
+
+    # Ensure test bundle is available
+    echo "=== 🔧 Setting up test environment ==="
+    mkdir -p ~/.atheon
+    if [ -f core/patterns.bundle ]; then
+        cp core/patterns.bundle ~/.atheon/patterns.bundle
+        echo "✓ Test bundle configured"
+    fi
+
+    # Run tests with coverage and race detection
+    echo "=== 🧪 Running comprehensive test suite ==="
+    if ! go test ./... -race -coverprofile=coverage.out -timeout 15m > /tmp/test_output.txt 2>&1; then
+        echo "ERROR: Tests failed:"
+        cat /tmp/test_output.txt
+        exit 1
+    fi
+    echo "✓ All tests passed"
+
+    # Check coverage threshold
+    echo "=== 📊 Checking coverage threshold ==="
+    COVERAGE=$(go tool cover -func=coverage.out 2>/dev/null | grep total: | awk '{print $3}' | sed 's/%//' || echo "0")
+    echo "Current coverage: ${COVERAGE}%"
+
+    if (( $(echo "$COVERAGE < $MIN_COVERAGE" | bc -l 2>/dev/null || echo "0") )); then
+        echo "ERROR: Coverage ${COVERAGE}% is below minimum ${MIN_COVERAGE}%"
+        echo "Add tests before committing or update threshold"
+        exit 1
+    fi
+    echo "✓ Coverage ${COVERAGE}% meets minimum ${MIN_COVERAGE}%"
+
+    # Check for TODO/FIXME comments in new code
+    echo "=== 📋 Checking for TODO/FIXME comments ==="
+    NEW_FILES=$(git diff --cached --name-only --diff-filter=A | grep '\.go$')
+    if [ -n "$NEW_FILES" ]; then
+        TODO_COUNT=$(grep -h "TODO\|FIXME" $NEW_FILES 2>/dev/null | wc -l || echo "0")
+        if [ "$TODO_COUNT" -gt 0 ]; then
+            echo "⚠️  Found $TODO_COUNT TODO/FIXME comments in new files"
+            echo "Consider addressing these before committing"
+        fi
+    fi
+
+    # Check for debug statements in new code
+    echo "=== 🐛 Checking for debug statements ==="
+    if [ -n "$NEW_FILES" ]; then
+        if grep -h "fmt\.Debug\|log\.Debug\|print.*debug\|Debug\.print" $NEW_FILES 2>/dev/null | grep -v "test"; then
+            echo "WARNING: Debug statements found in new code"
+            echo "Remove debug statements before committing"
+        fi
+    fi
+
+    # Verify pattern bundle is up to date
+    echo "=== 🔍 Checking pattern bundle ==="
+    if git diff --cached --name-only | grep -E "community/.*\.yaml" > /dev/null; then
+        echo "Pattern files changed, rebuilding bundle..."
+        ./bundler/bundler > /dev/null 2>&1 || echo "⚠️  Bundle rebuild had issues"
+        git add core/patterns.bundle
+        echo "✓ Pattern bundle updated"
+    fi
+
+    # Smart documentation validation
+    echo "=== 📚 Documentation Validation ==="
+    if [ -f "docs/scripts/validate-docs.sh" ]; then
+        # Make scripts executable
+        chmod +x docs/scripts/*.sh 2>/dev/null || true
+
+        # Run smart documentation validation
+        STAGED_FILES=$(git diff --cached --name-only)
+        if bash docs/scripts/validate-docs.sh $STAGED_FILES; then
+            echo "✓ Documentation validation passed"
+        else
+            # Validation failed, but this is non-blocking for now
+            echo "⚠️  Documentation may need updating (non-blocking warning)"
+        fi
+    else
+        # Fallback to basic check
+        if git diff --cached --name-only | grep -E '^docs/|\.md$' > /dev/null; then
+            echo "✓ Documentation updated"
+        else
+            echo "⚠️  No documentation updates detected"
+            echo "Consider updating docs/ for any user-facing changes"
+        fi
+    fi
+
+else
+    echo "=== ℹ️  No Go code changes detected, skipping code validation ==="
+fi
+
+echo ""
+echo "=== ✅ PRE-COMMIT VALIDATION PASSED ==="
+echo "Tests: ✓  Coverage: ${COVERAGE}%  Formatting: ✓  Author: $author"
+echo "Ready to commit! 🚀"
+exit 0

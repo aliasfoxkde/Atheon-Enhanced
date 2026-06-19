@@ -26,7 +26,9 @@ func TestVersionFlag(t *testing.T) {
 	out := make(chan string)
 	go func() {
 		var buf bytes.Buffer
-		io.Copy(&buf, r)
+		if _, err := io.Copy(&buf, r); err != nil {
+			t.Logf("Failed to capture stdout: %v", err)
+		}
 		out <- buf.String()
 	}()
 
@@ -35,6 +37,7 @@ func TestVersionFlag(t *testing.T) {
 		defer func() {
 			if r := recover(); r != nil {
 				// Expected to exit, so panic is OK
+				t.Logf("Recovered panic (expected): %v", r)
 			}
 		}()
 		main()

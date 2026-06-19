@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"atheon/core"
+	"github.com/aliasfoxkde/Atheon/core"
 )
 
 func TestListCategories(t *testing.T) {

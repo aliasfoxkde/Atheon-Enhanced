@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"atheon/core"
+	"github.com/aliasfoxkde/Atheon/core"
 )
 
 // TestPatternReDoSPrevention tests patterns for regex denial of service vulnerabilities

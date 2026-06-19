@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"atheon/core"
+	"github.com/aliasfoxkde/Atheon/core"
 )
 
 func TestParseCategories(t *testing.T) {

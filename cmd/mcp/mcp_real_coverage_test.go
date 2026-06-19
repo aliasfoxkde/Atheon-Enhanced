@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"atheon/core"
+	"github.com/aliasfoxkde/Atheon/core"
 )
 
 func TestToolList(t *testing.T) {

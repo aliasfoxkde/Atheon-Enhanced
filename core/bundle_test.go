@@ -1,7 +1,7 @@
 package core_test
 
 import (
-	"atheon/core"
+	"github.com/aliasfoxkde/Atheon/core"
 	"strings"
 	"testing"
 )

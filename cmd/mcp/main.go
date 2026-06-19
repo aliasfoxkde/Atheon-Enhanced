@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"atheon/core"
+	"github.com/aliasfoxkde/Atheon/core"
 )
 
 type request struct {

@@ -123,7 +123,9 @@ func handleCall(params json.RawMessage) (any, *rpcError) {
 			Source     string   `json:"source"`
 			Categories []string `json:"categories"`
 		}
-		json.Unmarshal(p.Arguments, &args) //nolint:errcheck
+		if err := json.Unmarshal(p.Arguments, &args); err != nil {
+			return nil, &rpcError{Code: -32602, Message: "invalid params"}
+		}
 		if args.Source == "" {
 			args.Source = "stdin"
 		}
@@ -135,7 +137,9 @@ func handleCall(params json.RawMessage) (any, *rpcError) {
 			Path       string   `json:"path"`
 			Categories []string `json:"categories"`
 		}
-		json.Unmarshal(p.Arguments, &args) //nolint:errcheck
+		if err := json.Unmarshal(p.Arguments, &args); err != nil {
+			return nil, &rpcError{Code: -32602, Message: "invalid params"}
+		}
 		core.SetActiveCategories(args.Categories)
 		findings, _, err := core.ScanFile(args.Path)
 		if err != nil {
@@ -148,7 +152,9 @@ func handleCall(params json.RawMessage) (any, *rpcError) {
 			Path       string   `json:"path"`
 			Categories []string `json:"categories"`
 		}
-		json.Unmarshal(p.Arguments, &args) //nolint:errcheck
+		if err := json.Unmarshal(p.Arguments, &args); err != nil {
+			return nil, &rpcError{Code: -32602, Message: "invalid params"}
+		}
 		core.SetActiveCategories(args.Categories)
 		findings, _, err := core.ScanDir(args.Path)
 		if err != nil {

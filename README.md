@@ -5,6 +5,8 @@
 ![Go](https://img.shields.io/badge/Go-1.21%2B-00ADD8)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Patterns](https://img.shields.io/badge/patterns-57-blueviolet)
+![CI](https://github.com/HoraDomu/Atheon/actions/workflows/ci.yml/badge.svg)
+[![Wiki](https://img.shields.io/badge/docs-wiki-blue)](https://github.com/HoraDomu/Atheon/wiki)
 
 > **One tool. All patterns. Any input.**
 
@@ -104,9 +106,13 @@ atheon --file <path>                 scan a single file explicitly
 atheon --env                         scan all environment variables
 atheon --json <path>                 output findings as JSON
 atheon --categories=<c1,c2> <path>  scan specific pattern categories only
-atheon --all <path>                  scan all categories (default)
-atheon list                          list every loaded pattern
+atheon --all <path>                  include disabled patterns in scan
+atheon list                          list all patterns with enabled/disabled status
+atheon list --enabled                list only enabled patterns
+atheon list --disabled               list only disabled patterns
 atheon list categories               list available categories
+atheon enable <pattern>              enable a pattern by name
+atheon disable <pattern>             disable a pattern by name
 atheon update                        download the latest patterns bundle
 atheon --help                        show help
 ```
@@ -142,14 +148,23 @@ This keeps scans fast regardless of how many patterns are in the bundle. A pre-c
 
 **Ignore rules**
 
-Directory scans automatically respect `.gitignore`. Drop a `.atheonignore` in your project root to exclude anything not already covered  test fixtures, generated files, `.env` files:
+Directory scans automatically respect `.gitignore`. Drop a `.atheonignore` in your project root to exclude anything not already covered — test fixtures, generated files, `.env` files:
 
 ```
 # .atheonignore
 test/
 *.generated.go
 .env
+
+# negation — ignore all of dist/ except this one file
+dist/
+!dist/keep.yaml
+
+# character class negation — exclude files not ending in .go or .yaml
+[!a-z]*.txt
 ```
+
+Full gitignore syntax is supported including `**`, `!` negation rules, and `[!...]` character class negation.
 
 To suppress a single line without ignoring the whole file, add `atheon:ignore` anywhere on that line:
 

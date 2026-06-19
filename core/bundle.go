@@ -74,6 +74,12 @@ func loadBundle(data []byte) error {
 		return err
 	}
 
+	var external []Pattern
+	for _, p := range registry {
+		if _, ok := p.(*bundlePattern); !ok {
+			external = append(external, p)
+		}
+	}
 	registry = nil
 	allPatterns = nil
 
@@ -101,6 +107,10 @@ func loadBundle(data []byte) error {
 		for _, p := range allPatterns {
 			p.enabled = true
 		}
+	}
+
+	for _, p := range external {
+		Register(p)
 	}
 
 	return nil
@@ -227,8 +237,12 @@ func DownloadBundle() error {
 		newPatterns[def.Name] = true
 	}
 
-	added := []string{}
-	removed := []string{}
+	oldPatternSet := make(map[string]bool, len(oldPatterns))
+	for _, name := range oldPatterns {
+		oldPatternSet[name] = true
+	}
+
+	var added, removed []string
 
 	for _, name := range oldPatterns {
 		if !newPatterns[name] {
@@ -236,7 +250,7 @@ func DownloadBundle() error {
 		}
 	}
 	for _, def := range newDefs {
-		if !contains(oldPatterns, def.Name) {
+		if !oldPatternSet[def.Name] {
 			added = append(added, def.Name)
 		}
 	}
@@ -259,24 +273,15 @@ func DownloadBundle() error {
 		fmt.Println("No pattern changes detected")
 	}
 
-	if err := os.WriteFile(filepath.Join(dir, "patterns.bundle"), data, 0o644); err != nil {
-		return err
-	}
-	// Reload in-memory patterns so the current process uses the new bundle immediately
+	// Load into memory first; only persist to disk if that succeeds
 	if err := loadBundle(data); err != nil {
 		return err
 	}
 	SetActiveCategories(activeCategoryFilter)
-	return nil
-}
-
-func contains(slice []string, item string) bool {
-	for _, s := range slice {
-		if s == item {
-			return true
-		}
+	if err := os.WriteFile(filepath.Join(dir, "patterns.bundle"), data, 0o644); err != nil {
+		return err
 	}
-	return false
+	return nil
 }
 
 func EnablePattern(name string) bool {
@@ -341,4 +346,5 @@ func EnableAllPatterns() {
 	for _, p := range allPatterns {
 		p.enabled = true
 	}
+	rebuildActiveScanners()
 }

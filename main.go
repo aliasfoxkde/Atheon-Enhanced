@@ -168,10 +168,28 @@ func cmdList(args []string) {
 		}
 		return
 	}
-	for _, p := range core.All() {
+
+	// Check if category filter is specified
+	var categoryFilter string
+	if len(args) > 0 && strings.HasPrefix(args[0], "--category=") {
+		categoryFilter = strings.TrimPrefix(args[0], "--category=")
+	}
+
+	patterns := core.All()
+	if categoryFilter != "" {
+		filtered := make([]core.Pattern, 0)
+		for _, p := range patterns {
+			if p.Category() == categoryFilter {
+				filtered = append(filtered, p)
+			}
+		}
+		patterns = filtered
+	}
+
+	for _, p := range patterns {
 		fmt.Printf("%s [%s]\n", p.Name(), p.Category())
 	}
-	fmt.Printf("\n%d pattern(s) loaded\n", len(core.All()))
+	fmt.Printf("\n%d pattern(s) loaded\n", len(patterns))
 }
 
 func printHelp() {

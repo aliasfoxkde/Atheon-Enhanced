@@ -78,8 +78,14 @@ func main() {
 
 	var buf bytes.Buffer
 	gz := gzip.NewWriter(&buf)
-	gz.Write(jsonBytes)
-	gz.Close()
+	if _, err := gz.Write(jsonBytes); err != nil {
+		fmt.Fprintln(os.Stderr, "error:", err)
+		os.Exit(1)
+	}
+	if err := gz.Close(); err != nil {
+		fmt.Fprintln(os.Stderr, "error:", err)
+		os.Exit(1)
+	}
 
 	if err := os.WriteFile(outPath, buf.Bytes(), 0o644); err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)

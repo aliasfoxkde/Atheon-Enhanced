@@ -7,12 +7,6 @@ type Pattern interface {
 	Matches(line string) bool
 }
 
-type BundlePattern interface {
-	Pattern
-	Enabled() bool
-	SetEnabled(bool)
-}
-
 var registry []Pattern
 
 func Register(p Pattern) {

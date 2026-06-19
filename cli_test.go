@@ -344,7 +344,7 @@ func TestHelpText(t *testing.T) {
 	findings := core.ScanString("test", "test")
 	// ScanString should return a slice (may be nil or empty)
 	// The important thing is it doesn't panic
-	if findings != nil && len(findings) > 0 {
+	if len(findings) > 0 {
 		t.Log("ScanString found patterns in test content")
 	} else {
 		t.Log("ScanString correctly handles content with no patterns")

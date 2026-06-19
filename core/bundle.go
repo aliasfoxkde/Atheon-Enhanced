@@ -51,11 +51,20 @@ var (
 )
 
 func init() {
-	data := embeddedBundle
+	// Default initialization reads the user's local bundle from ~/.atheon
+	// and falls back to the embedded bundle. Splitting this out as
+	// initializeWith lets tests exercise the error branches.
 	home, _ := os.UserHomeDir()
+	data := embeddedBundle
 	if b, err := os.ReadFile(filepath.Join(home, ".atheon", "patterns.bundle")); err == nil {
 		data = b
 	}
+	initializeWith(data)
+}
+
+// initializeWith runs the same setup as init() but accepts the bundle data
+// directly so tests can feed in corrupt data to exercise the error paths.
+func initializeWith(data []byte) {
 	if err := loadBundle(data); err != nil {
 		fmt.Fprintf(os.Stderr, "atheon: bundle load failed: %v\n", err)
 	}
@@ -194,12 +203,13 @@ func Categories() []string {
 }
 
 // bundleDownloadURL is the default upstream bundle URL. Tests may override
-// it via setBundleDownloadURL to point at an httptest server.
+// it via SetBundleDownloadURL to point at an httptest server.
 var bundleDownloadURL = "https://github.com/HoraDomu/Atheon/releases/latest/download/patterns.bundle"
 
-// setBundleDownloadURL swaps the upstream URL. Returns a restore function.
-// Intended for tests only.
-func setBundleDownloadURL(url string) func() {
+// SetBundleDownloadURL swaps the upstream URL. Returns a restore function.
+// Exported so external test packages (e.g., the main binary's tests) can
+// stub out network access.
+func SetBundleDownloadURL(url string) func() {
 	orig := bundleDownloadURL
 	bundleDownloadURL = url
 	return func() { bundleDownloadURL = orig }

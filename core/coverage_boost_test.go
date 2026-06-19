@@ -69,11 +69,17 @@ func TestScanFileDirectory(t *testing.T) {
 	}
 }
 
-// TestScanDirMissing exercises ScanDir on a missing path.
+// TestScanDirMissing exercises ScanDir on a missing path. The walker
+// function returns nil for errors so filepath.WalkDir succeeds with empty
+// results — this test just verifies no panic.
 func TestScanDirMissing(t *testing.T) {
-	// ScanDir may silently return empty for missing paths instead of
-	// erroring; verify either behavior is acceptable.
-	_, _, _ = ScanDir("/this/dir/does/not/exist")
+	findings, _, err := ScanDir("/this/dir/does/not/exist")
+	if err != nil {
+		t.Errorf("expected no error (walker swallows), got %v", err)
+	}
+	if len(findings) != 0 {
+		t.Errorf("expected no findings, got %d", len(findings))
+	}
 }
 
 // TestLoadBundleValid verifies loadBundle accepts valid gzip+JSON.

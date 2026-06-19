@@ -1,10 +1,14 @@
 package main
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/aliasfoxkde/Atheon/core"
 )
 
 // TestRunVersion exercises the --version flag branch.
@@ -127,6 +131,17 @@ func TestRunFileNoArg(t *testing.T) {
 	}
 }
 
+// TestRunFileClean exercises --file with a clean file (no findings branch).
+func TestRunFileClean(t *testing.T) {
+	tmp := filepath.Join(t.TempDir(), "clean.go")
+	if err := os.WriteFile(tmp, []byte("package x\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if code := run([]string{"--file", tmp}); code != 0 {
+		t.Errorf("expected exit 0 for clean --file, got %d", code)
+	}
+}
+
 // TestRunStdin exercises -/--stdin.
 func TestRunStdin(t *testing.T) {
 	orig := os.Stdin
@@ -149,6 +164,23 @@ func TestRunStdin(t *testing.T) {
 func TestRunPathMissing(t *testing.T) {
 	if code := run([]string{"/this/path/does/not/exist/anywhere"}); code != 1 {
 		t.Errorf("expected exit 1, got %d", code)
+	}
+}
+
+// TestRunPathFileScanError exercises the default-branch ScanFile error
+// branch by making the file unreadable after os.Stat.
+func TestRunPathFileScanError(t *testing.T) {
+	tmp := filepath.Join(t.TempDir(), "unreadable.go")
+	if err := os.WriteFile(tmp, []byte("package x\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(tmp, 0o000); err != nil {
+		t.Skipf("cannot chmod: %v", err)
+	}
+	defer os.Chmod(tmp, 0o644)
+
+	if code := run([]string{tmp}); code != 1 {
+		t.Errorf("expected exit 1 for unreadable file, got %d", code)
 	}
 }
 
@@ -238,6 +270,21 @@ func TestRunUpdate(t *testing.T) {
 	_ = code
 }
 
+// TestRunUpdateDownloadError exercises the update DownloadBundle error
+// branch by pointing the URL at an invalid host.
+func TestRunUpdateDownloadError(t *testing.T) {
+	// Point the upstream URL at a guaranteed-invalid host so DownloadBundle
+	// fails deterministically without network access.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	srv.Close()
+	restore := core.SetBundleDownloadURL(srv.URL)
+	defer restore()
+
+	if code := run([]string{"update"}); code != 1 {
+		t.Errorf("expected exit 1 from update with bad URL, got %d", code)
+	}
+}
+
 // TestRunDisableOK exercises the success path for disable.
 func TestRunDisableOK(t *testing.T) {
 	patterns := coreAll()
@@ -283,26 +330,19 @@ func TestRunEnvNoFindings(t *testing.T) {
 }
 
 // TestRunStdinReadError exercises the stdin read-error branch by replacing
-// stdin with a read-closed file descriptor.
+// stdin with a directory handle (reading a directory returns EISDIR).
 func TestRunStdinReadError(t *testing.T) {
 	orig := os.Stdin
 	defer func() { os.Stdin = orig }()
 
-	// Create a temp file and close it, then reopen as stdin so reads fail
-	tmp, err := os.CreateTemp("", "stdin-test-*")
+	// Open a directory as stdin — Read returns EISDIR, which io.ReadAll
+	// surfaces as an error.
+	dir, err := os.Open(t.TempDir())
 	if err != nil {
 		t.Fatal(err)
 	}
-	tmp.Close()
-	os.Remove(tmp.Name())
-	// Open the (now-deleted) file as stdin — reads will fail with EBADF
-	f, err := os.Open(tmp.Name())
-	if err != nil {
-		// If we can't open it, skip this test
-		t.Skipf("can't open stdin: %v", err)
-	}
-	defer f.Close()
-	os.Stdin = f
+	defer dir.Close()
+	os.Stdin = dir
 
 	// The code is 1 (error) when read fails
 	if code := run([]string{"-"}); code != 1 {
@@ -315,18 +355,12 @@ func TestRunStdinLongFlagReadError(t *testing.T) {
 	orig := os.Stdin
 	defer func() { os.Stdin = orig }()
 
-	tmp, err := os.CreateTemp("", "stdin-test-*")
+	dir, err := os.Open(t.TempDir())
 	if err != nil {
 		t.Fatal(err)
 	}
-	tmp.Close()
-	os.Remove(tmp.Name())
-	f, err := os.Open(tmp.Name())
-	if err != nil {
-		t.Skipf("can't open stdin: %v", err)
-	}
-	defer f.Close()
-	os.Stdin = f
+	defer dir.Close()
+	os.Stdin = dir
 
 	if code := run([]string{"--stdin"}); code != 1 {
 		t.Errorf("expected exit 1 for --stdin read error, got %d", code)

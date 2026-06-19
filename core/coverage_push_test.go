@@ -253,8 +253,8 @@ func TestScanEnvMalformedEntry(t *testing.T) {
 func TestSetActiveCategoriesResetAll(t *testing.T) {
 	// Snapshot the original enabled state of every pattern so we can restore
 	type snap struct {
-		p   *bundlePattern
-		en  bool
+		p  *bundlePattern
+		en bool
 	}
 	original := make([]snap, len(allPatterns))
 	for i, p := range allPatterns {

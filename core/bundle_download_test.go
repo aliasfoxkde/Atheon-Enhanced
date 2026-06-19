@@ -37,7 +37,7 @@ func TestDownloadBundleMockOK(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	restore := setBundleDownloadURL(srv.URL)
+	restore := SetBundleDownloadURL(srv.URL)
 	defer restore()
 
 	// Restore the embedded bundle after this test
@@ -79,7 +79,7 @@ func TestDownloadBundleMockServerError(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	restore := setBundleDownloadURL(srv.URL)
+	restore := SetBundleDownloadURL(srv.URL)
 	defer restore()
 
 	err := DownloadBundle()
@@ -100,7 +100,7 @@ func TestDownloadBundleMockBadGzip(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	restore := setBundleDownloadURL(srv.URL)
+	restore := SetBundleDownloadURL(srv.URL)
 	defer restore()
 
 	err := DownloadBundle()
@@ -118,7 +118,7 @@ func TestDownloadBundleMockBadJSON(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	restore := setBundleDownloadURL(srv.URL)
+	restore := SetBundleDownloadURL(srv.URL)
 	defer restore()
 
 	err := DownloadBundle()
@@ -140,7 +140,7 @@ func TestDownloadBundleMockMkdirError(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	restore := setBundleDownloadURL(srv.URL)
+	restore := SetBundleDownloadURL(srv.URL)
 	defer restore()
 
 	// Point HOME at a path under a non-directory so MkdirAll fails
@@ -181,7 +181,7 @@ func TestDownloadBundleMockChangesReported(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	restore := setBundleDownloadURL(srv.URL)
+	restore := SetBundleDownloadURL(srv.URL)
 	defer restore()
 
 	if err := DownloadBundle(); err != nil {
@@ -196,11 +196,39 @@ func TestDownloadBundleNetworkError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 	srv.Close() // immediately close so the URL is invalid
 
-	restore := setBundleDownloadURL(srv.URL)
+	restore := SetBundleDownloadURL(srv.URL)
 	defer restore()
 
 	err := DownloadBundle()
 	if err == nil {
 		t.Error("expected network error from closed server URL")
+	}
+}
+
+// TestDownloadBundleReadAllError exercises the io.ReadAll error branch by
+// using a server that returns chunked transfer encoding and closes mid-stream.
+func TestDownloadBundleReadAllError(t *testing.T) {
+	// Hijack the connection and abort it without writing a complete body.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			t.Fatal("ResponseWriter is not a Hijacker")
+		}
+		conn, _, err := hj.Hijack()
+		if err != nil {
+			t.Fatal(err)
+		}
+		// Write a partial response then close abruptly so ReadAll fails.
+		_, _ = conn.Write([]byte("HTTP/1.1 200 OK\r\nContent-Length: 100\r\n\r\nshort"))
+		_ = conn.Close()
+	}))
+	defer srv.Close()
+
+	restore := SetBundleDownloadURL(srv.URL)
+	defer restore()
+
+	err := DownloadBundle()
+	if err == nil {
+		t.Error("expected error from server with truncated body")
 	}
 }

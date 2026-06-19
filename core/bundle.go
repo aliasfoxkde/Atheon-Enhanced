@@ -151,6 +151,15 @@ func Categories() []string {
 
 func DownloadBundle() error {
 	const url = "https://github.com/HoraDomu/Atheon/releases/latest/download/patterns.bundle"
+
+	// Get current bundle info for comparison
+	var oldPatternCount int
+	var oldPatterns []string
+	for _, p := range allPatterns {
+		oldPatternCount++
+		oldPatterns = append(oldPatterns, p.name)
+	}
+
 	resp, err := http.Get(url) //nolint:gosec
 	if err != nil {
 		return err
@@ -171,7 +180,66 @@ func DownloadBundle() error {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
+
+	// Parse new bundle to compare
+	var newDefs []PatternDef
+	r, err := gzip.NewReader(bytes.NewReader(data))
+	if err != nil {
+		return fmt.Errorf("failed to parse new bundle: %w", err)
+	}
+	defer r.Close()
+	if err := json.NewDecoder(r).Decode(&newDefs); err != nil {
+		return fmt.Errorf("failed to decode new bundle: %w", err)
+	}
+
+	// Report changes
+	newPatterns := make(map[string]bool)
+	for _, def := range newDefs {
+		newPatterns[def.Name] = true
+	}
+
+	added := []string{}
+	removed := []string{}
+
+	for _, name := range oldPatterns {
+		if !newPatterns[name] {
+			removed = append(removed, name)
+		}
+	}
+	for _, def := range newDefs {
+		if !contains(oldPatterns, def.Name) {
+			added = append(added, def.Name)
+		}
+	}
+
+	// Print summary
+	fmt.Printf("Patterns updated: %d → %d\n", oldPatternCount, len(newDefs))
+	if len(added) > 0 {
+		fmt.Printf("Added: %d patterns\n", len(added))
+		for _, p := range added {
+			fmt.Printf("  + %s\n", p)
+		}
+	}
+	if len(removed) > 0 {
+		fmt.Printf("Removed: %d patterns\n", len(removed))
+		for _, p := range removed {
+			fmt.Printf("  - %s\n", p)
+		}
+	}
+	if len(added) == 0 && len(removed) == 0 {
+		fmt.Println("No pattern changes detected")
+	}
+
 	return os.WriteFile(filepath.Join(dir, "patterns.bundle"), data, 0o644)
+}
+
+func contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
 }
 
 func EnablePattern(name string) bool {

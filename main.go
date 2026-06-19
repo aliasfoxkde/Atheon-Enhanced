@@ -44,6 +44,28 @@ func main() {
 		}
 		fmt.Println("patterns updated.")
 
+	case "enable":
+		if len(args) < 2 {
+			fmt.Fprintln(os.Stderr, "error: enable requires a pattern name")
+			os.Exit(1)
+		}
+		if !core.EnablePattern(args[1]) {
+			fmt.Fprintf(os.Stderr, "error: pattern '%s' not found\n", args[1])
+			os.Exit(1)
+		}
+		fmt.Printf("enabled pattern: %s\n", args[1])
+
+	case "disable":
+		if len(args) < 2 {
+			fmt.Fprintln(os.Stderr, "error: disable requires a pattern name")
+			os.Exit(1)
+		}
+		if !core.DisablePattern(args[1]) {
+			fmt.Fprintf(os.Stderr, "error: pattern '%s' not found\n", args[1])
+			os.Exit(1)
+		}
+		fmt.Printf("disabled pattern: %s\n", args[1])
+
 	case "list":
 		cmdList(args[1:])
 
@@ -177,10 +199,28 @@ func cmdList(args []string) {
 		}
 		return
 	}
-	for _, p := range core.All() {
-		fmt.Println(p.Name())
+
+	// Check if category filter is specified
+	var categoryFilter string
+	if len(args) > 0 && strings.HasPrefix(args[0], "--category=") {
+		categoryFilter = strings.TrimPrefix(args[0], "--category=")
 	}
-	fmt.Printf("\n%d pattern(s) loaded\n", len(core.All()))
+
+	patterns := core.All()
+	if categoryFilter != "" {
+		filtered := make([]core.Pattern, 0)
+		for _, p := range patterns {
+			if p.Category() == categoryFilter {
+				filtered = append(filtered, p)
+			}
+		}
+		patterns = filtered
+	}
+
+	for _, p := range patterns {
+		fmt.Printf("%s [%s]\n", p.Name(), p.Category())
+	}
+	fmt.Printf("\n%d pattern(s) loaded\n", len(patterns))
 }
 
 func printHelp() {
@@ -195,6 +235,8 @@ usage:
   atheon --all <path>                scan all categories
   atheon list                        list loaded patterns
   atheon list categories             list available categories
+  atheon enable <pattern>            enable a pattern
+  atheon disable <pattern>           disable a pattern
   atheon update                      download latest patterns bundle
   atheon --help                      show this message
 `)

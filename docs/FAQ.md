@@ -224,7 +224,7 @@ go run ./bundler
 4. Add test case in `core/bundle_test.go`
 5. Submit PR with clear description
 
-See [CONTRIBUTING.md](../CONTRIBUTING.md) for details.
+See [contributing.md](contributing.md) for details.
 
 ### **Q: How do I contribute Go code?**
 **A:**
@@ -234,7 +234,7 @@ See [CONTRIBUTING.md](../CONTRIBUTING.md) for details.
 4. Justify any new dependencies
 5. Submit PR with clear explanation
 
-See [CONTRIBUTING.md](../CONTRIBUTING.md) for guidelines.
+See [contributing.md](contributing.md) for guidelines.
 
 ### **Q: Which branch should I contribute to?**
 **A:**

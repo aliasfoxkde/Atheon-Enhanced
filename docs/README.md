@@ -26,7 +26,7 @@ Welcome to the comprehensive documentation for the Enhanced Atheon repository. T
 - [Development Setup](development/setup.md) - Setting up development environment
 - [Testing Guide](development/testing.md) - Testing strategies and coverage
 - [CI/CD Workflows](development/cicd.md) - Continuous integration practices
-- [Contributing Guidelines](CONTRIBUTING.md) - How to contribute
+- [Contributing Guidelines](contributing.md) - How to contribute
 
 ### Operational
 - [Deployment Guide](deployment/production.md) - Production deployment

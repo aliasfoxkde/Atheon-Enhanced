@@ -6,7 +6,7 @@ Complete documentation for the enhanced Atheon pattern matching engine.
 
 ### **🚀 Getting Started**
 - **[README.md](../README.md)** - Main project documentation with quick start guide
-- **[CONTRIBUTING.md](../CONTRIBUTING.md)** - Contribution guidelines for both projects
+- **[contributing.md](contributing.md)** - Contribution guidelines for both projects
 - **[CONTRIBUTORS.md](../CONTRIBUTORS.md)** - Contributors and recognition
 
 ### **🏗️ System Architecture & Design**
@@ -71,7 +71,7 @@ Complete documentation for the enhanced Atheon pattern matching engine.
 4. Use [Getting Started Guide](../.github/wiki/Getting-Started.md) for detailed tutorials
 
 ### **For Contributors**
-1. Read [CONTRIBUTING.md](../CONTRIBUTING.md) for contribution guidelines
+1. Read [contributing.md](contributing.md) for contribution guidelines
 2. Review [System Architecture](SYSTEM_ARCHITECTURE.md) for technical understanding
 3. Understand [Branch Strategy](BRANCH_STRATEGY.md) for development workflow
 4. Follow [Pattern Development Guide](../.github/wiki/Pattern-Development.md) for pattern creation

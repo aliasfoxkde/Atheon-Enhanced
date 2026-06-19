@@ -134,7 +134,7 @@ We use the following severity levels:
 
 ### Documentation
 - [SECURITY.md](https://github.com/HoraDomu/Atheon/blob/main/SECURITY.md) (this file)
-- [CONTRIBUTING.md](https://github.com/HoraDomu/Atheon/blob/main/CONTRIBUTING.md)
+- [contributing.md](https://github.com/HoraDomu/Atheon/blob/main/docs/contributing.md)
 - [Pattern Guidelines](https://github.com/HoraDomu/Atheon/blob/main/community/README.md)
 
 ### External Resources

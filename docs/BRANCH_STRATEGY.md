@@ -139,6 +139,20 @@ test/test-improvement     # Test enhancements
 - **Performance**: Optimized with streaming API
 - **Features**: MCP integration, pattern persistence
 
+### **CI/CD Pipeline Configuration**
+- **Profile**: `config/profiles/pipeline.json`
+- **Patterns**: Security and quality patterns
+- **Testing**: Automated testing with JSON output
+- **Performance**: Fast mode for CI/CD integration
+- **Features**: Strict mode, optimized for automation
+
+### **MCP Integration Configuration**
+- **Profile**: `config/profiles/mcp-integration.json`
+- **Patterns**: Full pattern set with streaming results
+- **Testing**: MCP server validation
+- **Performance**: Optimized for AI assistant integration
+- **Features**: Real-time scanning, category filtering
+
 ### **dev/full-feature Configuration**
 - **Profile**: `config/profiles/development.json`
 - **Patterns**: All 105+ patterns enabled

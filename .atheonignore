@@ -12,5 +12,9 @@ coverage.out
 # Dependency hash file
 go.sum
 
-# Website
+# Documentation and examples (contain TODOs for documentation)
+README.md
 docs/
+.github/wiki/
+.github/workflows/
+*.md

@@ -140,7 +140,7 @@ We use the following severity levels:
 ### External Resources
 - [Go Security Guide](https://github.com/golang/go/wiki/Security)
 - [CVE Database](https://cve.mitre.org/)
-- [OWASP Regex Dos](https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS)
+- [OWASP Regex Dos](https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS) <!-- atheon:ignore -->
 
 ## Security Testing
 

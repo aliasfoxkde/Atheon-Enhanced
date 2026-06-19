@@ -1,0 +1,244 @@
+name: Comprehensive CI/CD
+
+on:
+  push:
+    branches: [ main, dev/full-feature ]
+  pull_request:
+    branches: [ main, dev/full-feature, stable/clean ]
+
+jobs:
+  test-multi-version:
+    name: Test Go ${{ matrix.version }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        version: ['1.21', '1.22', '1.23', '1.24']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go ${{ matrix.version }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.version }}
+          cache: true
+
+      - name: Run tests
+        run: go test ./... -v -race -coverprofile=coverage.out
+
+      - name: Check coverage
+        run: |
+          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
+          echo "Coverage: $COVERAGE%"
+          if (( $(echo "$COVERAGE < 45" | bc -l) )); then
+            echo "Coverage $COVERAGE% is below 45% threshold"
+            exit 1
+          fi
+          echo "Coverage $COVERAGE% meets threshold"
+
+  static-analysis:
+    name: Static Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache: true
+
+      - name: Run go vet
+        run: go vet ./...
+
+      - name: Run staticcheck
+        run: |
+          go install honnef.co/go/tools/cmd/staticcheck@latest
+          staticcheck ./...
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache: true
+
+      - name: Build Atheon
+        run: go build -o atheon .
+
+      - name: Scan codebase with Atheon
+        run: |
+          ./atheon . --all --json > security-findings.json
+          echo "Security scan complete"
+
+      - name: Check for critical findings
+        run: |
+          CRITICAL=$(jq '[.[] | select(.pattern | contains("api-key") or contains("secret"))] | length' security-findings.json)
+          if [ "$CRITICAL" -gt 0 ]; then
+            echo "Found $CRITICAL critical security issues"
+            jq '.' security-findings.json
+            exit 1
+          fi
+          echo "No critical security issues found"
+
+  performance-benchmarks:
+    name: Performance Benchmarks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache: true
+
+      - name: Run benchmarks
+        run: |
+          go test -bench=. -benchmem ./... > benchmark-results.txt
+
+      - name: Store benchmark results
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: 'go'
+          output-file-path: benchmark-results.txt
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+
+  build-binaries:
+    name: Build Binaries
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        go: ['1.23']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go }}
+          cache: true
+
+      - name: Build binaries
+        run: |
+          go build -o atheon-${{ matrix.os }} .
+          go build -o atheon-mcp-${{ matrix.os }} ./cmd/mcp
+
+      - name: Test binaries
+        run: |
+          ./atheon-${{ matrix.os }} --version
+          ./atheon-${{ matrix.os }} list categories
+
+  integration-test:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache: true
+
+      - name: Run integration tests
+        run: |
+          # Test pattern loading
+          go run . list --all
+
+          # Test configuration profiles
+          for profile in config/profiles/*.json; do
+            echo "Testing profile: $profile"
+            # Validate profile JSON
+            jq empty "$profile"
+          done
+
+          # Test self-scanning
+          go run . . --all > /dev/null
+
+      - name: Test MCP integration
+        run: |
+          go build -o atheon-mcp ./cmd/mcp
+          # Test MCP server can start
+          timeout 5s ./atheon-mcp || true
+
+  code-quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check formatting
+        run: |
+          go fmt ./...
+          if [ -n "$(git diff --name-only)" ]; then
+            echo "Code is not formatted. Run 'go fmt ./...'"
+            exit 1
+          fi
+          echo "Code is properly formatted"
+
+      - name: Check for common issues
+        run: |
+          # Check for TODO comments in production code
+          if grep -r "TODO" core/*.go | grep -v "test"; then
+            echo "Warning: TODO comments found in production code"
+          fi
+
+          # Check for debug statements
+          if grep -r "fmt.Debug" core/*.go | grep -v "test"; then
+            echo "Warning: Debug statements found in production code"
+          fi
+
+  documentation-check:
+    name: Documentation Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check documentation completeness
+        run: |
+          # Check that all config profiles are documented
+          for profile in config/profiles/*.json; do
+            profile_name=$(basename "$profile" .json)
+            if ! grep -q "$profile_name" docs/BRANCH_STRATEGY.md; then
+              echo "Profile $profile_name not documented in BRANCH_STRATEGY.md"
+              exit 1
+            fi
+          done
+          echo "All profiles documented"
+
+          # Check that main branches are documented
+          for branch in stable/clean main dev/full-feature; do
+            if ! grep -q "$branch" docs/BRANCH_STRATEGY.md; then
+              echo "Branch $branch not properly documented"
+              exit 1
+            fi
+          done
+          echo "All branches documented"

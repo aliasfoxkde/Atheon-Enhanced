@@ -1,0 +1,16 @@
+{
+  "name": "pipeline",
+  "description": "CI/CD pipeline optimized settings for integration and automation",
+  "enabled_categories": ["secrets", "security", "code-quality", "ai-detection"],
+  "strict_mode": "strict",
+  "performance_mode": "fast",
+  "exit_on_findings": true,
+  "max_file_size_mb": 50,
+  "binary_file_detection": true,
+  "gitignore_respect": true,
+  "output_format": "json",
+  "timeout_seconds": 120,
+  "fail_on_error": true,
+  "quiet_mode": false,
+  "show_stats": true
+}

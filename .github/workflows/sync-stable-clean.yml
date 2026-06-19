@@ -1,0 +1,38 @@
+name: Sync stable/clean with upstream
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Daily at midnight UTC
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  sync:
+    name: Sync stable/clean branch
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: stable/clean
+          fetch-depth: 0
+
+      - name: Add upstream remote
+        run: |
+          git remote add upstream https://github.com/HoraDomu/Atheon.git || true
+          git fetch upstream
+
+      - name: Merge upstream/main
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git merge upstream/main -m "Sync with upstream HoraDomu/Atheon main ($(date +%Y-%m-%d))"
+          git push origin stable/clean
+
+      - name: Run tests after sync
+        run: |
+          go test ./... -v
+
+      - name: Validate patterns
+        run: |
+          go run . list --all

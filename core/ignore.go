@@ -121,7 +121,8 @@ func writeIgnoreSegment(seg string, b *strings.Builder) {
 			b.WriteString("[^/]")
 		case seg[i] == '[':
 			j := i + 1
-			if j < len(seg) && seg[j] == '!' {
+			negated := j < len(seg) && seg[j] == '!'
+			if negated {
 				j++
 			}
 			if j < len(seg) && seg[j] == ']' {
@@ -131,7 +132,12 @@ func writeIgnoreSegment(seg string, b *strings.Builder) {
 				j++
 			}
 			if j < len(seg) {
-				b.WriteString(seg[i : j+1])
+				if negated {
+					b.WriteString("[^")
+					b.WriteString(seg[i+2 : j+1])
+				} else {
+					b.WriteString(seg[i : j+1])
+				}
 				i = j
 			} else {
 				b.WriteString(`\[`)

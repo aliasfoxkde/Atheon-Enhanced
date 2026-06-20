@@ -187,12 +187,11 @@ func TestScanFileIgnored(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Run ScanFile from within tmpDir so the rel path is matched
-	orig, _ := os.Getwd()
-	defer os.Chdir(orig)
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatal(err)
-	}
+	// t.Chdir changes CWD for the test and restores it on Cleanup. This
+	// is safer than the manual os.Chdir pattern because it restores via
+	// the testing framework rather than a deferred call that another
+	// goroutine could observe in an inconsistent state.
+	t.Chdir(tmpDir)
 
 	findings, _, err := ScanFile(context.Background(), secret)
 	if err != nil {

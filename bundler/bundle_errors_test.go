@@ -3,12 +3,21 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
 // TestBundleReadFileError exercises the os.ReadFile error branch by
 // creating a directory with a non-readable file inside.
+//
+// On Windows, file mode bits below 0o200 do not restrict the file owner
+// (only the read-only bit is honored), so we cannot reliably force a
+// read failure on the same user. Skip there.
 func TestBundleReadFileError(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("chmod does not restrict owner reads on Windows")
+	}
+
 	tmpDir := t.TempDir()
 	communityDir := filepath.Join(tmpDir, "community", "secrets")
 	if err := os.MkdirAll(communityDir, 0o755); err != nil {
@@ -36,7 +45,15 @@ match: '\bX\b'
 
 // TestBundleWriteFileError exercises the os.WriteFile error branch by
 // pointing outPath to an unwritable directory.
+//
+// On Windows, file mode bits below 0o200 do not restrict the file owner
+// (only the read-only bit is honored), so we cannot reliably force a
+// write failure on the same user. Skip there.
 func TestBundleWriteFileError(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("chmod does not restrict owner writes on Windows")
+	}
+
 	tmpDir := t.TempDir()
 	communityDir := filepath.Join(tmpDir, "community", "secrets")
 	if err := os.MkdirAll(communityDir, 0o755); err != nil {

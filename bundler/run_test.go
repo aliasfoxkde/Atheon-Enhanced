@@ -27,12 +27,9 @@ match: '\bP\b'
 		t.Fatal(err)
 	}
 
-	// Save cwd, change to tmpDir, restore after
-	cwd, _ := os.Getwd()
-	defer func() { _ = os.Chdir(cwd) }()
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatal(err)
-	}
+	// t.Chdir handles cleanup via t.Cleanup; using the manual os.Chdir
+	// pattern is racy when other tests rely on the package's CWD.
+	t.Chdir(tmpDir)
 
 	code := run(nil)
 	if code != 0 {

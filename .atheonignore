@@ -4,6 +4,9 @@ community/
 # Test files contain intentional example patterns
 *_test.go
 test/
+testdata/
+**/testdata/
+**/fixtures/
 
 # Generated files
 coverage.html

@@ -39,4 +39,14 @@ jobs:
 
       - name: Validate patterns
         run: |
-          go run ./cmd/atheon list --all
+          # The stable/clean branch may carry either the old layout
+          # (main.go at the repo root) or the new layout (cmd/atheon).
+          # Pick whichever binary path the checked-out branch supports
+          # so the workflow does not fail on a layout transition.
+          if [ -d cmd/atheon ]; then
+            go run ./cmd/atheon list --all
+          elif [ -f main.go ]; then
+            go run . list --all
+          else
+            echo "No atheon entry point found; skipping pattern validation."
+          fi

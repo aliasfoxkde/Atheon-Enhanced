@@ -16,6 +16,8 @@ jobs:
     name: Auto Merge PR
     runs-on: ubuntu-latest
     if: github.event.pull_request.auto_merge == null && github.event.pull_request.draft == false
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Check if PR is mergeable
         run: |
@@ -38,8 +40,6 @@ jobs:
         run: |
           PR_NUM=${{ github.event.pull_request.number }}
           gh pr merge $PR_NUM --repo ${{ github.repository }} --squash --delete-branch --auto
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   handle-conflicts:
     name: Report Conflicts

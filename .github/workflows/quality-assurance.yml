@@ -60,7 +60,7 @@ jobs:
         shell: bash
 
       - name: Upload coverage
-        if: success() && file_exists('coverage.out')
+        if: success()
         uses: codecov/codecov-action@v4
         with:
           file: coverage.out

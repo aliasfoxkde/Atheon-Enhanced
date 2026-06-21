@@ -1,8 +1,8 @@
 name: Sync stable/clean with upstream
 
 on:
-  schedule:
-    - cron: '0 0 * * *'  # Daily at midnight UTC
+  # SCHEDULE REMOVED - syncs with upstream HoraDomu/Atheon which is FORBIDDEN
+  # Only allow manual triggering
   workflow_dispatch:  # Allow manual triggering
 
 permissions:

@@ -1,5 +1,5 @@
 name: missing-form-labels
-match: '<input[^>]*(?!.*for=)|<textarea[^>]*(?!.*label)|<select[^>]*(?!.*label)'
+match: '<input(?![^>]*\bfor=)[^>]*>|<textarea(?![^>]*\blabel)[^>]*>|<select(?![^>]*\blabel)[^>]*>'
 severity: high
 language: html
 category: accessibility

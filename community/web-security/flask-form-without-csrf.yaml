@@ -1,5 +1,5 @@
 name: flask-form-without-csrf
-match: 'render_template.*form.*(?!\{.*csrf_token.*)|Flask.*form.*no.*csrf'
+match: 'render_template\(|Flask.*form.*no.*csrf'
 severity: medium
 language: python
 category: web-security

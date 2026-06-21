@@ -77,7 +77,7 @@ jobs:
         run: go mod download
 
       - name: Build CLI
-        run: go build -v -o atheon${{ runner.os == 'Windows' && '.exe' || '' }} .
+        run: go build -v -o atheon${{ runner.os == 'Windows' && '.exe' || '' }} ./cmd/atheon
 
       - name: Build MCP Server
         run: go build -v -o atheon-mcp${{ runner.os == 'Windows' && '.exe' || '' }} ./cmd/mcp

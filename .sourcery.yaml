@@ -1,0 +1,15 @@
+# Sourcery Configuration
+# https://docs.sourcery.ai
+
+# Exclude test files and fixtures from review
+exclude:
+  - "**/*_test.go"
+  - "**/test/"
+  - "**/fixtures.txt"
+  - "test/**"
+
+# Ignore paths containing these patterns
+ignore:
+  - path: "**/*_test.go"
+  - path: "**/test/**"
+  - path: "**/fixtures.txt"

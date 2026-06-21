@@ -1,5 +1,5 @@
 name: missing-language-attribute
-match: '<html(?![^>]*\blang=)(?![^>]*\bxml:lang=)[^>]*>|document\.documentElement\.lang'
+match: '<html[^>]*>|document\.documentElement\.lang'
 severity: low
 language: html
 category: accessibility

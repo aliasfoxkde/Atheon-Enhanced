@@ -148,9 +148,6 @@ func SetActiveCategories(cats []string) {
 		if len(cats) > 0 && !catSet[p.category] {
 			continue
 		}
-		if !p.enabled {
-			continue
-		}
 		byCategory[p.category] = append(byCategory[p.category], p)
 	}
 	// Include externally registered non-bundle patterns so Register() callers are scanned

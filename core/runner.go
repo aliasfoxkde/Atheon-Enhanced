@@ -101,7 +101,9 @@ func ScanDir(root string) ([]Finding, *Stats, error) {
 	results := make([][]Finding, len(paths))
 	sizes := make([]int64, len(paths))
 	scanned := make([]bool, len(paths))
+	scanErrors := make([]error, len(paths))
 	var wg sync.WaitGroup
+	var errMu sync.Mutex
 	workers := max(8, runtime.NumCPU()*8)
 	sem := make(chan struct{}, workers)
 
@@ -113,6 +115,9 @@ func ScanDir(root string) ([]Finding, *Stats, error) {
 			defer func() { <-sem }()
 			data, err := os.ReadFile(p)
 			if err != nil {
+				errMu.Lock()
+				scanErrors[i] = err
+				errMu.Unlock()
 				return
 			}
 			results[i] = scanLines(string(data), p)
@@ -125,9 +130,13 @@ func ScanDir(root string) ([]Finding, *Stats, error) {
 	var findings []Finding
 	var totalBytes int64
 	var filesScanned int
+	var errs []error
 	for i := range results {
 		if scanned[i] {
 			filesScanned++
+		}
+		if scanErrors[i] != nil {
+			errs = append(errs, scanErrors[i])
 		}
 		findings = append(findings, results[i]...)
 		totalBytes += sizes[i]
@@ -137,6 +146,7 @@ func ScanDir(root string) ([]Finding, *Stats, error) {
 		Files:     filesScanned,
 		Bytes:     totalBytes,
 		ElapsedMs: time.Since(start).Milliseconds(),
+		Errors:    errs,
 	}, nil
 }
 

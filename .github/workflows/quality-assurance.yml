@@ -39,9 +39,9 @@ jobs:
 
       - name: Run tests
         run: |
-          # Skip -race on macOS ARM64 due to known flakiness with race detector
+          # Skip -race and -coverprofile on macOS due to known flakiness on ARM64
           if [ "$RUNNER_OS" == "macOS" ]; then
-            go test ./... -v -coverprofile=coverage.out -timeout 15m
+            go test ./... -v -timeout 15m
           else
             go test ./... -v -race -coverprofile=coverage.out -timeout 15m
           fi

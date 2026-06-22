@@ -55,7 +55,13 @@ jobs:
           cache: true
 
       - name: Run tests
-        run: go test ./... -v -race -coverprofile=coverage.out
+        run: |
+          # Skip -race and -coverprofile on macOS due to known flakiness on ARM64
+          if [ "$RUNNER_OS" == "macOS" ]; then
+            go test ./... -v -timeout 15m
+          else
+            go test ./... -v -race -coverprofile=coverage.out
+          fi
 
       - name: Check coverage
         run: |

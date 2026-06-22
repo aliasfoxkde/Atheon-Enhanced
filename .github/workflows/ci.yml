@@ -122,5 +122,3 @@ jobs:
         with:
           version: v2.12.2
           args: --timeout=5m
-          verify: false
-          skip-cache: true

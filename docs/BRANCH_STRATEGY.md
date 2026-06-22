@@ -27,4 +27,9 @@ The development branch for integrating major features. Contains work-in-progress
 
 ## Configuration Profiles
 
-Configuration profiles are stored in `config/profiles/` and manage environment-specific settings.
+Configuration profiles are stored in `config/profiles/` and manage environment-specific settings:
+
+- `development.json` - Development environment configuration
+- `mcp-integration.json` - MCP server integration settings
+- `pipeline.json` - CI/CD pipeline configuration
+- `production.json` - Production environment settings

@@ -1,5 +1,0 @@
-name: api-versioning
-match: 'api.*version.*header|Accept.*application/vnd\.|/v[0-9]+/|versioning.*strategy'
-severity: medium
-language: text
-category: api-integration

@@ -1,2 +1,0 @@
-name: weak-cryptography
-match: 'md5|sha1.*hash|crypto\.createCipher|Math\.random\(\).*password|Math\.random\(\).*token'

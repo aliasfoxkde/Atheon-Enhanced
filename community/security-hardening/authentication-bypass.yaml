@@ -1,5 +1,0 @@
-name: authentication-bypass
-match: 'if.*password.*==.*\..*|if.*username.*==.*\..*|auth.*simple.*comparison|password.*in.*\['
-severity: high
-language: python
-category: security-hardening

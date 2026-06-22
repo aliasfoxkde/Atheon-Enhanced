@@ -1,2 +1,0 @@
-name: caching-strategy
-match: 'cache.*first.*network|network.*first.*cache|stale.*while.*revalidate'

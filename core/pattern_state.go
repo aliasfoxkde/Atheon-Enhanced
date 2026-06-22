@@ -7,9 +7,7 @@ import (
 	"path/filepath"
 )
 
-// PatternState stores the enabled/disabled state of patterns. It is
-// persisted to ~/.atheon/pattern_state.json between invocations so user
-// preferences survive across runs.
+// PatternState stores the enabled/disabled state of patterns
 type PatternState struct {
 	Patterns map[string]bool `json:"patterns"` // pattern name -> enabled state
 }
@@ -59,7 +57,7 @@ func savePatternState(state *PatternState) error {
 		return fmt.Errorf("failed to marshal pattern state: %w", err)
 	}
 
-	if err := os.WriteFile(path, data, 0o600); err != nil {
+	if err := os.WriteFile(path, data, 0o644); err != nil {
 		return fmt.Errorf("failed to write pattern state: %w", err)
 	}
 
@@ -87,12 +85,7 @@ func syncPatternState() error {
 	return savePatternState(state)
 }
 
-// InitializePatternState loads the user's persisted pattern-state file
-// from ~/.atheon/pattern_state.json and applies it to the in-memory
-// pattern set. It is called automatically by init(); callers may invoke
-// it again after programmatically modifying patterns. If the state file
-// does not exist the call is a no-op. Errors are non-fatal — they are
-// logged to stderr and returned for callers that want to handle them.
+// InitializePatternState loads and applies pattern state on startup
 func InitializePatternState() error {
 	state, err := loadPatternState()
 	if err != nil {

@@ -1,2 +1,0 @@
-name: django-debug-print
-match: '(?i)(print\(.*request|DEBUG\s*=\s*True|django.*debug)'

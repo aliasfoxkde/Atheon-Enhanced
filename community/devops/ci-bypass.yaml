@@ -1,2 +1,0 @@
-name: ci-bypass
-match: '(?i)(ci.*skip|skip.*ci|bypass.*ci|ci.*bypass)'

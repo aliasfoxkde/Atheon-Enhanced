@@ -1,2 +1,0 @@
-name: typescript-any
-match: ':\s*any\b|as\s+any\b'

@@ -1,2 +1,0 @@
-name: semantic-html
-match: '<div[^>]*role="button"|<div[^>]*class=".*header.*"|<span[^>]*class=".*navigation.*"'

@@ -1,2 +1,0 @@
-name: aria-labels
-match: '<button[^>]*>[^<]*$|<img[^>]*alt='

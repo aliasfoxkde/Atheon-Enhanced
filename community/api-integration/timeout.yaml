@@ -1,2 +1,0 @@
-name: timeout
-match: 'timeout.*0|timeout.*30000|fetch.*timeout.*10000|axios.*timeout.*5000'

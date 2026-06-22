@@ -1,2 +1,0 @@
-name: serverless
-match: 'timeout.*30|memorySize.*128|handler.*async.*await'

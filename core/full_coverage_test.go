@@ -3,7 +3,6 @@ package core
 import (
 	"bytes"
 	"compress/gzip"
-	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -22,7 +21,7 @@ func TestDownloadBundleFull(t *testing.T) {
 	defer func() { allPatterns = originalPatterns }()
 
 	// Test actual download (may fail in test environment)
-	err := DownloadBundle(context.Background())
+	err := DownloadBundle()
 	if err != nil {
 		t.Logf("DownloadBundle failed (expected in test environment): %v", err)
 		// This is expected - we can't easily mock HTTP without refactoring

@@ -1,2 +1,0 @@
-name: injection
-match: '\+\s*\$.*\+.*\$|innerHTML.*request\.|innerHTML.*location\.|eval\s*\('

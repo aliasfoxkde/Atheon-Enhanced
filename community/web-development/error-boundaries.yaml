@@ -1,2 +1,0 @@
-name: error-boundaries
-match: 'componentDidCatch|getDerivedStateFromError|class.*ErrorBoundary'

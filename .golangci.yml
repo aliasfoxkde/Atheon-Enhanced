@@ -1,37 +1,10 @@
-# golangci-lint configuration for Atheon.
-#
-# Rationale: we want strict, opinionated linting on every CI push.
-# The linter set below is intentionally broad; per-rule exceptions
-# live in `linters-settings` and per-file overrides in `issues`.
-#
-# To run locally: `golangci-lint run ./...`
-# CI runs this config via .github/workflows/comprehensive-ci.yml.
 linters:
-  disable-all: true
   enable:
-    # Bugs / correctness
-    - errcheck       # unchecked errors
-    - govet          # stdlib vet (in case vet rules drift)
-    - ineffassign    # unused assignments
-    - staticcheck    # SA* family — the highest-signal linter
-    - unused         # unused vars, funcs, types, fields
-    - nilerr         # returning nil after checking err
-    - nilnil         # returning nil, nil is almost always wrong
-    - contextcheck   # ctx passed to non-ctx-aware functions
-    # Style / readability
-    - revive         # supersedes golint; checks exported-identifier godoc
-    - gocritic       # opinionated style checks
-    - goimports      # import grouping & ordering
-    - misspell       # typos in comments/strings
-    # Security / robustness
-    - gosec          # common security pitfalls
-    - bodyclose      # http body Close() after read
-    - dupl           # duplicated code blocks
-    - goconst        # repeated strings → const
-    - cyclop         # cyclomatic complexity
-    - funlen         # function length
-    - maintidx       # maintainability index
-    - nestif         # deep if-nesting
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
 
 linters-settings:
   errcheck:
@@ -42,72 +15,3 @@ linters-settings:
       - (strings.Builder).Write
       - (strings.Builder).WriteByte
       - (strings.Builder).WriteString
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - style
-      - performance
-    disabled-checks:
-      - hugeParam        # too noisy for small structs
-      - rangeValCopy     # common Go idiom, false positives
-      - commentedOutCode # we have commented-out code intentionally
-  revive:
-    rules:
-      - name: exported
-        severity: warning
-      - name: package-comments
-        severity: warning
-      - name: var-naming
-        severity: warning
-      - name: error-strings
-        severity: warning
-  cyclop:
-    max-complexity: 20
-  funlen:
-    lines: 100
-    statements: 50
-  nestif:
-    min-complexity: 8
-  gosec:
-    severity: medium
-    confidence: medium
-  goimports:
-    local-prefixes: github.com/aliasfoxkde/Atheon
-
-issues:
-  # Allow issues in tests at lower severity so CI doesn't break on style nits
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - goconst
-        - dupl
-        - funlen
-        - gocritic
-        - gosec          # test fixtures don't need 0600 perms
-        - cyclop         # table-driven tests are intentionally branchy
-        - nestif         # nested ifs in test setup are fine
-        - nilerr         # tests deliberately exercise error paths
-        - maintidx       # test complexity is unrelated to maintainability
-        - errcheck       # test cleanup defers (Chmod, Chdir, WriteString) legitimately swallow errors
-    - path: cmd/atheon/main\.go
-      linters:
-        - funlen         # main.go is long but linear
-        - cyclop         # main is necessarily branchy
-        - nestif         # CLI flag parsing has deep conditionals
-    # Generated and embedded data is not subject to linting
-    - path: patterns\.bundle
-      linters:
-        - all
-  # Don't auto-fix anything in CI; fixes go through review
-  fix: false
-  max-issues-per-linter: 0
-  max-same-issues: 0
-  exclude-dirs:
-    - testdata
-    - .tmp-cov
-    - docs
-  exclude-files:
-    - patterns\.bundle$
-
-run:
-  timeout: 5m

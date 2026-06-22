@@ -1,2 +1,0 @@
-name: insecure-flag
-match: '(?i)(--insecure|insecure.*flag|skip.*verify|no.*check)'

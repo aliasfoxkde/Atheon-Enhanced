@@ -1,2 +1,0 @@
-name: offline-support
-match: 'offline.*html.*503|navigator\.onLine.*false|fallback.*page.*offline'

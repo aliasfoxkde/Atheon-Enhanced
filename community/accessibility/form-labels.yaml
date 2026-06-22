@@ -1,2 +1,0 @@
-name: form-labels
-match: '<input.*placeholder.*[^label]|<select.*[^label]|<textarea.*[^label]'

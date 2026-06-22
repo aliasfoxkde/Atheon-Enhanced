@@ -1,2 +1,0 @@
-name: cruft
-match: '(?i)(XXX|HACK|FIXME|BUG|TODO.*remove|deprecated.*delete)'

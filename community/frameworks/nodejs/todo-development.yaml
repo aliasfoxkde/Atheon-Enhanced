@@ -1,2 +1,0 @@
-name: nodejs-todo-development
-match: '(?i)(console\.log.*todo|\/\/\s*TODO.*fixme|FIXME.*console\.log)'

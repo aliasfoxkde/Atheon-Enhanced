@@ -1,2 +1,0 @@
-name: git-hook
-match: '(?i)(pre-commit|pre-push|post.*receive|hook.*script)'

@@ -1,2 +1,0 @@
-name: csrf
-match: 'form.*action.*POST|<form.*method.*post.*csrf.*false|cookie.*sameSite.*none'

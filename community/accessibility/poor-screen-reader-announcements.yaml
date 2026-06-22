@@ -1,5 +1,0 @@
-name: poor-screen-reader-announcements
-match: 'aria-label.*hidden|sr-only.*hidden|screen-reader-only.*display.*none'
-severity: medium
-language: html
-category: accessibility

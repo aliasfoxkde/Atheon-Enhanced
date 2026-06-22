@@ -1,2 +1,0 @@
-name: build-force
-match: '(?i)(--force|force.*build|build.*force).*(-f|--force)'

@@ -1,2 +1,0 @@
-name: focus-management
-match: 'tabIndex.*-1.*aria-label|useEffect.*focus.*\[\]'

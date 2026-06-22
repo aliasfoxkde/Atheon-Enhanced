@@ -1,2 +1,0 @@
-name: missing-alt-text
-match: '<img[^>]*>|<img[^>]*alt=""'

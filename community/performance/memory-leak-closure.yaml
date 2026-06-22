@@ -1,2 +1,0 @@
-name: memory-leak-closure
-match: '(?:setInterval|setTimeout|addEventListener)\([^)]*\)\s*=>?\s*\{[^}]*\.(?:addEventListener|setInterval|setTimeout)\s*\('

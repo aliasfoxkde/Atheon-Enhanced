@@ -3,7 +3,6 @@ package core
 import (
 	"bytes"
 	"compress/gzip"
-	"context"
 	_ "embed"
 	"encoding/json"
 	"fmt"
@@ -19,9 +18,6 @@ import (
 //go:embed patterns.bundle
 var embeddedBundle []byte
 
-// PatternDef is the on-disk (and on-wire) representation of a pattern as
-// it appears inside a pattern bundle. Match holds the regular-expression
-// source; the compiled *regexp.Regexp is not part of the wire form.
 type PatternDef struct {
 	Name     string `json:"name"`
 	Category string `json:"category"`
@@ -65,20 +61,11 @@ var (
 )
 
 func init() {
-	// Default initialization reads the user's local bundle from ~/.atheon
-	// and falls back to the embedded bundle. Splitting this out as
-	// initializeWith lets tests exercise the error branches.
-	home, _ := os.UserHomeDir()
 	data := embeddedBundle
+	home, _ := os.UserHomeDir()
 	if b, err := os.ReadFile(filepath.Join(home, ".atheon", "patterns.bundle")); err == nil {
 		data = b
 	}
-	initializeWith(data)
-}
-
-// initializeWith runs the same setup as init() but accepts the bundle data
-// directly so tests can feed in corrupt data to exercise the error paths.
-func initializeWith(data []byte) {
 	if err := loadBundle(data); err != nil {
 		fmt.Fprintf(os.Stderr, "atheon: bundle load failed: %v\n", err)
 	}
@@ -94,13 +81,13 @@ func initializeWith(data []byte) {
 func loadBundle(data []byte) error {
 	r, err := gzip.NewReader(bytes.NewReader(data))
 	if err != nil {
-		return fmt.Errorf("%w: %v", ErrBundleParse, err)
+		return err
 	}
 	defer r.Close()
 
 	var defs []PatternDef
 	if err := json.NewDecoder(r).Decode(&defs); err != nil {
-		return fmt.Errorf("%w: %v", ErrBundleParse, err)
+		return err
 	}
 
 	var external []Pattern
@@ -145,9 +132,6 @@ func loadBundle(data []byte) error {
 	return nil
 }
 
-// SetActiveCategories restricts subsequent scans to the named categories.
-// A nil or empty slice means "all categories." Calling this rebuilds the
-// internal pre-filter regexes used by ScanFile and ScanDir.
 func SetActiveCategories(cats []string) {
 	activeCategoryFilter = cats
 
@@ -162,6 +146,9 @@ func SetActiveCategories(cats []string) {
 			continue
 		}
 		if len(cats) > 0 && !catSet[p.category] {
+			continue
+		}
+		if !p.enabled {
 			continue
 		}
 		byCategory[p.category] = append(byCategory[p.category], p)
@@ -207,8 +194,6 @@ func SetActiveCategories(cats []string) {
 	}
 }
 
-// Categories returns the unique, unsorted list of category labels present
-// in the current bundle. The returned slice is owned by the caller.
 func Categories() []string {
 	seen := map[string]bool{}
 	var cats []string
@@ -221,229 +206,133 @@ func Categories() []string {
 	return cats
 }
 
-// bundleDownloadURL is the default upstream bundle URL. Tests may override
-// it via SetBundleDownloadURL to point at an httptest server.
-var bundleDownloadURL = "https://github.com/HoraDomu/Atheon/releases/latest/download/patterns.bundle"
+func DownloadBundle() error {
+	const url = "https://github.com/HoraDomu/Atheon/releases/latest/download/patterns.bundle"
 
-// SetBundleDownloadURL swaps the upstream URL used by DownloadBundle. It
-// returns a restore function that callers should defer to reset the URL
-// after tests or short-lived overrides. Exported so external test
-// packages (e.g., the main binary's tests) can stub out network access.
-func SetBundleDownloadURL(url string) func() {
-	orig := bundleDownloadURL
-	bundleDownloadURL = url
-	return func() { bundleDownloadURL = orig }
-}
+	// Get current bundle info for comparison
+	var oldPatternCount int
+	var oldPatterns []string
+	for _, p := range allPatterns {
+		oldPatternCount++
+		oldPatterns = append(oldPatterns, p.name)
+	}
 
-// DownloadBundle fetches the latest pattern bundle from the URL
-// configured via SetBundleDownloadURL (or the default URL), compares it
-// against the in-memory bundle, prints a summary of added/removed
-// patterns, and persists the new bundle to ~/.atheon/patterns.bundle.
-//
-// The bundle is loaded into memory before being written to disk; if
-// loadBundle fails the on-disk bundle is left untouched.
-//
-// On any non-success HTTP status code, DownloadBundle returns an error
-// wrapping ErrBundleDownload so callers can use errors.Is.
-// DownloadBundle fetches the latest pattern bundle from the URL
-// configured via SetBundleDownloadURL (or the default URL), compares it
-// against the in-memory bundle, prints a summary of added/removed
-// patterns, and persists the new bundle to ~/.atheon/patterns.bundle.
-//
-// The bundle is loaded into memory before being written to disk; if
-// loadBundle fails the on-disk bundle is left untouched.
-//
-// The context controls the HTTP request lifecycle: canceling ctx
-// aborts the in-flight download.
-//
-// On any non-success HTTP status code, DownloadBundle returns an error
-// wrapping ErrBundleDownload so callers can use errors.Is.
-func DownloadBundle(ctx context.Context) error {
-	oldPatterns := currentPatternNames()
-
-	data, err := fetchBundleData(ctx)
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Get(url) //nolint:gosec
 	if err != nil {
 		return err
 	}
-	dir, err := ensureAtheonDir()
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("server returned %d", resp.StatusCode)
+	}
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
-
-	newDefs, err := parseBundle(data)
+	home, err := os.UserHomeDir()
 	if err != nil {
 		return err
 	}
+	dir := filepath.Join(home, ".atheon")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
 
-	added, removed := diffPatternNames(oldPatterns, newDefs)
-	printBundleDiff(len(oldPatterns), len(newDefs), added, removed)
+	// Parse new bundle to compare
+	var newDefs []PatternDef
+	r, err := gzip.NewReader(bytes.NewReader(data))
+	if err != nil {
+		return fmt.Errorf("failed to parse new bundle: %w", err)
+	}
+	defer r.Close()
+	if err := json.NewDecoder(r).Decode(&newDefs); err != nil {
+		return fmt.Errorf("failed to decode new bundle: %w", err)
+	}
+
+	// Report changes
+	newPatterns := make(map[string]bool)
+	for _, def := range newDefs {
+		newPatterns[def.Name] = true
+	}
+
+	oldPatternSet := make(map[string]bool, len(oldPatterns))
+	for _, name := range oldPatterns {
+		oldPatternSet[name] = true
+	}
+
+	var added, removed []string
+
+	for _, name := range oldPatterns {
+		if !newPatterns[name] {
+			removed = append(removed, name)
+		}
+	}
+	for _, def := range newDefs {
+		if !oldPatternSet[def.Name] {
+			added = append(added, def.Name)
+		}
+	}
+
+	// Print summary
+	fmt.Printf("Patterns updated: %d → %d\n", oldPatternCount, len(newDefs))
+	if len(added) > 0 {
+		fmt.Printf("Added: %d patterns\n", len(added))
+		for _, p := range added {
+			fmt.Printf("  + %s\n", p)
+		}
+	}
+	if len(removed) > 0 {
+		fmt.Printf("Removed: %d patterns\n", len(removed))
+		for _, p := range removed {
+			fmt.Printf("  - %s\n", p)
+		}
+	}
+	if len(added) == 0 && len(removed) == 0 {
+		fmt.Println("No pattern changes detected")
+	}
 
 	// Load into memory first; only persist to disk if that succeeds
 	if err := loadBundle(data); err != nil {
 		return err
 	}
 	SetActiveCategories(activeCategoryFilter)
-	if err := os.WriteFile(filepath.Join(dir, "patterns.bundle"), data, 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "patterns.bundle"), data, 0o644); err != nil {
 		return err
 	}
 	return nil
 }
 
-// currentPatternNames returns the names of every pattern currently in
-// the active bundle, in slice order.
-func currentPatternNames() []string {
-	var names []string
-	for _, p := range allPatterns {
-		names = append(names, p.name)
-	}
-	return names
-}
-
-// fetchBundleData performs the HTTP GET against bundleDownloadURL and
-// returns the response body on success.
-func fetchBundleData(ctx context.Context) ([]byte, error) {
-	client := &http.Client{Timeout: 30 * time.Second}
-	// bundleDownloadURL is configured via SetBundleDownloadURL and only
-	// ever points at https://github.com/... or a test stub. SSRF surface
-	// is bounded by the controlled allow-list maintained in this package.
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, bundleDownloadURL, http.NoBody)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrBundleDownload, err)
-	}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrBundleDownload, err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("%w: server returned %d", ErrBundleDownload, resp.StatusCode)
-	}
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrBundleDownload, err)
-	}
-	return data, nil
-}
-
-// ensureAtheonDir creates (if needed) and returns the ~/.atheon path.
-func ensureAtheonDir() (string, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
-	}
-	dir := filepath.Join(home, ".atheon")
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return "", err
-	}
-	return dir, nil
-}
-
-// parseBundle decodes a gzipped JSON bundle into PatternDefs.
-func parseBundle(data []byte) ([]PatternDef, error) {
-	var defs []PatternDef
-	r, err := gzip.NewReader(bytes.NewReader(data))
-	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrBundleParse, err)
-	}
-	defer r.Close()
-	if err := json.NewDecoder(r).Decode(&defs); err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrBundleParse, err)
-	}
-	return defs, nil
-}
-
-// diffPatternNames computes the symmetric set difference between the
-// currently-loaded pattern names and a freshly-downloaded bundle.
-func diffPatternNames(oldPatterns []string, newDefs []PatternDef) (added, removed []string) {
-	newSet := make(map[string]bool, len(newDefs))
-	for _, def := range newDefs {
-		newSet[def.Name] = true
-	}
-	oldSet := make(map[string]bool, len(oldPatterns))
-	for _, name := range oldPatterns {
-		oldSet[name] = true
-	}
-	for _, name := range oldPatterns {
-		if !newSet[name] {
-			removed = append(removed, name)
-		}
-	}
-	for _, def := range newDefs {
-		if !oldSet[def.Name] {
-			added = append(added, def.Name)
-		}
-	}
-	return added, removed
-}
-
-// printBundleDiff writes a human-readable summary of the bundle change.
-func printBundleDiff(oldCount, newCount int, added, removed []string) {
-	fmt.Printf("Patterns updated: %d → %d\n", oldCount, newCount)
-	switch {
-	case len(added) > 0:
-		fmt.Printf("Added: %d patterns\n", len(added))
-		for _, p := range added {
-			fmt.Printf("  + %s\n", p)
-		}
-		if len(removed) > 0 {
-			fmt.Printf("Removed: %d patterns\n", len(removed))
-			for _, p := range removed {
-				fmt.Printf("  - %s\n", p)
-			}
-		}
-	case len(removed) > 0:
-		fmt.Printf("Removed: %d patterns\n", len(removed))
-		for _, p := range removed {
-			fmt.Printf("  - %s\n", p)
-		}
-	default:
-		fmt.Println("No pattern changes detected")
-	}
-}
-
-// EnablePattern enables the named pattern, rebuilds the scanner set,
-// and persists the new state. It returns false if no pattern with the
-// given name exists in the bundle.
 func EnablePattern(name string) bool {
 	for _, p := range allPatterns {
-		if p.name != name {
-			continue
+		if p.name == name {
+			p.enabled = true
+			rebuildRegistry()
+			rebuildActiveScanners()
+			if err := syncPatternState(); err != nil {
+				fmt.Fprintf(os.Stderr, "warning: failed to save pattern state: %v\n", err)
+			}
+			return true
 		}
-		p.enabled = true
-		rebuildRegistry()
-		rebuildActiveScanners()
-		if err := syncPatternState(); err != nil {
-			fmt.Fprintf(os.Stderr, "warning: failed to save pattern state: %v\n", err)
-		}
-		return true
 	}
 	return false
 }
 
-// DisablePattern disables the named pattern, rebuilds the scanner set,
-// and persists the new state. It returns false if no pattern with the
-// given name exists in the bundle.
 func DisablePattern(name string) bool {
 	for _, p := range allPatterns {
-		if p.name != name {
-			continue
+		if p.name == name {
+			p.enabled = false
+			rebuildRegistry()
+			rebuildActiveScanners()
+			if err := syncPatternState(); err != nil {
+				fmt.Fprintf(os.Stderr, "warning: failed to save pattern state: %v\n", err)
+			}
+			return true
 		}
-		p.enabled = false
-		rebuildRegistry()
-		rebuildActiveScanners()
-		if err := syncPatternState(); err != nil {
-			fmt.Fprintf(os.Stderr, "warning: failed to save pattern state: %v\n", err)
-		}
-		return true
 	}
 	return false
 }
 
-// SetPatternEnabled sets the enabled flag for the named pattern and
-// rebuilds the active scanner set. Unlike EnablePattern and
-// DisablePattern it does not persist state to disk — useful for tests
-// and for callers that batch state updates. Returns false if the
-// pattern name is unknown.
 func SetPatternEnabled(name string, enabled bool) bool {
 	for _, p := range allPatterns {
 		if p.name == name {
@@ -455,8 +344,6 @@ func SetPatternEnabled(name string, enabled bool) bool {
 	return false
 }
 
-// ListDisabledPatterns returns the names of every pattern that is
-// currently disabled, in bundle order.
 func ListDisabledPatterns() []string {
 	var disabled []string
 	for _, p := range allPatterns {
@@ -467,8 +354,6 @@ func ListDisabledPatterns() []string {
 	return disabled
 }
 
-// ListEnabledPatterns returns the names of every pattern that is
-// currently enabled, in bundle order.
 func ListEnabledPatterns() []string {
 	var enabled []string
 	for _, p := range allPatterns {
@@ -483,8 +368,7 @@ func rebuildActiveScanners() {
 	SetActiveCategories(activeCategoryFilter)
 }
 
-// EnableAllPatterns enables every pattern in the bundle, overriding any
-// prior disable calls, then rebuilds the active scanner set.
+// EnableAllPatterns enables every pattern in the bundle, overriding any prior disable calls.
 func EnableAllPatterns() {
 	for _, p := range allPatterns {
 		p.enabled = true

@@ -1,5 +1,0 @@
-name: inaccessible-modal-dialogs
-match: 'dialog.*role.*dialog.*no.*aria-modal|modal.*no.*focus.*trap|dialog.*no.*escape.*close'
-severity: high
-language: javascript
-category: accessibility

@@ -1,5 +1,0 @@
-name: missing-language-attribute
-match: '<html[^>]*>|document\.documentElement\.lang'
-severity: low
-language: html
-category: accessibility

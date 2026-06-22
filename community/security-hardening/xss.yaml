@@ -1,2 +1,0 @@
-name: xss
-match: 'innerHTML.*user|document\.write.*user|dangerouslySetInnerHTML.*props'

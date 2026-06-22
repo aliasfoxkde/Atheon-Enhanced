@@ -1,10 +1,5 @@
 package core
 
-// Finding represents a single pattern match produced by ScanFile, ScanDir,
-// ScanString, or ScanEnv. File is the source path (or "env:KEY" when
-// scanning the process environment); Line is the 1-indexed line number
-// within the source (0 for env scans); Content is the trimmed matching
-// line or, for env scans, the matching value.
 type Finding struct {
 	Pattern string
 	File    string
@@ -12,10 +7,6 @@ type Finding struct {
 	Content string
 }
 
-// Stats summarizes the work performed by ScanFile or ScanDir. Files is the
-// number of files whose contents were scanned (binary files and skipped
-// directories are excluded); Bytes is the total number of bytes scanned;
-// ElapsedMs is the wall-clock duration of the scan in milliseconds.
 type Stats struct {
 	Files     int
 	Bytes     int64

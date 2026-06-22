@@ -1,2 +1,0 @@
-name: git-force-push
-match: '(?i)git push.*--force|-f.*git push|force.*push'

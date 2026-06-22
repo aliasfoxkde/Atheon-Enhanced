@@ -1,2 +1,0 @@
-name: session-management
-match: 'session.*secret.*random|session.*cookie.*secure.*false|session.*maxAge.*0'

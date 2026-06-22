@@ -1,7 +1,6 @@
 package core
 
 import (
-	"context"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -43,15 +42,7 @@ func isIgnored(path string, matchers []*ignoreMatcher) bool {
 	return false
 }
 
-// ScanFile reads a single file and reports every Finding produced by the
-// currently active patterns. It honors .atheonignore and .gitignore when
-// the file lives under the current working directory. The returned
-// *Stats describes the read; findings are nil and stats are nil only when
-// the file is ignored.
-//
-// The context controls read-side cancellation: if ctx is canceled before
-// the read completes, ScanFile returns ctx.Err().
-func ScanFile(ctx context.Context, path string) ([]Finding, *Stats, error) {
+func ScanFile(path string) ([]Finding, *Stats, error) {
 	start := time.Now()
 	// Respect .atheonignore and .gitignore for files under the working directory,
 	// so that `atheon file.go` and `atheon .` agree on what gets scanned.
@@ -64,14 +55,11 @@ func ScanFile(ctx context.Context, path string) ([]Finding, *Stats, error) {
 			}
 		}
 	}
-	if err := ctx.Err(); err != nil {
-		return nil, nil, err
-	}
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, nil, err
 	}
-	findings := scanLines(ctx, string(data), path)
+	findings := scanLines(string(data), path)
 	return findings, &Stats{
 		Files:     1,
 		Bytes:     int64(len(data)),
@@ -79,26 +67,14 @@ func ScanFile(ctx context.Context, path string) ([]Finding, *Stats, error) {
 	}, nil
 }
 
-// ScanDir walks root and scans every non-binary, non-ignored file in
-// parallel using one worker per CPU (up to a sensible cap). It honors
-// .atheonignore and .gitignore at root and skips well-known noise
-// directories (e.g. .git, node_modules, vendor). The returned *Stats
-// counts only the files whose contents were actually scanned.
-//
-// The context controls worker cancellation: if ctx is canceled mid-walk
-// the goroutines exit promptly and ScanDir returns ctx.Err() after
-// WaitGroup drains.
-func ScanDir(ctx context.Context, root string) ([]Finding, *Stats, error) {
+func ScanDir(root string) ([]Finding, *Stats, error) {
 	start := time.Now()
 	ignoreMatcher := loadIgnorePatternsMatcher(root)
 	var paths []string
 
 	if err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
-			return nil //nolint:nilerr // skip unreadable entries during walk; reported via stats
-		}
-		if err := ctx.Err(); err != nil {
-			return err
+			return nil
 		}
 		rel, _ := filepath.Rel(root, path)
 		if d.IsDir() {
@@ -131,24 +107,15 @@ func ScanDir(ctx context.Context, root string) ([]Finding, *Stats, error) {
 
 	for i, p := range paths {
 		wg.Add(1)
-		select {
-		case sem <- struct{}{}:
-		case <-ctx.Done():
-			wg.Done()
-			wg.Wait()
-			return nil, nil, ctx.Err()
-		}
+		sem <- struct{}{}
 		go func(i int, p string) {
 			defer wg.Done()
 			defer func() { <-sem }()
-			if err := ctx.Err(); err != nil {
-				return
-			}
 			data, err := os.ReadFile(p)
 			if err != nil {
 				return
 			}
-			results[i] = scanLines(ctx, string(data), p)
+			results[i] = scanLines(string(data), p)
 			sizes[i] = int64(len(data))
 			scanned[i] = true
 		}(i, p)
@@ -173,26 +140,9 @@ func ScanDir(ctx context.Context, root string) ([]Finding, *Stats, error) {
 	}, nil
 }
 
-// ScanEnv scans the current process's environment variables for matches
-// against the active patterns. Each finding uses "env:KEY" as its File
-// and the matching value as its Content; Line is zero.
-//
-// The context is accepted for symmetry with the other Scan* entry
-// points; the implementation checks ctx between iterations and returns
-// early if canceled.
-func ScanEnv(ctx context.Context) []Finding {
-	return scanEnv(ctx, os.Environ())
-}
-
-// scanEnv is the inner implementation that accepts an explicit env list.
-// Splitting this out lets tests exercise the len(parts) != 2 branch
-// without having to mutate the real process environment.
-func scanEnv(ctx context.Context, envs []string) []Finding {
+func ScanEnv() []Finding {
 	var findings []Finding
-	for _, env := range envs {
-		if err := ctx.Err(); err != nil {
-			return findings
-		}
+	for _, env := range os.Environ() {
 		parts := strings.SplitN(env, "=", 2)
 		if len(parts) != 2 {
 			continue
@@ -216,23 +166,14 @@ func scanEnv(ctx context.Context, envs []string) []Finding {
 	return findings
 }
 
-// ScanString scans a string in memory and returns every Finding produced
-// by the active patterns. source is recorded as the File on each
-// Finding; lines are reported with their 1-indexed line number.
-//
-// The context is accepted for API symmetry; the scan is in-memory and
-// the implementation only checks ctx for cancellation between lines.
-func ScanString(ctx context.Context, content, source string) []Finding {
-	return scanLines(ctx, content, source)
+func ScanString(content, source string) []Finding {
+	return scanLines(content, source)
 }
 
-func scanLines(ctx context.Context, content, file string) []Finding {
+func scanLines(content, file string) []Finding {
 	var findings []Finding
 	lines := strings.Split(content, "\n")
 	for i, line := range lines {
-		if err := ctx.Err(); err != nil {
-			return findings
-		}
 		if strings.Contains(line, "atheon:ignore") {
 			continue
 		}

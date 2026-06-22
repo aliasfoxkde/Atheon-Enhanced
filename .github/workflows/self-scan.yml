@@ -6,27 +6,21 @@ on:
   pull_request:
     branches: [ main ]
 
-permissions:
-  contents: read
-  actions: read
-  security-events: write
-  pull-requests: read
-
 jobs:
   self-scan:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Set up Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v5
         with:
           go-version: '1.24'
 
       - name: Build Atheon
         run: |
-          go build -v -o atheon ./cmd/atheon
+          go build -v -o atheon .
           go build -v -o atheon-mcp ./cmd/mcp
 
       - name: Scan Atheon source code

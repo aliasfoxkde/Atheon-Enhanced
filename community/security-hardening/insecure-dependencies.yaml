@@ -1,5 +1,0 @@
-name: insecure-dependencies
-match: 'requirements\.txt.*django==1\.|package\.json.*express<4\.|Gemfile.*rails<5\.|pom\.xml.*log4j.*2\.'
-severity: high
-language: text
-category: security-hardening

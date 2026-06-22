@@ -1,2 +1,0 @@
-name: fake-data
-match: '(?i)(lorem ipsum|dummy.*data|test.*pattern|placeholder.*text)'

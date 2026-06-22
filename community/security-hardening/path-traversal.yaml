@@ -1,5 +1,0 @@
-name: path-traversal
-match: 'open\(.*\.\.\/|read_file\(.*\.\.\/|file\(.*\.\.\/|os\.path\.join.*input\(|os\.path\.join.*request\.'
-severity: critical
-language: python
-category: security-hardening

@@ -1,5 +1,0 @@
-name: missing-focus-indicators
-match: ':focus.*outline.*none|focus.*style.*none|button.*focus.*visible.*false'
-severity: medium
-language: css
-category: accessibility

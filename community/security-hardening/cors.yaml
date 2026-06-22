@@ -1,2 +1,0 @@
-name: cors
-match: 'Access-Control-Allow-Origin.*\*|cors.*origin.*true'

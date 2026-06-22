@@ -14,25 +14,11 @@ func TestPatternInterfaceCategory(t *testing.T) {
 
 	// Test that all patterns implement the Category() method
 	validCategories := map[string]bool{
-		"secrets":            true,
-		"pii":                true,
-		"code-quality":       true,
-		"healthcare":         true,
-		"finance":            true,
-		"ai-detection":       true,
-		"devops":             true,
-		"django":             true,
-		"nodejs":             true,
-		"react":              true,
-		"accessibility":      true,
-		"api-integration":    true,
-		"cloud-native":       true,
-		"data-visualization": true,
-		"performance":        true,
-		"pwa":                true,
-		"security-hardening": true,
-		"web-development":    true,
-		"web-security":       true,
+		"secrets":      true,
+		"pii":          true,
+		"code-quality": true,
+		"healthcare":   true,
+		"finance":      true,
 	}
 
 	for _, p := range patterns {

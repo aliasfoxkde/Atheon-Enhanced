@@ -1,5 +1,0 @@
-name: poor-focus-management
-match: 'useEffect.*focus.*\[\]|element\.focus\(\).*no.*trap|focus.*trap.*missing'
-severity: high
-language: javascript
-category: accessibility

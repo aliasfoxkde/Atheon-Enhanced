@@ -1,5 +1,0 @@
-name: large-object-cloning
-match: '\.clone\(\).*JSON\.stringify|structuredClone.*large|Object\.assign.*large.*object'
-severity: medium
-language: javascript
-category: performance

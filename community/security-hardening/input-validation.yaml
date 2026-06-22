@@ -1,2 +1,0 @@
-name: input-validation
-match: 'req\.params.*\.|req\.body.*\.|req\.query.*\.|query.*raw.*|body.*raw'

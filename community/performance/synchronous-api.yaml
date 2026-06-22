@@ -1,2 +1,0 @@
-name: synchronous-api
-match: 'fs\.readFileSync|fs\.writeFileSync|child_process\.spawnSync'

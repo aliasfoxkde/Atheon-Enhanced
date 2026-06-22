@@ -1,2 +1,0 @@
-name: react-console-log-dev
-match: '(?i)(console\.log|console\.debug|console\.warn).*development|if.*process\.env\.NODE_ENV.*development'

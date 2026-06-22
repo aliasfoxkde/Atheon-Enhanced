@@ -1,5 +1,0 @@
-name: missing-prop-validation
-match: 'PropsTypes|propTypes.*isRequired|React\.PropTypes.*\.isRequired'
-severity: medium
-language: javascript
-category: web-development

@@ -1,2 +1,0 @@
-name: dockerfile
-match: '(?i)(FROM|dockerfile|docker.*build|docker.*compose)'

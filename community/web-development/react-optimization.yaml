@@ -1,2 +1,0 @@
-name: react-optimization
-match: 'useCallback.*\[\]|useMemo.*\[\]|React\.memo.*props.*object'

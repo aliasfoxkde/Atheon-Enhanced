@@ -1,2 +1,0 @@
-name: ai-template
-match: '(?i)(your.*code|your.*logic|your.*implementation|placeholder.*code|template.*code)'

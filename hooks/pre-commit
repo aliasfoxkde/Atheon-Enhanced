@@ -1,0 +1,12 @@
+#!/bin/sh
+# Atheon pre-commit hook
+# Copy this file to .git/hooks/pre-commit and make it executable:
+#   cp hooks/pre-commit .git/hooks/pre-commit
+#   chmod +x .git/hooks/pre-commit
+
+atheon ./
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "atheon: commit blocked — clean up the findings above first."
+  exit 1
+fi

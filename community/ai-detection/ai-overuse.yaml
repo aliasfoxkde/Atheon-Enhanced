@@ -1,2 +1,0 @@
-name: ai-overuse
-match: '(?i)(multiple|various|numerous|several|many|different).*\b(times|instances|cases|ways)'

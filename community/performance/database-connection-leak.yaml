@@ -1,5 +1,0 @@
-name: database-connection-leak
-match: '\.connect\(\).*\.close\(\)|\.open\(\).*\.close\(\)|new.*Connection.*no.*close|pool\.connect.*no.*disconnect'
-severity: high
-language: python
-category: performance

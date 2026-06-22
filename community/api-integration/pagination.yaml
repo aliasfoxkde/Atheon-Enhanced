@@ -1,2 +1,0 @@
-name: pagination
-match: 'limit.*100\+|page.*size.*large|offset.*pagination|cursor.*pagination'

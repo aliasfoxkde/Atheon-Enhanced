@@ -1,2 +1,0 @@
-name: kubernetes
-match: '(?i)(apiVersion:|kind:\s*Deployment|kubectl|kubernetes|k8s|manifest)'

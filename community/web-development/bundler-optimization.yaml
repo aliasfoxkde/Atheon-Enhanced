@@ -1,2 +1,0 @@
-name: bundler-optimization
-match: 'import.*\*.*from|require.*dynamic.*import|import.*\(?.*await'

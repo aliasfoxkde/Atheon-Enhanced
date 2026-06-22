@@ -1,2 +1,0 @@
-name: vue-html-directive
-match: 'v-html.*\$\{'

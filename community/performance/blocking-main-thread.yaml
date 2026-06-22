@@ -1,2 +1,0 @@
-name: blocking-main-thread
-match: 'while.*true.*\{|for.*while.*true|sleep.*main.*thread'

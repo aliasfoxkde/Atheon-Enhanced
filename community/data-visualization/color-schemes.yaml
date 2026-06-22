@@ -1,2 +1,0 @@
-name: color-schemes
-match: 'backgroundColor.*#[fF]{6}|borderColor.*#[0F]{6}|color.*palette.*contrast'

@@ -12,18 +12,5 @@ coverage.out
 # Dependency hash file
 go.sum
 
-# Documentation and examples (contain TODOs for documentation)
-README.md
+# Website
 docs/
-.github/wiki/
-.github/workflows/
-*.md
-
-# Binary files that cause false positives
-bundler/bundler
-atheon
-atheon-mcp
-
-# Development files that may contain example patterns
-.githooks/
-.gitignore

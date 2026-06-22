@@ -1,2 +1,0 @@
-name: manifest
-match: 'manifest.*name.*short_name.*different|display.*standalone.*theme_color.*different|icons.*192.*512'

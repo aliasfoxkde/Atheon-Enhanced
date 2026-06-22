@@ -1,2 +1,0 @@
-name: ai-safety-bypass
-match: '(?i)(add error handling|fix this later|implement this|todo.*fix|hack|workaround|temporary)'

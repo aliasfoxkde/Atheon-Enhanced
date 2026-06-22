@@ -1,5 +1,0 @@
-name: seo-meta-tags
-match: '<!DOCTYPE html>|<meta name="description"|<meta property="og:|<link rel="canonical"|<meta name="keywords"'
-severity: low
-language: html
-category: web-development

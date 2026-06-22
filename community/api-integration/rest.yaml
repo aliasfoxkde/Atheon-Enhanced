@@ -1,2 +1,0 @@
-name: rest
-match: 'fetch.*\.then.*\.then.*\.catch|await\s+fetch.*await\s+fetch'

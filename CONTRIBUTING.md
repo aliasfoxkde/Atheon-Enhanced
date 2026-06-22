@@ -1,38 +1,6 @@
-# Contributing to Atheon
+# Contributing
 
 Atheon grows through patterns. Every pattern is one YAML file — no Go required, no engine changes, fast to review, and immediately useful to every user once merged.
-
----
-
-## 🎯 Which Project to Contribute To?
-
-### **Official HoraDomu/Atheon**
-- **Best for**: Stable patterns, bug fixes, documentation
-- **Process**: Standard PR review and testing
-- **Impact**: Immediate benefit to all users
-- **Repository**: [https://github.com/HoraDomu/Atheon](https://github.com/HoraDomu/Atheon)
-
-### **Enhanced aliasfoxkde/Atheon**
-- **Best for**: Experimental patterns, performance features, CI/CD improvements
-- **Process**: Enhanced testing, validation across multiple Go versions
-- **Impact**: Testing ground for future innovations
-- **Repository**: [https://github.com/aliasfoxkde/Atheon](https://github.com/aliasfoxkde/Atheon)
-- **Contributors**: [View Contributors Graph](https://github.com/aliasfoxkde/Atheon/graphs/contributors)
-
----
-
-## 👥 Contributors & Recognition
-
-### **Official Project Contributors**
-- [CONTRIBUTORS.md](CONTRIBUTORS.md) - Contributors to the official project
-- All contributions are permanently credited
-
-### **Enhanced Fork Contributors**
-- [Live Contributors Graph](https://github.com/aliasfoxkde/Atheon/graphs/contributors) - Real-time contributor visualization
-- [Project Pulse](https://github.com/aliasfoxkde/Atheon/pulse) - Recent activity and engagement
-- Your name appears permanently in the contributor history
-
-**Both projects value every contribution.** Whether you contribute to the official project or this enhanced testing fork, your work benefits the entire community.
 
 ---
 

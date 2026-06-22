@@ -1,2 +1,0 @@
-name: color-contrast
-match: 'color.*#[fF]{3}[fF]{3}|background.*#[fF]{3}[fF]{3}|opacity.*0\.[1-4]'

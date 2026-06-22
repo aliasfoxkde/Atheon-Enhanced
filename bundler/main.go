@@ -5,7 +5,6 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -27,49 +26,7 @@ type patternDef struct {
 	Enabled  bool   `json:"enabled"`
 }
 
-// bundleWalkErr is a sentinel for WalkDir errors so the loop above still
-// returns errors but tests can introspect.
-type bundleWalkErr struct {
-	path string
-	err  error
-}
-
-func (e *bundleWalkErr) Error() string { return e.path + ": " + e.err.Error() }
-func (e *bundleWalkErr) Unwrap() error { return e.err }
-
-// bundleToWriter bundles the community directory and writes the result to out.
-// Splitting this out from bundle() lets tests pass a failing writer.
-func bundleToWriter(communityDir string, out io.Writer) (int, error) {
-	defs, err := walkPatterns(communityDir)
-	if err != nil {
-		return 0, err
-	}
-
-	jsonBytes, err := json.Marshal(defs)
-	if err != nil {
-		return 0, err
-	}
-
-	if err := writeGzipped(out, jsonBytes); err != nil {
-		return 0, err
-	}
-	return len(defs), nil
-}
-
 func bundle(communityDir, outPath string) (int, error) {
-	var buf bytes.Buffer
-	n, err := bundleToWriter(communityDir, &buf)
-	if err != nil {
-		return 0, err
-	}
-	if err := os.WriteFile(outPath, buf.Bytes(), 0o600); err != nil {
-		return 0, err
-	}
-	return n, nil
-}
-
-// walkPatterns walks communityDir and returns all parsed pattern definitions.
-func walkPatterns(communityDir string) ([]patternDef, error) {
 	var defs []patternDef
 	err := filepath.WalkDir(communityDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil || d.IsDir() || !strings.HasSuffix(path, ".yaml") {
@@ -77,7 +34,7 @@ func walkPatterns(communityDir string) ([]patternDef, error) {
 		}
 		data, err := os.ReadFile(path)
 		if err != nil {
-			return &bundleWalkErr{path: path, err: err}
+			return err
 		}
 		var pf patternFile
 		if err := yaml.Unmarshal(data, &pf); err != nil {
@@ -100,46 +57,43 @@ func walkPatterns(communityDir string) ([]patternDef, error) {
 		return nil
 	})
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
-	return defs, nil
-}
 
-// writeGzipped gzip-encodes jsonBytes into out. Accepts io.Writer so tests
-// can substitute a failing writer to exercise the gzip error paths.
-func writeGzipped(out io.Writer, jsonBytes []byte) error {
-	gz := gzip.NewWriter(out)
+	jsonBytes, err := json.Marshal(defs)
+	if err != nil {
+		return 0, err
+	}
+
+	var buf bytes.Buffer
+	gz := gzip.NewWriter(&buf)
 	if _, err := gz.Write(jsonBytes); err != nil {
-		return err
+		return 0, err
 	}
 	if err := gz.Close(); err != nil {
-		return err
+		return 0, err
 	}
-	return nil
+
+	if err := os.WriteFile(outPath, buf.Bytes(), 0o644); err != nil {
+		return 0, err
+	}
+	return len(defs), nil
 }
 
 func main() {
-	os.Exit(run(os.Args[1:]))
-}
-
-// run executes the bundler with the given args and returns the exit code.
-// This is separated from main() so tests can call it without os.Exit
-// terminating the test process.
-func run(args []string) int {
 	communityDir := "community"
 	outPath := filepath.Join("core", "patterns.bundle")
-	if len(args) > 0 {
-		communityDir = args[0]
+	if len(os.Args) > 1 {
+		communityDir = os.Args[1]
 	}
-	if len(args) > 1 {
-		outPath = args[1]
+	if len(os.Args) > 2 {
+		outPath = os.Args[2]
 	}
 
 	n, err := bundle(communityDir, outPath)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
-		return 1
+		os.Exit(1)
 	}
 	fmt.Printf("bundled %d patterns → %s\n", n, outPath)
-	return 0
 }

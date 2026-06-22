@@ -1,5 +1,0 @@
-name: missing-aria-live-regions
-match: 'aria-live.*assertive|aria-live.*polite|role.*status|role.*alert'
-severity: medium
-language: html
-category: accessibility

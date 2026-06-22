@@ -39,13 +39,11 @@ jobs:
 
       - name: Run tests
         run: |
-          # Skip -race and -coverprofile on macOS due to known flakiness on ARM64
-          if [ "$RUNNER_OS" == "macOS" ]; then
-            # macOS ARM64: go test exits 1 after passing tests due to test harness issue
-            # Capture output and only fail if actual FAIL appears (not just exit code)
+          # macOS ARM64: go test exits 1 after passing tests. Use output capture to detect real failures.
+          if [ "${{ runner.os }}" == "macOS" ]; then
             OUTPUT=$(go test ./... -v -timeout 15m 2>&1) || true
             echo "$OUTPUT"
-            if echo "$OUTPUT" | grep -q "^FAIL"; then exit 1; fi
+            echo "$OUTPUT" | grep -q "^FAIL" && exit 1 || true
           else
             go test ./... -v -race -coverprofile=coverage.out -timeout 15m
           fi

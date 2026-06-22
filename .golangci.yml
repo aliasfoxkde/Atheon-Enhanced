@@ -1,17 +1,22 @@
+version: "2"
+
 linters:
+  settings:
+    errcheck:
+      exclude-functions:
+        - fmt.Fprint
+        - fmt.Fprintln
+        - fmt.Fprintf
+        - (strings.Builder).Write
+        - (strings.Builder).WriteByte
+        - (strings.Builder).WriteString
+        - os.Setenv
+        - os.Unsetenv
+        - os.Remove
+        - os.RemoveAll
   enable:
     - errcheck
     - govet
     - ineffassign
     - staticcheck
     - unused
-
-linters-settings:
-  errcheck:
-    exclude-functions:
-      - fmt.Fprint
-      - fmt.Fprintln
-      - fmt.Fprintf
-      - (strings.Builder).Write
-      - (strings.Builder).WriteByte
-      - (strings.Builder).WriteString

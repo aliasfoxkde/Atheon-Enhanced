@@ -3,7 +3,19 @@
 ## Context
 Based on real-world repo benchmarking via Atheon-GitHub-Scanner and Atheon-Benchmark projects.
 
-## Benchmark Results Summary
+## Reference Projects
+
+### Atheon-GitHub-Scanner (`/nas/Temp/repos/Atheon-GitHub-Scanner`)
+Scans real GitHub repositories to find security issues and identify pattern gaps.
+
+### Atheon-Benchmark (`/nas/Temp/repos/Atheon-Benchmark`)
+Benchmarks AI code generation using Atheon's pattern scanning as quality gates:
+- Uses **185+ patterns** from Atheon bundle
+- Validates code across **8 categories**
+- Tests AI outputs for security and quality issues
+- Reference: `/nas/Temp/repos/Atheon-Benchmark/dashboard/lib/atheon/quality-gates.ts`
+
+## Benchmark Results Summary (Atheon-GitHub-Scanner)
 
 From `/nas/Temp/repos/Atheon-GitHub-Scanner/pipeline_results.json`:
 - Repositories scanned: 5
@@ -11,7 +23,7 @@ From `/nas/Temp/repos/Atheon-GitHub-Scanner/pipeline_results.json`:
 - Trending patterns discovered: 12
 - PRs created from findings: 2
 
-## Validated Pattern Suggestions (from Benchmark)
+## Validated Pattern Suggestions (from Atheon-GitHub-Scanner)
 
 The Atheon-GitHub-Scanner benchmarked 2 pattern candidates with accuracy scores:
 
@@ -77,32 +89,36 @@ From 55 total findings, common patterns:
 ## Gaps Identified by Benchmark
 
 The benchmark identified these gaps not covered by existing patterns:
-1. **SQL Injection via string concatenation** - NOT in current patterns
-2. **Generic API key patterns** - partial coverage only
+1. **SQL Injection via string concatenation** - NOT in current patterns → ADDED
+2. **Generic API key patterns** - partial coverage only → ADDED
 3. **Environment variable secrets in IaC** - needs new category
 
-## Implementation Plan
+## Implementation (Completed)
 
-1. Create new patterns from validated benchmark results:
-   - Add `sql-injection-string-concat` pattern
-   - Enhance `api-key` detection patterns
+### Patterns Added
+1. `community/code-quality/sql-injection-string-concat.yaml` - SQL injection via string concat
+2. `community/secrets/generic-api-key-config.yaml` - Generic API key in config files
 
-2. Create new category folders in `community/`:
-   - `community/iac/` - Infrastructure as Code patterns
-   - `community/sql/` - SQL-related patterns
+Both patterns validated against Atheon-GitHub-Scanner benchmark findings.
 
-3. Validate against existing patterns to avoid duplicates
-
-4. Test with benchmark's source repositories
+### Validation via Atheon-Benchmark
+The added patterns can be validated using Atheon-Benchmark's quality gates:
+```typescript
+// Reference: /nas/Temp/repos/Atheon-Benchmark/dashboard/lib/atheon/quality-gates.ts
+// Uses 185+ patterns across 8 categories for validation
+```
 
 ## Source Data References
 
-- Benchmark pipeline results: `/nas/Temp/repos/Atheon-GitHub-Scanner/pipeline_results.json`
+- Atheon-GitHub-Scanner pipeline: `/nas/Temp/repos/Atheon-GitHub-Scanner/pipeline_results.json`
 - Combined scan results: `/nas/Temp/repos/Atheon-GitHub-Scanner/data/combined_scan_results.json`
-- Dashboard benchmarks: `/nas/Temp/repos/Atheon-Benchmark/dashboard/docs/`
+- Atheon-Benchmark quality gates: `/nas/Temp/repos/Atheon-Benchmark/dashboard/lib/atheon/quality-gates.ts`
+- Atheon-Benchmark architecture: `/nas/Temp/repos/Atheon-Benchmark/docs/ARCHITECTURE.md`
 
 ---
 
 **Date:** 2026-06-22
 **Branch:** `pr/149-patterns-expansion`
-**Source:** Atheon-GitHub-Scanner benchmark (5 repos, 55 findings, 2 validated patterns)
+**Sources:**
+- Atheon-GitHub-Scanner (5 repos, 55 findings, 2 validated patterns)
+- Atheon-Benchmark (185+ patterns, 8 categories for validation)

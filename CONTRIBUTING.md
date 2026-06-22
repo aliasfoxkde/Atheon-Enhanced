@@ -16,8 +16,8 @@ Atheon grows through patterns. Every pattern is one YAML file — no Go required
 - **Best for**: Experimental patterns, performance features, CI/CD improvements
 - **Process**: Enhanced testing, validation across multiple Go versions
 - **Impact**: Testing ground for future innovations
-- **Repository**: [https://github.com/aliasfoxkde/Atheon](https://github.com/aliasfoxkde/Atheon)
-- **Contributors**: [View Contributors Graph](https://github.com/aliasfoxkde/Atheon/graphs/contributors)
+- **Repository**: [https://github.com/aliasfoxkde/Atheon-Enhanced](https://github.com/aliasfoxkde/Atheon-Enhanced)
+- **Contributors**: [View Contributors Graph](https://github.com/aliasfoxkde/Atheon-Enhanced/graphs/contributors)
 
 ---
 
@@ -28,11 +28,27 @@ Atheon grows through patterns. Every pattern is one YAML file — no Go required
 - All contributions are permanently credited
 
 ### **Enhanced Fork Contributors**
-- [Live Contributors Graph](https://github.com/aliasfoxkde/Atheon/graphs/contributors) - Real-time contributor visualization
-- [Project Pulse](https://github.com/aliasfoxkde/Atheon/pulse) - Recent activity and engagement
+- [Live Contributors Graph](https://github.com/aliasfoxkde/Atheon-Enhanced/graphs/contributors) - Real-time contributor visualization
+- [Project Pulse](https://github.com/aliasfoxkde/Atheon-Enhanced/pulse) - Recent activity and engagement
 - Your name appears permanently in the contributor history
 
 **Both projects value every contribution.** Whether you contribute to the official project or this enhanced testing fork, your work benefits the entire community.
+
+---
+
+## Development Setup
+
+After cloning, install the pre-commit hook so every commit is automatically formatted and tested:
+
+```sh
+git config core.hooksPath hooks
+```
+
+The hook:
+- Auto-formats Go files with `gofmt` and re-stages them
+- Runs `go vet ./...`
+- Runs the full test suite (`go test ./... -p 1`) with coverage
+- Rebuilds `core/patterns.bundle` if any `community/**/*.yaml` files changed
 
 ---
 
@@ -84,7 +100,7 @@ Open `core/bundle_test.go` and add an entry under the `cases` map:
 **5. Run tests and verify manually**
 
 ```sh
-go test ./...
+go test ./... -p 1
 atheon --file <path-to-sample>
 ```
 

@@ -1,0 +1,8 @@
+# All PRs require review from the maintainer.
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+* @aliasfoxkde
+
+# CI/CD and release workflows — extra scrutiny
+.github/ @aliasfoxkde
+.goreleaser.yml @aliasfoxkde

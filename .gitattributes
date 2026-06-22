@@ -1,0 +1,17 @@
+# Normalize line endings to LF on commit, checkout as-is on Windows
+* text=auto
+
+# Shell scripts and YAML: always LF
+*.sh text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+
+# Go source: LF
+*.go text eol=lf
+
+# Binary: never diff/merge
+core/patterns.bundle binary
+*.bundle binary
+
+# Markdown: LF
+*.md text eol=lf

@@ -6,11 +6,11 @@
 
 ![Go](https://img.shields.io/badge/Go-1.21%2B-00ADD8)
 ![License](https://img.shields.io/badge/license-MIT-green)
-![Patterns](https://img.shields.io/badge/patterns-179-blueviolet)
+![Patterns](https://img.shields.io/badge/patterns-190-blueviolet)
 ![Categories](https://img.shields.io/badge/categories-19-orange)
-![CI](https://github.com/aliasfoxkde/Atheon/actions/workflows/comprehensive-ci.yml/badge.svg)
-![Coverage](https://img.shields.io/badge/coverage-98%25-brightgreen)
-![Stars](https://img.shields.io/github/stars/aliasfoxkde/Atheon?style=social)
+![CI](https://github.com/aliasfoxkde/Atheon-Enhanced/actions/workflows/comprehensive-ci.yml/badge.svg)
+![Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen)
+![Stars](https://img.shields.io/github/stars/aliasfoxkde/Atheon-Enhanced?style=social)
 
 > **One tool. All patterns. Any input.**
 
@@ -33,7 +33,7 @@
 ### **Enhanced aliasfoxkde/Atheon (Atheon-Enhanced)** - Feature-Rich Testing Build
 - **Purpose**: Experimental "nightly build" testing the limits of pattern matching
 - **Focus**: Performance optimizations, advanced features, comprehensive pattern coverage
-- **Patterns**: 179 patterns across 19 categories (community-driven, comprehensive coverage)
+- **Patterns**: 190 patterns across 19 categories (community-driven, comprehensive coverage)
 - **Update cadence**: Frequent updates with latest features and enhancements
 - **Best for**: Power users, CI/CD integration, comprehensive security scanning
 
@@ -56,7 +56,7 @@
 <summary><b>📊 Enhanced Features vs Official Release</b></summary>
 
 ### **What's Enhanced in This Testing Build?**
-- **179 patterns** across 19 categories - comprehensive coverage
+- **190 patterns** across 19 categories - comprehensive coverage
 - **2-3x faster** with streaming API and performance optimizations
 - **10x less memory** usage with chunked file scanning
 - **MCP integration** with enhanced configuration options
@@ -64,7 +64,7 @@
 - **Quality enforcement** patterns for AI/developer shortcuts
 - **Configuration profiles** for different use cases
 - **Comprehensive CI/CD** with multi-version testing
-- **98% test coverage** on the core scanner
+- **~95% test coverage** on the core scanner
 
 ### **Trade-offs to Consider**
 - ✅ **More features** - Latest capabilities and experimental patterns
@@ -82,9 +82,9 @@
 | Repository | Purpose | Status |
 |------------|---------|--------|
 | **[Official Project](https://github.com/HoraDomu/Atheon)** | Stable production release | ✅ Recommended for production |
-| **[Enhanced Version](https://github.com/aliasfoxkde/Atheon)** | Feature-rich testing build | 🧪 Experimental features |
-| **[Project Pulse](https://github.com/aliasfoxkde/Atheon/pulse)** | Activity & updates overview | 📊 Live stats |
-| **[Contributors](https://github.com/aliasfoxkde/Atheon/graphs/contributors)** | Project contributors | 👥 Community |
+| **[Enhanced Version](https://github.com/aliasfoxkde/Atheon-Enhanced)** | Feature-rich testing build | 🧪 Experimental features |
+| **[Project Pulse](https://github.com/aliasfoxkde/Atheon-Enhanced/pulse)** | Activity & updates overview | 📊 Live stats |
+| **[Contributors](https://github.com/aliasfoxkde/Atheon-Enhanced/graphs/contributors)** | Project contributors | 👥 Community |
 
 ---
 
@@ -96,7 +96,7 @@
 ### **Recommended: Build from Source**
 ```bash
 # Clone the repository
-git clone https://github.com/aliasfoxkde/Atheon.git
+git clone https://github.com/aliasfoxkde/Atheon-Enhanced.git
 cd Atheon
 
 # Build the main binary
@@ -117,7 +117,7 @@ atheon --version
 ### **Alternative: Development Version**
 ```bash
 # Clone and checkout development branch
-git clone https://github.com/aliasfoxkde/Atheon.git
+git clone https://github.com/aliasfoxkde/Atheon-Enhanced.git
 cd Atheon
 git checkout dev/full-feature
 
@@ -283,9 +283,9 @@ chmod +x .git/hooks/pre-commit
 <summary><b>🔗 Project Ecosystem</b></summary>
 
 ### **Core Projects**
-- **[Atheon](https://github.com/aliasfoxkde/Atheon)** - Main pattern matching engine (this repository)
-- **[Atheon-Benchmark](https://github.com/aliasfoxkde/Atheon-Enhanced-Benchmark)** - Performance testing and benchmarking tools
-- **[Atheon-GitHub-Scanner](https://github.com/aliasfoxkde/Atheon-Enhanced-GitHub-Scanner)** - GitHub repository scanning automation
+- **[Atheon](https://github.com/aliasfoxkde/Atheon-Enhanced)** - Main pattern matching engine (this repository)
+- **[Atheon-Benchmark](https://github.com/aliasfoxkde/Atheon-Benchmark)** - Performance testing and benchmarking tools
+- **[Atheon-GitHub-Scanner](https://github.com/aliasfoxkde/Atheon-GitHub-Scanner)** - GitHub repository scanning automation
 
 ### **Official Upstream**
 - **[HoraDomu/Atheon](https://github.com/HoraDomu/Atheon)** - Official stable release
@@ -400,7 +400,7 @@ atheon --profile config/profiles/pipeline.json ./my-project
 - ✅ **Performance Benchmarks**: Track improvements over time
 
 ### **Expanded Pattern Library**
-- ✅ **179 patterns** across 19 categories
+- ✅ **190 patterns** across 19 categories
 - ✅ **New categories**: Accessibility, Performance, Web Development, API Integration, Security Hardening, Cloud-Native, PWA, Data Visualization
 - ✅ **Enhanced coverage**: Modern web development, security best practices, performance optimization
 - ✅ **AI Detection Patterns**: AI-generated code identification, template detection, safety bypasses
@@ -498,7 +498,7 @@ atheon --profile config/profiles/pipeline.json ./my-project
 ### **Quality Metrics**
 - **Test Coverage**: 98% core, 100% cmd/atheon, 92% cmd/mcp, 97% bundler
 - **CI/CD Pass Rate**: >95%
-- **Pattern Validation**: All 179 patterns tested and functional
+- **Pattern Validation**: All 190 patterns tested and functional
 - **Pattern Coverage**: 19 categories with modern development support
 - **Lint Warnings**: 0 (golangci-lint clean)
 
@@ -565,19 +565,19 @@ gh pr create --base main --head feat/my-feature
 - **Purpose**: Tracks upstream HoraDomu/Atheon:main exactly
 - **Usage**: Reference for upstream changes, starting point for features
 - **Patterns**: 57 upstream patterns only
-- **Installation**: `go install github.com/aliasfoxkde/Atheon@stable/clean`
+- **Installation**: `go install github.com/aliasfoxkde/Atheon-Enhanced@stable/clean`
 
 ### **`main` Branch** (Production Build)
 - **Purpose**: Production-ready with all enhancements
 - **Usage**: User-facing installation, production deployment
-- **Patterns**: 179 patterns across 19 categories
-- **Installation**: `go install github.com/aliasfoxkde/Atheon@latest`
+- **Patterns**: 190 patterns across 19 categories
+- **Installation**: `go install github.com/aliasfoxkde/Atheon-Enhanced@latest`
 
 ### **`dev/full-feature` Branch** (Development/Testing)
 - **Purpose**: Comprehensive testing with all patterns enabled
 - **Usage**: Pattern development, performance validation, quality assurance
-- **Patterns**: All 179 patterns enabled, full testing active
-- **Installation**: `go install github.com/aliasfoxkde/Atheon@dev/full-feature`
+- **Patterns**: All 190 patterns enabled, full testing active
+- **Installation**: `go install github.com/aliasfoxkde/Atheon-Enhanced@dev/full-feature`
 
 </details>
 
@@ -611,7 +611,7 @@ The folder name becomes the category. No engine changes, no recompile needed.
 
 ### **Community Contributors**
 - **[Upstream Contributors](docs/CONTRIBUTORS.md)** - Contributors to the official project
-- **[Enhanced Contributors](https://github.com/aliasfoxkde/Atheon/graphs/contributors)** - Contributors to this enhanced version
+- **[Enhanced Contributors](https://github.com/aliasfoxkde/Atheon-Enhanced/graphs/contributors)** - Contributors to this enhanced version
 
 > **📖 See detailed system architecture**: [docs/SYSTEM_ARCHITECTURE.md](docs/SYSTEM_ARCHITECTURE.md)
 
@@ -636,13 +636,13 @@ The folder name becomes the category. No engine changes, no recompile needed.
 
 ### **Maintainer & Enhancement**
 - **Maintainer**: Micheal Kinney (aliasfoxkde)
-- **Repository**: [https://github.com/aliasfoxkde/Atheon](https://github.com/aliasfoxkde/Atheon)
+- **Repository**: [https://github.com/aliasfoxkde/Atheon-Enhanced](https://github.com/aliasfoxkde/Atheon-Enhanced)
 - **Portfolio**: [https://openportfolio.pages.dev](https://openportfolio.pages.dev)
 - **Enhancement Purpose**: Advanced features, performance optimizations, comprehensive testing
 
 ### **Related Projects**
-- **[Atheon-Benchmark](https://github.com/aliasfoxkde/Atheon-Enhanced-Benchmark)** - Performance testing and benchmarking tools
-- **[Atheon-GitHub-Scanner](https://github.com/aliasfoxkde/Atheon-Enhanced-GitHub-Scanner)** - GitHub repository scanning automation
+- **[Atheon-Benchmark](https://github.com/aliasfoxkde/Atheon-Benchmark)** - Performance testing and benchmarking tools
+- **[Atheon-GitHub-Scanner](https://github.com/aliasfoxkde/Atheon-GitHub-Scanner)** - GitHub repository scanning automation
 
 ### **Development Assistance**
 This enhanced version includes development support using TaskWizer technologies for systematic testing, documentation generation, and quality assurance.
@@ -655,7 +655,7 @@ This enhanced version includes development support using TaskWizer technologies 
 Both the upstream project and this enhanced fork are built by the community. Every pattern contributed benefits all users.
 
 - **[Upstream Contributors](docs/CONTRIBUTORS.md)** - Contributors to the official project
-- **[Enhanced Contributors](https://github.com/aliasfoxkde/Atheon/graphs/contributors)** - Contributors to this enhanced version
+- **[Enhanced Contributors](https://github.com/aliasfoxkde/Atheon-Enhanced/graphs/contributors)** - Contributors to this enhanced version
 
 Thank you to all contributors who help make Atheon better every day!
 
@@ -679,7 +679,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - ✅ Production-ready reliability
 
 ### **Use Enhanced aliasfoxkde/Atheon (Atheon-Enhanced) when you want**:
-- ✅ 179 patterns across 19 categories (comprehensive coverage)
+- ✅ 190 patterns across 19 categories (comprehensive coverage)
 - ✅ 2-3x performance improvements
 - ✅ 10x memory reduction for large files
 - ✅ MCP integration with advanced features
@@ -700,12 +700,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 | Resource | Link | Purpose |
 |----------|------|---------|
 | **Official Project** | [https://github.com/HoraDomu/Atheon](https://github.com/HoraDomu/Atheon) | Stable production release |
-| **Enhanced Version** | [https://github.com/aliasfoxkde/Atheon](https://github.com/aliasfoxkde/Atheon) | Feature-rich testing build |
+| **Enhanced Version** | [https://github.com/aliasfoxkde/Atheon-Enhanced](https://github.com/aliasfoxkde/Atheon-Enhanced) | Feature-rich testing build |
 | **Feature Comparison** | [docs/FEATURE_COMPARISON.md](docs/FEATURE_COMPARISON.md) | Detailed feature comparison |
 | **System Architecture** | [docs/SYSTEM_ARCHITECTURE.md](docs/SYSTEM_ARCHITECTURE.md) | Technical architecture |
 | **Branch Strategy** | [docs/BRANCH_STRATEGY.md](docs/BRANCH_STRATEGY.md) | Development workflow |
-| **Project Pulse** | [https://github.com/aliasfoxkde/Atheon/pulse](https://github.com/aliasfoxkde/Atheon/pulse) | Activity overview |
-| **Contributors** | [https://github.com/aliasfoxkde/Atheon/graphs/contributors](https://github.com/aliasfoxkde/Atheon/graphs/contributors) | Project contributors |
+| **Project Pulse** | [https://github.com/aliasfoxkde/Atheon-Enhanced/pulse](https://github.com/aliasfoxkde/Atheon-Enhanced/pulse) | Activity overview |
+| **Contributors** | [https://github.com/aliasfoxkde/Atheon-Enhanced/graphs/contributors](https://github.com/aliasfoxkde/Atheon-Enhanced/graphs/contributors) | Project contributors |
 | **Scanner Demo** | [https://atheon-scanner.pages.dev/](https://atheon-scanner.pages.dev/) | Live scanning demo |
 | **Benchmark Demo** | [https://atheon-benchmark.pages.dev](https://atheon-benchmark.pages.dev) | Performance benchmarking |
 
@@ -714,18 +714,18 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📈 **Project Growth & Activity**
 
 ### **Repository Activity**
-![GitHub Stars](https://img.shields.io/github/stars/aliasfoxkde/Atheon?style=for-the-badge&logo=github)
-![GitHub Forks](https://img.shields.io/github/forks/aliasfoxkde/Atheon?style=for-the-badge&logo=github)
-![GitHub Issues](https://img.shields.io/github/issues/aliasfoxkde/Atheon?style=for-the-badge)
-![GitHub Closed PRs](https://img.shields.io/github/issues-pr-closed/aliasfoxkde/Atheon?style=for-the-badge)
+![GitHub Stars](https://img.shields.io/github/stars/aliasfoxkde/Atheon-Enhanced?style=for-the-badge&logo=github)
+![GitHub Forks](https://img.shields.io/github/forks/aliasfoxkde/Atheon-Enhanced?style=for-the-badge&logo=github)
+![GitHub Issues](https://img.shields.io/github/issues/aliasfoxkde/Atheon-Enhanced?style=for-the-badge)
+![GitHub Closed PRs](https://img.shields.io/github/issues-pr-closed/aliasfoxkde/Atheon-Enhanced?style=for-the-badge)
 
 ### **Stars Over Time**
-[![Star History Chart](https://api.star-history.com/svg?repos=aliasfoxkde/Atheon&type=Date)](https://star-history.com/#aliasfoxkde/Atheon&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=aliasfoxkde/Atheon-Enhanced&type=Date)](https://star-history.com/#aliasfoxkde/Atheon-Enhanced&Date)
 
 ### **Recent Activity**
-- ![Latest Commit](https://img.shields.io/github/last-commit/aliasfoxkde/Atheon?style=flat-square)
-- ![Commit Activity](https://img.shields.io/github/commit-activity/y/aliasfoxkde/Atheon?style=flat-square)
-- ![Release](https://img.shields.io/github/release/aliasfoxkde/Atheon?style=flat-square)
+- ![Latest Commit](https://img.shields.io/github/last-commit/aliasfoxkde/Atheon-Enhanced?style=flat-square)
+- ![Commit Activity](https://img.shields.io/github/commit-activity/y/aliasfoxkde/Atheon-Enhanced?style=flat-square)
+- ![Release](https://img.shields.io/github/release/aliasfoxkde/Atheon-Enhanced?style=flat-square)
 
 ### **⚠️ Important Disclaimers**
 

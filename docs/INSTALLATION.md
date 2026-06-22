@@ -5,20 +5,20 @@
 ### Homebrew (macOS / Linux)
 
 ```bash
-brew tap HoraDomu/atheon
+brew tap aliasfoxkde/Atheon-Enhanced
 brew install atheon
 ```
 
 ### Scoop (Windows)
 
 ```bash
-scoop bucket add atheon https://github.com/HoraDomu/scoop-atheon
+scoop bucket add atheon https://github.com/aliasfoxkde/scoop-Atheon-Enhanced
 scoop install atheon
 ```
 
 ### Manual Installation
 
-1. Download the binary for your platform from [Releases](https://github.com/HoraDomu/Atheon/releases/latest)
+1. Download the binary for your platform from [Releases](https://github.com/aliasfoxkde/Atheon-Enhanced/releases/latest)
 2. Rename binary to `atheon` (Linux/macOS) or `atheon.exe` (Windows)
 3. Move to directory in your PATH
 
@@ -44,7 +44,7 @@ move atheon.exe C:\Windows\System32\
 
 1. Clone repository:
 ```bash
-git clone https://github.com/HoraDomu/Atheon.git
+git clone https://github.com/aliasfoxkde/Atheon-Enhanced.git
 cd Atheon
 ```
 
@@ -223,7 +223,7 @@ For development work, you may want to install from source and create a symlink:
 
 ```bash
 # Clone repository
-git clone https://github.com/HoraDomu/Atheon.git
+git clone https://github.com/aliasfoxkde/Atheon-Enhanced.git
 cd Atheon
 
 # Build and create symlink
@@ -239,7 +239,7 @@ export PATH=$PATH:$(pwd):$PATH
 ### Homebrew
 ```bash
 brew uninstall atheon
-brew untap HoraDomu/atheon
+brew untap aliasfoxkde/Atheon-Enhanced
 ```
 
 ### Scoop

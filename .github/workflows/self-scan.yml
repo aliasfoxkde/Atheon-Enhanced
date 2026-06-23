@@ -60,14 +60,12 @@ jobs:
           # pattern regexes — exclude them from all scans.
           # Test files (*_test.go, testdata/) carry fake credentials by design.
           ./atheon --json --categories=${{ matrix.categories }} . \
-            | jq '[.[] | select(
-                (.file | test("_test\\.go$"))    or
-                (.file | test("/testdata/"))      or
-                (.file | test("\\\\testdata\\\\")) or
-                (.file | test("^community/"))     or
-                (.file | test("^community\\\\"))  or
+            | jq '[.[] | select((
+                (.file | test("_test\\.go$"))   or
+                (.file | test("/testdata/"))     or
+                (.file | test("^community/"))    or
                 (.file | test("^\\.github/wiki/"))
-              ) | not]' > scan-${{ matrix.scan }}.json
+              ) | not)]' > scan-${{ matrix.scan }}.json
 
           COUNT=$(jq 'length' scan-${{ matrix.scan }}.json)
           echo "findings=${COUNT}" >> "$GITHUB_OUTPUT"

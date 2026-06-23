@@ -21,12 +21,12 @@ fail()    { echo "  [✗] $*" >&2; }
 # Filter out test/testdata/community files from JSON findings array.
 # Keeps only findings that are in production source.
 filter_prod() {
-  jq '[.[] | select(
+  jq '[.[] | select((
     (.file | test("_test\\.go$"))   or
     (.file | test("/testdata/"))     or
     (.file | test("^community/"))    or
     (.file | test("^\\.github/wiki/"))
-  ) | not]'
+  ) | not)]'
 }
 
 # ── build ─────────────────────────────────────────────────────────────────────

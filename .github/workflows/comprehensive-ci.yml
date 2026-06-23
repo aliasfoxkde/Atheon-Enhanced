@@ -125,12 +125,12 @@ jobs:
           # community/ and test files intentionally contain pattern-matching content.
           # Only gate on findings in production source.
           ./atheon --json --categories=secrets,pii . \
-            | jq '[.[] | select(
+            | jq '[.[] | select((
                 (.file | test("_test\\.go$")) or
                 (.file | test("/testdata/"))   or
                 (.file | test("^community/"))  or
                 (.file | test("^\\.github/wiki/"))
-              ) | not]' > security-findings.json
+              ) | not)]' > security-findings.json
           COUNT=$(jq 'length' security-findings.json)
           echo "Production source findings: ${COUNT}"
 

@@ -9,7 +9,7 @@
 ![Patterns](https://img.shields.io/badge/patterns-255-blueviolet)
 ![Categories](https://img.shields.io/badge/categories-19-orange)
 ![CI](https://github.com/aliasfoxkde/Atheon-Enhanced/actions/workflows/comprehensive-ci.yml/badge.svg)
-![Coverage](https://img.shields.io/badge/coverage-97%25-brightgreen)
+[![codecov](https://codecov.io/gh/aliasfoxkde/Atheon-Enhanced/graph/badge.svg)](https://codecov.io/gh/aliasfoxkde/Atheon-Enhanced)
 ![Stars](https://img.shields.io/github/stars/aliasfoxkde/Atheon-Enhanced?style=social)
 
 > **One tool. All patterns. Any input.**

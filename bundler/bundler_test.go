@@ -7,6 +7,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -181,6 +182,8 @@ func TestBundleWhitespaceName(t *testing.T) {
 	_, err := bundle(community, out)
 	if err == nil {
 		t.Error("expected error for whitespace in pattern name, got nil")
+	} else if !strings.Contains(err.Error(), "must not contain whitespace") {
+		t.Errorf("expected 'must not contain whitespace' in error, got: %v", err)
 	}
 }
 
@@ -194,6 +197,8 @@ func TestBundleDuplicatePatternName(t *testing.T) {
 	_, err := bundle(community, out)
 	if err == nil {
 		t.Error("expected error for duplicate pattern name, got nil")
+	} else if !strings.Contains(err.Error(), "duplicate pattern name") {
+		t.Errorf("expected 'duplicate pattern name' in error, got: %v", err)
 	}
 }
 
@@ -206,6 +211,8 @@ func TestBundleInvalidRegex(t *testing.T) {
 	_, err := bundle(community, out)
 	if err == nil {
 		t.Error("expected error for invalid regex, got nil")
+	} else if !strings.Contains(err.Error(), "invalid regex") {
+		t.Errorf("expected 'invalid regex' in error, got: %v", err)
 	}
 }
 
@@ -224,6 +231,8 @@ func TestBundleToWriterGzipFailure(t *testing.T) {
 	_, err := bundleToWriter(community, failWriter{})
 	if err == nil {
 		t.Error("expected error from failing writer, got nil")
+	} else if !errors.Is(err, errWriteFail) {
+		t.Errorf("expected errWriteFail sentinel, got: %v", err)
 	}
 }
 

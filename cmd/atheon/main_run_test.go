@@ -307,14 +307,21 @@ func TestRunUpdateSuccess(t *testing.T) {
 	defer restoreURL()
 
 	// Save and restore the on-disk bundle so the test is non-destructive.
-	home, _ := os.UserHomeDir()
+	home, err := os.UserHomeDir()
+	if err != nil {
+		t.Fatalf("cannot determine home dir: %v", err)
+	}
 	diskBundle := filepath.Join(home, ".atheon", "patterns.bundle")
 	origBundle, origErr := os.ReadFile(diskBundle)
+	origMissing := os.IsNotExist(origErr)
+	if origErr != nil && !origMissing {
+		t.Fatalf("cannot read existing bundle (non-ENOENT error): %v", origErr)
+	}
 	defer func() {
-		if origErr == nil {
-			_ = os.WriteFile(diskBundle, origBundle, 0o600)
-		} else {
+		if origMissing {
 			_ = os.Remove(diskBundle)
+		} else {
+			_ = os.WriteFile(diskBundle, origBundle, 0o600)
 		}
 		core.ReloadBundle()
 	}()

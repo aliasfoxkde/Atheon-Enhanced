@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -494,31 +495,39 @@ func TestScanDirContextCancelledBeforeStart(t *testing.T) {
 	}
 
 	_, _, err := ScanDir(ctx, tmpDir)
-	// Either ctx.Err() or nil is acceptable — what matters is it doesn't hang.
-	_ = err
+	if err != nil && err != context.Canceled {
+		t.Errorf("expected nil or context.Canceled, got: %v", err)
+	}
 }
 
 // TestScanDirFileReadErrorSkipped exercises the goroutine path where os.ReadFile fails.
+// Skipped on Windows (chmod is not enforced) and when running as root (ignores mode bits).
 func TestScanDirFileReadErrorSkipped(t *testing.T) {
-	tmpDir := t.TempDir()
+	if runtime.GOOS == "windows" {
+		t.Skip("os.Chmod file permissions are not enforced on Windows")
+	}
 
-	// Write a valid file so the walk collects it, then remove it before workers run.
-	// We rely on the race between walk completion and goroutine execution.
-	// An easier approach: write a file, scan it normally — the error path fires
-	// only on unreadable files, so we test the happy path indirectly.
-	// Instead, write a file the goroutine can read successfully.
-	if err := os.WriteFile(filepath.Join(tmpDir, "ok.txt"), []byte("no secrets here"), 0o644); err != nil {
+	tmpDir := t.TempDir()
+	unreadable := filepath.Join(tmpDir, "secret.txt")
+	if err := os.WriteFile(unreadable, []byte("AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE"), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	if err := os.Chmod(unreadable, 0o000); err != nil {
+		t.Skipf("cannot chmod: %v", err)
+	}
+	defer os.Chmod(unreadable, 0o644)
 
 	findings, stats, err := ScanDir(context.Background(), tmpDir)
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf("unexpected ScanDir error: %v", err)
 	}
 	if stats == nil {
 		t.Fatal("expected non-nil stats")
 	}
-	_ = findings
+	// Unreadable file is skipped — no findings expected.
+	if len(findings) != 0 {
+		t.Errorf("expected 0 findings for unreadable file, got %d", len(findings))
+	}
 }
 
 // TestScanLinesContextCancelled exercises the early-exit path in scanLines.
@@ -527,6 +536,8 @@ func TestScanLinesContextCancelled(t *testing.T) {
 	cancel()
 
 	findings := scanLines(ctx, "AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE\nline2\nline3\n", "test.txt")
-	// Should return 0 or partial results — just must not panic or hang.
-	_ = findings
+	// Pre-cancelled context: the early-exit select fires before any line is processed.
+	if len(findings) != 0 {
+		t.Errorf("expected 0 findings with cancelled context, got %d", len(findings))
+	}
 }

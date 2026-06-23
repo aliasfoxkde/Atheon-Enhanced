@@ -423,8 +423,7 @@ func TestDownloadBundleHTTPError(t *testing.T) {
 func TestDownloadBundleNetworkError(t *testing.T) {
 	// Create a server that immediately closes connection
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Close connection immediately
-		return
+		// no-op: let the server close the connection normally
 	}))
 	server.Close() // Close immediately
 
@@ -541,7 +540,7 @@ func TestDownloadBundleNoChanges(t *testing.T) {
 	defer restoreURL()
 
 	if err := core.DownloadBundle(context.Background()); err != nil {
-		t.Logf("DownloadBundle no-changes: %v", err)
+		t.Fatalf("DownloadBundle no-changes: %v", err)
 	}
 }
 
@@ -562,7 +561,7 @@ func TestDownloadBundleRemovedOnly(t *testing.T) {
 	defer restoreURL()
 
 	if err := core.DownloadBundle(context.Background()); err != nil {
-		t.Logf("DownloadBundle removed-only: %v", err)
+		t.Fatalf("DownloadBundle removed-only: %v", err)
 	}
 }
 
@@ -584,6 +583,6 @@ func TestDownloadBundleAddedOnly(t *testing.T) {
 	defer restoreURL()
 
 	if err := core.DownloadBundle(context.Background()); err != nil {
-		t.Logf("DownloadBundle added-only: %v", err)
+		t.Fatalf("DownloadBundle added-only: %v", err)
 	}
 }

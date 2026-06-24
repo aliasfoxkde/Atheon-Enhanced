@@ -20,7 +20,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version override (e.g., 0.4.1). Leave blank to auto-derive from date.'
+        description: 'Version override (e.g., v1.3.1-enhanced). Leave blank to auto-increment from last v*-enhanced tag.'
         required: false
         type: string
 
@@ -61,20 +61,30 @@ jobs:
 
           if [ -n "${INPUT_VERSION:-}" ]; then
             VERSION="${INPUT_VERSION}"
+            # Strip any leading "v" the operator may have typed.
+            VERSION="${VERSION#v}"
+            # Strip trailing -enhanced if present (we add it below).
+            VERSION="${VERSION%-enhanced}"
           else
-            # Auto-derive from date in 0.YY.MM.DD format.
-            DATE_VERSION="0.$(date +%y).$(date +%m).$(date +%d)"
-            VERSION="${DATE_VERSION}"
+            # Auto-increment patch from the last v*-enhanced tag.
+            LAST_TAG=$(git tag --list 'v*-enhanced' --sort=-version:refname | head -1)
+            [ -z "$LAST_TAG" ] && LAST_TAG="v1.0.0-enhanced"
+            BASE="${LAST_TAG#v}"
+            BASE="${BASE%-enhanced}"
+            MAJOR=$(echo "$BASE" | cut -d. -f1)
+            MINOR=$(echo "$BASE" | cut -d. -f2)
+            PATCH=$(echo "$BASE" | cut -d. -f3)
+            VERSION="${MAJOR}.${MINOR}.$((PATCH + 1))"
           fi
-          # Strip any leading "v" the operator may have typed.
-          VERSION="${VERSION#v}"
-          # Validate: semver-ish (digits and dots only, must start with digit).
-          if ! [[ "$VERSION" =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
-            echo "::error::Invalid version: '$VERSION' (expected digits-and-dots like 0.4.1)"
+          # Validate: semver (digits and dots only, must start with digit).
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Invalid version: '$VERSION' (expected semver like 1.3.1)"
             exit 1
           fi
+          TAG="v${VERSION}-enhanced"
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-          echo "Building release: v${VERSION}"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "Building release: ${TAG}"
 
       - name: Set up Go
         uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
@@ -91,40 +101,36 @@ jobs:
       - name: Check tag does not already exist
         id: check_tag
         env:
-          VERSION: ${{ steps.version.outputs.version }}
+          TAG: ${{ steps.version.outputs.tag }}
         run: |
           set -euo pipefail
-          if git rev-parse "v${VERSION}" >/dev/null 2>&1; then
+          if git rev-parse "${TAG}" >/dev/null 2>&1; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
-            echo "::error::Tag v${VERSION} already exists."
+            echo "::error::Tag ${TAG} already exists."
             exit 1
           fi
           echo "exists=false" >> "$GITHUB_OUTPUT"
 
       - name: Create version tag
         env:
-          VERSION: ${{ steps.version.outputs.version }}
+          TAG: ${{ steps.version.outputs.tag }}
         run: |
           set -euo pipefail
-          git tag "v${VERSION}"
-          git push origin "v${VERSION}"
-
-      - name: Wait for build to start
-        run: sleep 5
+          git tag "${TAG}"
+          git push origin "${TAG}"
 
       - name: Check release status
         env:
-          VERSION: ${{ steps.version.outputs.version }}
+          TAG: ${{ steps.version.outputs.tag }}
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          echo "Release tag v${VERSION} pushed"
+          echo "Release tag ${TAG} pushed"
           echo "GoReleaser will automatically build and publish the release"
           echo "Check Actions tab: https://github.com/${REPO}/actions"
 
   goreleaser:
     name: GoReleaser
-    needs: release
     runs-on: ubuntu-latest
     permissions:
       contents: write

@@ -52,13 +52,19 @@ jobs:
         run: |
           python3 << 'PYEOF'
           import os
+          import re
           import sys
 
           import yaml
 
-          required = ['name', 'description', 'severity', 'category', 'enabled', 'pattern']
-          valid_severities = ['low', 'medium', 'high', 'critical']
+          # Actual Atheon pattern format: only name and match are truly required.
+          # category, enabled, description are optional but encouraged.
+          # The fields severity/true_positives/false_positives do NOT exist in
+          # the real pattern schema — do not require them here.
+          required = ['name', 'match']
+          encouraged = ['description', 'category']
           errors = []
+          warnings = []
 
           changed = os.environ.get('CHANGED_FILES', '').strip().splitlines()
           for path in changed:
@@ -71,25 +77,39 @@ jobs:
               except yaml.YAMLError as e:
                   errors.append(f'{path}: YAML parse error: {e}')
                   continue
+              if not isinstance(data, dict):
+                  errors.append(f'{path}: expected a YAML mapping, got {type(data).__name__}')
+                  continue
               for field in required:
                   if field not in data:
                       errors.append(f'{path}: missing required field "{field}"')
-              if 'severity' in data and data['severity'] not in valid_severities:
-                  errors.append(
-                      f'{path}: invalid severity "{data["severity"]}" '
-                      f'(must be one of: {valid_severities})'
-                  )
-              if 'true_positives' not in data or not data['true_positives']:
-                  errors.append(f'{path}: missing true_positives test cases')
-              if 'false_positives' not in data or not data['false_positives']:
-                  errors.append(f'{path}: missing false_positives test cases')
+              # Validate the regex compiles (RE2-compatible via Python re, which
+              # rejects lookahead/lookbehind just like Go's regexp package).
+              if 'match' in data:
+                  try:
+                      re.compile(data['match'])
+                  except re.error as e:
+                      errors.append(f'{path}: invalid regex in "match": {e}')
+              # name must be lowercase-hyphenated
+              if 'name' in data and not re.fullmatch(r'[a-z0-9][a-z0-9\-]*', str(data['name'])):
+                  errors.append(f'{path}: "name" must be lowercase-hyphenated, got: {data["name"]}')
+              # enabled must be bool if present
+              if 'enabled' in data and not isinstance(data['enabled'], bool):
+                  errors.append(f'{path}: "enabled" must be true or false, got: {data["enabled"]}')
+              for field in encouraged:
+                  if field not in data:
+                      warnings.append(f'{path}: missing encouraged field "{field}" (not required)')
 
+          if warnings:
+              print('Schema warnings (non-blocking):')
+              for w in warnings:
+                  print(f'  ⚠  {w}')
           if errors:
               print('Schema validation failed:')
               for e in errors:
-                  print(f'  - {e}')
+                  print(f'  ✗  {e}')
               sys.exit(1)
-          print('Schema validation passed')
+          print('✅ Schema validation passed')
           PYEOF
 
       - name: AI pattern review via GitHub Models

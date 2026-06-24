@@ -12,14 +12,23 @@ jobs:
   auto-merge:
     name: Enable Auto-Merge
     runs-on: ubuntu-latest
-    if: github.event.pull_request.draft == false
+    # Only same-repo PRs (e.g. dependabot, owner branches). Fork PRs must
+    # go through explicit human review — auto-merge should never fire on
+    # untrusted contributor code without a manual approval step.
+    if: >
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.head.repo.full_name == github.repository
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Bind PR-controlled values to env so they are never interpolated
+      # into the shell command body via ${{ }}.
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      REPO: ${{ github.repository }}
     steps:
       - name: Enable auto-merge
         run: |
-          gh pr merge ${{ github.event.pull_request.number }} \
-            --repo ${{ github.repository }} \
+          gh pr merge "${PR_NUMBER}" \
+            --repo "${REPO}" \
             --squash \
             --delete-branch \
             --auto
@@ -30,9 +39,11 @@ jobs:
     if: github.event.pull_request.mergeable == false
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      REPO: ${{ github.repository }}
     steps:
       - name: Comment on conflicting PR
         run: |
-          gh pr comment ${{ github.event.pull_request.number }} \
-            --repo ${{ github.repository }} \
+          gh pr comment "${PR_NUMBER}" \
+            --repo "${REPO}" \
             --body "This PR has merge conflicts. Please resolve them before merging."

@@ -1,7 +1,7 @@
 # Owner Checklist & Recommendations
 
 Comprehensive list of setup tasks, pending work, and recommendations for `aliasfoxkde/Atheon-Enhanced`.
-Last updated: 2026-06-23. See also: [docs/integrations/mcp.md](integrations/mcp.md) | [docs/integrations/github-agents.md](integrations/github-agents.md) | [docs/integrations/pre-commit.md](integrations/pre-commit.md) | [docs/patterns/contributing-patterns.md](patterns/contributing-patterns.md)
+Last updated: 2026-06-24. See also: [docs/integrations/mcp.md](integrations/mcp.md) | [docs/integrations/github-agents.md](integrations/github-agents.md) | [docs/integrations/pre-commit.md](integrations/pre-commit.md) | [docs/patterns/contributing-patterns.md](patterns/contributing-patterns.md)
 
 ---
 
@@ -144,12 +144,12 @@ description: Pattern-matching engine for secrets, PII, and code quality
 
 **Should you set it up? Yes — one environment: `release`.**
 
-The scheduled release workflow (`.github/workflows/scheduled-release.yml`) currently runs on the 10th and 21st with no human gate. A protection rule prevents accidental automated releases if a workflow bug fires early.
+The release workflow (`.github/workflows/release.yml`) runs on a schedule (10th and 21st) and on tag push with no human gate. A protection rule prevents accidental automated releases if a workflow bug fires early.
 
 **Setup:**
 1. Settings → Environments → New environment → name it `release`
 2. Under **Deployment protection rules**, enable **Required reviewers** → add yourself (`aliasfoxkde`)
-3. In `.github/workflows/scheduled-release.yml`, add `environment: release` to the release job
+3. In `.github/workflows/release.yml`, add `environment: release` to the `release` job
 
 That's it — every release will pause for your approval before creating the GitHub release tag.
 
@@ -235,7 +235,7 @@ Cross-reference against any branch you plan to delete. If the branch name appear
 
 ### ✅ goreleaser — configured
 
-`.goreleaser.yml` is at the repo root. On each `v*-enhanced` tag push, `publish.yml` invokes goreleaser to produce signed, checksummed binaries for linux/mac/windows (amd64 + arm64). Both `atheon` and `atheon-mcp` are included.
+`.goreleaser.yml` is at the repo root. On each `v*-enhanced` tag push, the `goreleaser` job in `release.yml` produces signed, checksummed binaries for linux/mac/windows (amd64 + arm64). Both `atheon` and `atheon-mcp` are included.
 
 **Note:** The homebrew and scoop taps referenced in `.goreleaser.yml` require `GH_PAT` secret and the `aliasfoxkde/homebrew-Atheon-Enhanced` / `aliasfoxkde/scoop-Atheon-Enhanced` repos to exist. Create those repos (they can be empty initially) and add a PAT with repo write access as the `GH_PAT` secret. Until then, goreleaser will build binaries but skip tap updates.
 
@@ -257,20 +257,22 @@ All workflow files now use `${{ vars.GO_VERSION || '1.23' }}` and `${{ vars.COVE
 
 ### ✅ Release version scheme — fixed
 
-`scheduled-release.yml` now auto-increments the patch version from the last `v*-enhanced` tag (e.g., `v1.3.0-enhanced` → `v1.3.1-enhanced`) instead of the previous broken `0.4.$(date +%y%m%d)` scheme.
+`release.yml` auto-increments the patch version from the last `v*-enhanced` tag (e.g., `v1.3.0-enhanced` → `v1.3.1-enhanced`). The previous date-based scheme (`0.YY.MM.DD`) has been removed.
 
 ### ✅ Release environment gate — configured
 
-The `release` job in `scheduled-release.yml` now has `environment: release`. Create the environment in GitHub Settings with yourself as required reviewer so each release pauses for approval.
+Add `environment: release` to the `release` job in `.github/workflows/release.yml`. Create the environment in GitHub Settings with yourself as required reviewer so each release pauses for approval.
 
 **Settings → Environments → New environment → `release` → Required reviewers → add `aliasfoxkde`**
 
 ### ✅ Community pattern review — automated
 
-`.github/workflows/community-pattern-review.yml` runs on PRs that touch `community/**/*.yaml`. It:
-1. Validates YAML schema (required fields, severity values)
-2. Calls GitHub Models API (GPT-4o-mini, free with `GITHUB_TOKEN`) to review regex breadth and test case coverage
+`.github/workflows/community-pattern-review.yml` runs on same-repo PRs that touch `community/**/*.yaml`. It:
+1. Validates YAML schema (`name` + `match` required; `description`/`category` encouraged; regex compilation checked)
+2. Calls GitHub Models API (GPT-4o-mini, free with `GITHUB_TOKEN`) to review regex breadth
 3. Posts a review comment on the PR
+
+Security: fork PRs are blocked by `if: github.event.pull_request.head.repo.full_name == github.repository`; all PR-controlled filenames flow through `env:` (not `${{ }}` inside `run:` blocks).
 
 ### ✅ Copilot instructions — created
 

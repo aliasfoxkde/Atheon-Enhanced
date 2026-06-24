@@ -123,4 +123,4 @@ if [ -n "$STAGED_FILES" ]; then
 fi
 ```
 
-The self-scan CI job (`.github/workflows/quality-assurance.yml`) already does this on every push. The local hook adds an earlier catch point.
+The self-scan CI job (`.github/workflows/ci.yml`, `secrets-scan` step in the integration job) already does this on every push. The local hook adds an earlier catch point.

@@ -328,8 +328,12 @@ jobs:
     permissions:
       # EnricoMi/publish-unit-test-result-action creates check runs via
       # the workflow's GITHUB_TOKEN; without checks:write it returns 403.
+      # It also posts an issue comment on the PR (comment_mode: always is the
+      # action's default), which requires issues:write — without it the comment
+      # POST returns 403 from /repos/.../issues/.../comments.
       contents: read
       checks: write
+      issues: write
 
     steps:
       - name: Checkout code

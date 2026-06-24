@@ -59,7 +59,12 @@ func Example_core_Categories() {
 }
 
 func Example_core_EnablePattern() {
-	ok := core.DisablePattern("credit-card")
+	// Examples run in the same process as tests, so any pattern-state
+	// mutation leaks into subsequent tests. Restore the enabled state on
+	// exit (and pick a non-existent name so even the disable call is
+	// side-effect-free).
+	ok := core.DisablePattern("credit-card-not-registered")
+	defer core.EnablePattern("credit-card")
 	fmt.Printf("%T", ok)
 	// Output: bool
 }

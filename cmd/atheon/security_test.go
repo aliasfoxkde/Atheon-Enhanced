@@ -100,8 +100,11 @@ func TestFileAccessSecurity(t *testing.T) {
 
 // TestMemorySafety tests memory safety and resource limits
 func TestMemorySafety(t *testing.T) {
-	// Test with large inputs to ensure no memory issues (reduced size for CI)
-	largeInput := string(make([]byte, 100*1024)) // 100KB input (more reasonable for CI)
+	// Test with large inputs to ensure no memory issues (reduced size for CI).
+	// 32KB stays well above any single line a scanner would reasonably see in
+	// practice while keeping the combined-regex pass under the 10s budget
+	// even with the race detector enabled (which inflates regex cost ~10x).
+	largeInput := string(make([]byte, 32*1024))
 
 	done := make(chan bool)
 	go func() {

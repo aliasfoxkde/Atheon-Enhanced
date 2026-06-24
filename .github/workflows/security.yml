@@ -1,0 +1,188 @@
+name: Security
+
+# Consolidated security workflow: CodeQL, Atheon self-scan, govulncheck.
+# Replaces the previous (separate) codeql.yml, security-scanning.yml, and self-scan.yml.
+# Runs on PR, push to main, weekly schedule, and manual dispatch.
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 6 * * 1'  # Weekly Monday 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  security-events: write
+  statuses: read
+  pull-requests: read
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────
+  # CodeQL — semantic security analysis
+  # ─────────────────────────────────────────────────────────────────────
+  codeql:
+    name: CodeQL (Go)
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+      actions: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@dd903d2e4f5405488e5ef1422510ee31c8b32357 # v3.36.2
+        with:
+          languages: go
+          queries: security-extended
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@dd903d2e4f5405488e5ef1422510ee31c8b32357 # v3.36.2
+        with:
+          category: "/language:go"
+          upload: true
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Atheon self-scan — secrets and PII blocking in production source
+  # ─────────────────────────────────────────────────────────────────────
+  self-scan-secrets:
+    name: Self-Scan (secrets — blocking)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Set up Go
+        uses: actions/setup-go@40f1582b2485089de7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version: '1.24'
+          cache: true
+
+      - name: Build Atheon
+        run: go build -v -o atheon ./cmd/atheon
+
+      - name: Scan production source
+        run: |
+          # Filter: only production source. Tests, testdata, community YAML, and
+          # GitHub-managed paths are excluded.
+          ./atheon --json --categories=secrets,pii . \
+            | jq '[.[] | select((
+                (.file | test("_test\\.go$"))              or
+                (.file | test("/testdata/"))                or
+                (.file | test("^community/"))               or
+                (.file | test("^\\.github/wiki/"))          or
+                (.file | test("^\\.github/ISSUE_TEMPLATE/"))
+              ) | not)]' > scan-secrets.json
+
+          COUNT=$(jq 'length' scan-secrets.json)
+          echo "Findings in production source: ${COUNT}"
+
+          if [ "${COUNT}" -gt 0 ]; then
+            echo "❌ Found ${COUNT} secrets/PII finding(s) in production source:"
+            jq -r '.[] | "  [\(.pattern)] \(.file):\(.line)"' scan-secrets.json
+            exit 1
+          fi
+          echo "✅ No secrets or PII in production source"
+
+      - name: Upload scan results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: atheon-scan-secrets
+          path: scan-secrets.json
+          retention-days: 30
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Atheon self-scan — code-quality (informational)
+  # ─────────────────────────────────────────────────────────────────────
+  self-scan-quality:
+    name: Self-Scan (code-quality — informational)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Set up Go
+        uses: actions/setup-go@40f1582b2485089de7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version: '1.24'
+          cache: true
+
+      - name: Build Atheon
+        run: go build -v -o atheon ./cmd/atheon
+
+      - name: Scan production source
+        run: |
+          ./atheon --json --categories=code-quality,devops,ai-detection . \
+            | jq '[.[] | select((
+                (.file | test("_test\\.go$"))              or
+                (.file | test("/testdata/"))                or
+                (.file | test("^community/"))               or
+                (.file | test("^\\.github/wiki/"))          or
+                (.file | test("^\\.github/ISSUE_TEMPLATE/"))
+              ) | not)]' > scan-quality.json
+
+          COUNT=$(jq 'length' scan-quality.json)
+          echo "Code-quality findings in production source: ${COUNT}"
+
+          if [ "${COUNT}" -gt 0 ]; then
+            echo "ℹ️ ${COUNT} code-quality finding(s) (informational):"
+            jq -r '.[] | "  [\(.pattern)] \(.file):\(.line)"' scan-quality.json | head -20
+          else
+            echo "✅ No code-quality findings"
+          fi
+
+      - name: Upload scan results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: atheon-scan-quality
+          path: scan-quality.json
+          retention-days: 30
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Go vulnerability check
+  # ─────────────────────────────────────────────────────────────────────
+  govulncheck:
+    name: Go Vulnerability Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Set up Go
+        uses: actions/setup-go@40f1582b2485089de7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version: '1.23'
+          cache: true
+
+      - name: Run govulncheck
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
+
+      - name: Check for outdated dependencies
+        run: |
+          go list -u -m all | tee outdated.txt
+          if [ -s outdated.txt ]; then
+            echo "⚠️ Outdated dependencies detected (see outdated.txt)"
+          else
+            echo "✅ All dependencies are up to date"
+          fi
+
+      - name: Upload outdated dependencies list
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: outdated-deps
+          path: outdated.txt
+          retention-days: 7

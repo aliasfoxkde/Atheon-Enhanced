@@ -5,7 +5,7 @@
 # live in `linters-settings` and per-file overrides in `issues`.
 #
 # To run locally: `golangci-lint run ./...`
-# CI runs this config via .github/workflows/comprehensive-ci.yml.
+# CI runs this config via .github/workflows/ci.yml.
 linters:
   disable-all: true
   enable:

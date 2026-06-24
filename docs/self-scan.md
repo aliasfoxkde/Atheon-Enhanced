@@ -11,7 +11,7 @@ integration test — real patterns against real code, not synthetic fixtures.
 
 ### CI Workflow
 
-The `Atheon Self-Scan` workflow (`.github/workflows/self-scan.yml`) runs two scans
+The `Security` workflow (`.github/workflows/security.yml`) runs two self-scans
 on every push to `main` and every PR:
 
 | Scan | Categories | Behaviour |

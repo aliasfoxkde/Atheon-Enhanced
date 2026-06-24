@@ -8,7 +8,7 @@
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Patterns](https://img.shields.io/badge/patterns-255-blueviolet)
 ![Categories](https://img.shields.io/badge/categories-19-orange)
-![CI](https://github.com/aliasfoxkde/Atheon-Enhanced/actions/workflows/comprehensive-ci.yml/badge.svg)
+![CI](https://github.com/aliasfoxkde/Atheon-Enhanced/actions/workflows/ci.yml/badge.svg)
 [![codecov](https://codecov.io/gh/aliasfoxkde/Atheon-Enhanced/graph/badge.svg)](https://codecov.io/gh/aliasfoxkde/Atheon-Enhanced)
 ![Stars](https://img.shields.io/github/stars/aliasfoxkde/Atheon-Enhanced?style=social)
 

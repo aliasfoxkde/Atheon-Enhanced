@@ -1,0 +1,7 @@
+theme: jekyll-theme-cayman
+title: Atheon-Enhanced
+description: Pattern-matching engine for secrets, PII, and code quality — 255+ patterns, SARIF output, MCP server
+show_downloads: false
+github:
+  zip_url: false
+  tar_url: false

@@ -1,0 +1,151 @@
+name: Dev Testing (Relaxed Gates)
+
+on:
+  push:
+    branches: [ dev/testing ]
+  pull_request:
+    branches: [ dev/testing ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  dev-tests:
+    name: Dev Tests (Coverage ≥50%)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Set up Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version: "${{ vars.GO_VERSION || '1.23' }}"
+          cache: true
+
+      - name: Run tests (verbose, no race — faster iteration)
+        run: go test ./... -p 1 -v -coverprofile=coverage.out -timeout 15m 2>&1
+        continue-on-error: true
+
+      - name: Coverage check (relaxed — 50% threshold)
+        run: |
+          if [ ! -f coverage.out ]; then
+            echo "⚠️  No coverage file — tests may have failed"
+            exit 0
+          fi
+          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//' | cut -d. -f1)
+          echo "Coverage: $COVERAGE%"
+          if [ "$COVERAGE" -lt 50 ]; then
+            echo "❌ Coverage $COVERAGE% below dev threshold of 50%"
+            exit 1
+          fi
+          echo "✅ Coverage $COVERAGE% (dev threshold: 50%)"
+        shell: bash
+
+  dev-lint:
+    name: Dev Lint (Informational)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Set up Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version: "${{ vars.GO_VERSION || '1.23' }}"
+          cache: true
+
+      - name: Go vet
+        run: go vet ./...
+        continue-on-error: true
+
+      - name: golangci-lint (informational)
+        uses: golangci/golangci-lint-action@55c2c1448f86e01eaae002a5a3a9624417608d84 # v6.5.2
+        with:
+          version: v1.64.8
+          args: --timeout=5m
+        continue-on-error: true
+
+  dev-self-scan:
+    name: Dev Self-Scan (All Categories, Informational)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Set up Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version: "${{ vars.GO_VERSION || '1.23' }}"
+          cache: true
+
+      - name: Build Atheon
+        run: go build -o atheon ./cmd/atheon
+
+      - name: Self-scan (all categories — informational only)
+        run: |
+          echo "=== Atheon self-scan: all categories (informational) ==="
+          ./atheon --json --categories=secrets,pii,code-quality,devops,ai-detection . \
+            | jq '[.[] | select((
+                (.file | test("_test\\.go$"))              or
+                (.file | test("/testdata/"))                or
+                (.file | test("^community/"))               or
+                (.file | test("^\\.github/wiki/"))          or
+                (.file | test("^\\.github/ISSUE_TEMPLATE/"))
+              ) | not)]' > dev-scan.json
+
+          COUNT=$(jq 'length' dev-scan.json)
+          echo "Findings in production source: $COUNT"
+
+          if [ "$COUNT" -gt 0 ]; then
+            echo "--- Findings (informational) ---"
+            jq -r '.[] | "\(.file):\(.line)  [\(.pattern)]  \(.content)"' dev-scan.json
+            echo ""
+            echo "ℹ️  $COUNT findings reported (informational only — not blocking on dev/testing)"
+          else
+            echo "✅ No findings in production source"
+          fi
+        continue-on-error: true
+
+  dev-build-matrix:
+    name: Dev Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Set up Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version: "${{ vars.GO_VERSION || '1.23' }}"
+          cache: true
+
+      - name: Build binaries
+        run: |
+          go build -o atheon${{ runner.os == 'Windows' && '.exe' || '' }} ./cmd/atheon
+          go build -o atheon-mcp${{ runner.os == 'Windows' && '.exe' || '' }} ./cmd/mcp
+        continue-on-error: true
+
+      - name: Smoke test (unix)
+        if: runner.os != 'Windows'
+        run: ./atheon --help && ./atheon list categories
+        continue-on-error: true
+
+      - name: Smoke test (windows)
+        if: runner.os == 'Windows'
+        run: .\atheon.exe --help && .\atheon.exe list categories
+        shell: pwsh
+        continue-on-error: true

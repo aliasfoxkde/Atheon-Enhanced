@@ -3,6 +3,13 @@ name: Release
 # Consolidated release workflow: tag-based GoReleaser + scheduled release
 # on the 10th and 21st of each month. Replaces publish.yml and
 # scheduled-release.yml.
+#
+# SECURITY NOTE: `workflow_dispatch.inputs.version` is operator-controlled but
+# still flows through shell — pass it via `env:` (not direct `${{ inputs.x }}`
+# inside a `run:` block) so an unexpected shell metacharacter is treated as
+# data, not code. Coderabbit review CRIT-3 on PR #55 documented the same risk
+# against the pre-consolidation scheduled-release.yml; the consolidated version
+# inherits it, so the fix is applied here.
 
 on:
   push:
@@ -13,7 +20,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version override (e.g., 0.4.1)'
+        description: 'Version override (e.g., 0.4.1). Leave blank to auto-derive from date.'
         required: false
         type: string
 
@@ -44,12 +51,18 @@ jobs:
 
       - name: Determine version
         id: version
+        env:
+          # CRIT-3 fix: bind workflow_dispatch inputs to env so the value is
+          # passed as a shell variable rather than being interpolated into
+          # the script body via `${{ }}`.
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
-          if [ -n "${{ inputs.version }}" ]; then
-            VERSION="${{ inputs.version }}"
+          set -euo pipefail
+
+          if [ -n "${INPUT_VERSION:-}" ]; then
+            VERSION="${INPUT_VERSION}"
           else
-            # Calculate next version based on date: 0.YY.MM.DD format.
-            # Cleaner than the prior `0.4.YYMMDD` format.
+            # Auto-derive from date in 0.YY.MM.DD format.
             DATE_VERSION="0.$(date +%y).$(date +%m).$(date +%d)"
             VERSION="${DATE_VERSION}"
           fi
@@ -60,7 +73,7 @@ jobs:
             echo "::error::Invalid version: '$VERSION' (expected digits-and-dots like 0.4.1)"
             exit 1
           fi
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
           echo "Building release: v${VERSION}"
 
       - name: Set up Go
@@ -77,27 +90,37 @@ jobs:
 
       - name: Check tag does not already exist
         id: check_tag
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          if git rev-parse "v${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-            echo "::error::Tag v${{ steps.version.outputs.version }} already exists."
+          set -euo pipefail
+          if git rev-parse "v${VERSION}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "::error::Tag v${VERSION} already exists."
             exit 1
           fi
-          echo "exists=false" >> $GITHUB_OUTPUT
+          echo "exists=false" >> "$GITHUB_OUTPUT"
 
       - name: Create version tag
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          git tag "v${{ steps.version.outputs.version }}"
-          git push origin "v${{ steps.version.outputs.version }}"
+          set -euo pipefail
+          git tag "v${VERSION}"
+          git push origin "v${VERSION}"
 
       - name: Wait for build to start
         run: sleep 5
 
       - name: Check release status
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          REPO: ${{ github.repository }}
         run: |
-          echo "Release tag v${{ steps.version.outputs.version }} pushed"
+          set -euo pipefail
+          echo "Release tag v${VERSION} pushed"
           echo "GoReleaser will automatically build and publish the release"
-          echo "Check Actions tab: https://github.com/${{ github.repository }}/actions"
+          echo "Check Actions tab: https://github.com/${REPO}/actions"
 
   goreleaser:
     name: GoReleaser

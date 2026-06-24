@@ -1,0 +1,162 @@
+name: Community Pattern Review
+
+# SECURITY NOTE: This workflow processes attacker-controlled filenames from PR
+# changes. All such values MUST flow through `env:` and be referenced via shell
+# variables — never via `${{ }}` inside a `run:` block. Direct template
+# expansion of filenames into Python source or shell commands allows arbitrary
+# code execution on the runner. See Coderabbit review threads CRIT-1 and CRIT-2
+# on PR #55 for the original findings.
+
+on:
+  pull_request:
+    paths:
+      - 'community/**/*.yaml'
+      - 'community/**/*.yml'
+
+# Fork PRs receive a read-only GITHUB_TOKEN regardless of declared permissions,
+# so the AI review step (which calls `gh pr comment`) is a no-op for forks.
+# Same-repo PRs retain full write access.
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  ai-pattern-review:
+    runs-on: ubuntu-latest
+    # Gate to the canonical repo so a fork of Atheon-Enhanced cannot trigger
+    # this workflow against a malicious community/ directory.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad717f7f0a2cdec # v4.3.1
+
+      - name: Get changed pattern files
+        id: changed
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          FILES=$(git diff --name-only "origin/${BASE_REF}...HEAD" -- 'community/**/*.yaml' 'community/**/*.yml' | head -10)
+          {
+            echo "files<<EOF"
+            echo "$FILES"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Validate YAML schema
+        env:
+          # CRIT-1 fix: filenames from the PR must NEVER be expanded via ${{ }}
+          # into the Python source. Pass them through env so the heredoc contains
+          # only the controlled script.
+          CHANGED_FILES: ${{ steps.changed.outputs.files }}
+        run: |
+          python3 << 'PYEOF'
+          import os
+          import sys
+
+          import yaml
+
+          required = ['name', 'description', 'severity', 'category', 'enabled', 'pattern']
+          valid_severities = ['low', 'medium', 'high', 'critical']
+          errors = []
+
+          changed = os.environ.get('CHANGED_FILES', '').strip().splitlines()
+          for path in changed:
+              path = path.strip()
+              if not path or not os.path.exists(path):
+                  continue
+              try:
+                  with open(path) as f:
+                      data = yaml.safe_load(f)
+              except yaml.YAMLError as e:
+                  errors.append(f'{path}: YAML parse error: {e}')
+                  continue
+              for field in required:
+                  if field not in data:
+                      errors.append(f'{path}: missing required field "{field}"')
+              if 'severity' in data and data['severity'] not in valid_severities:
+                  errors.append(
+                      f'{path}: invalid severity "{data["severity"]}" '
+                      f'(must be one of: {valid_severities})'
+                  )
+              if 'true_positives' not in data or not data['true_positives']:
+                  errors.append(f'{path}: missing true_positives test cases')
+              if 'false_positives' not in data or not data['false_positives']:
+                  errors.append(f'{path}: missing false_positives test cases')
+
+          if errors:
+              print('Schema validation failed:')
+              for e in errors:
+                  print(f'  - {e}')
+              sys.exit(1)
+          print('Schema validation passed')
+          PYEOF
+
+      - name: AI pattern review via GitHub Models
+        if: steps.changed.outputs.files != ''
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # CRIT-2 fix: bind PR-controlled filenames to env so they are never
+          # re-parsed as shell or Python code. `set -euo pipefail` then makes
+          # the script fail closed on any unexpected error.
+          FILES: ${{ steps.changed.outputs.files }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${FILES}" ]; then
+            echo "No pattern files to review"
+            exit 0
+          fi
+
+          REVIEW_BODY=""
+
+          while IFS= read -r FILE; do
+            # Trim CR/LF/IFS whitespace; skip blank lines and missing files.
+            FILE="$(echo "$FILE" | xargs)"
+            [ -z "${FILE}" ] && continue
+            [ ! -f "${FILE}" ] && continue
+
+            CONTENT="$(cat "${FILE}")"
+
+            # Build the JSON payload with jq --arg so $content is escaped as a
+            # JSON string, not concatenated into shell.
+            PAYLOAD="$(jq -n \
+              --arg system 'You are reviewing an Atheon pattern YAML file for a security scanner. Analyze it concisely (3-5 sentences max). Check: (1) Is the regex overly broad — would it match common variable names or identifiers that are NOT the target? (2) Do the true_positives cover realistic examples? (3) Do the false_positives cover common safe patterns? (4) Is the severity appropriate for the detection type? Reply with: CONCERNS (if any issues) or LGTM (if the pattern looks solid), followed by your brief analysis.' \
+              --arg pattern_file "${FILE}" \
+              --arg content "${CONTENT}" \
+              '{model: "gpt-4o-mini", messages: [{role: "system", content: $system}, {role: "user", content: ($pattern_file + "\n\n" + $content)}], max_tokens: 300}')"
+
+            RESPONSE="$(curl -sf \
+              "https://models.inference.ai.azure.com/chat/completions" \
+              -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "${PAYLOAD}" \
+              2>/dev/null || echo '{"choices":[{"message":{"content":"GitHub Models API unavailable — review skipped"}}]}')"
+
+            ANALYSIS="$(echo "${RESPONSE}" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['choices'][0]['message']['content'])" 2>/dev/null || echo "Parse error")"
+
+            REVIEW_BODY="${REVIEW_BODY}
+          ### \`${FILE}\`
+          ${ANALYSIS}
+          "
+          done <<< "${FILES}"
+
+          if [ -z "${REVIEW_BODY}" ]; then
+            echo "No pattern files to review"
+            exit 0
+          fi
+
+          COMMENT="## AI Pattern Review
+
+          Automated review of changed community patterns using GitHub Models (GPT-4o-mini). This is informational — human review is still required.
+
+          ${REVIEW_BODY}
+
+          ---
+          *Generated by [community-pattern-review.yml](.github/workflows/community-pattern-review.yml) · Model: gpt-4o-mini via GitHub Models API*"
+
+          gh pr comment "${PR_NUMBER}" \
+            --repo "${REPO}" \
+            --body "${COMMENT}"

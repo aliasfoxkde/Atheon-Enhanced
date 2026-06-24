@@ -53,14 +53,20 @@ jobs:
           go test ./... -p 1 -timeout 15m -coverprofile=coverage.out
 
       - name: Check coverage threshold
+        env:
+          # Coderabbit MAJ-1 (PR #55): parameterize the threshold so an owner
+          # raising vars.COVERAGE_THRESHOLD doesn't leave the gate stuck at 70.
+          # `vars.X` is read-only at the repo level for forks, so the default
+          # keeps the gate meaningful without external setup.
+          COVERAGE_THRESHOLD: ${{ vars.COVERAGE_THRESHOLD || '70' }}
         run: |
           COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//' | cut -d. -f1)
           echo "Coverage: ${COVERAGE}%"
-          if [ "${COVERAGE}" -lt 70 ]; then
-            echo "❌ Coverage ${COVERAGE}% is below 70% threshold"
+          if [ "${COVERAGE}" -lt "${COVERAGE_THRESHOLD}" ]; then
+            echo "❌ Coverage ${COVERAGE}% is below ${COVERAGE_THRESHOLD}% threshold"
             exit 1
           fi
-          echo "✅ Coverage ${COVERAGE}% meets threshold"
+          echo "✅ Coverage ${COVERAGE}% meets ${COVERAGE_THRESHOLD}% threshold"
 
   # ─────────────────────────────────────────────────────────────────────
   # Static analysis — go vet, golangci-lint, staticcheck, gofmt

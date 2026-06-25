@@ -29,6 +29,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          # `git diff origin/${BASE_REF}...HEAD` below needs the merge-base
+          # ref to resolve. Default shallow checkout (depth=1) leaves only
+          # the PR commit; origin/${BASE_REF} is missing and the step
+          # dies with `fatal: bad revision`. fetch-depth: 0 fetches full
+          # history so the three-dot diff works.
+          fetch-depth: 0
 
       - name: Get changed pattern files
         id: changed

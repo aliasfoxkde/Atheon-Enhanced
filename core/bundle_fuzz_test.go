@@ -42,19 +42,31 @@ func FuzzParseBundle(f *testing.F) {
 
 // snapshotState captures the mutable globals loadBundle touches, so the
 // fuzzer can restore them after each run. Keeps each fuzz iteration
-// hermetic without depending on init() running again.
+// hermetic without depending on init() running again. The captured pointers
+// are untouched by loadBundle (which allocates fresh pointers per call), so
+// they're safe to put back as-is.
 func snapshotState() ([]Pattern, []*bundlePattern) {
 	regs := append([]Pattern(nil), registry...)
 	patterns := append([]*bundlePattern(nil), allPatterns...)
 	return regs, patterns
 }
 
-func restoreState(regs []Pattern, _ []*bundlePattern) {
+// restoreState puts the package back to the state captured by snapshotState.
+// We re-register the saved registry verbatim AND restore allPatterns from the
+// captured slice — both are needed because other tests and the example
+// subprocess rely on allPatterns being populated for Categories() etc.
+// Setting allPatterns = nil (the previous, broken behaviour) left subsequent
+// tests seeing "no categories" and broke Example_core_Categories.
+func restoreState(regs []Pattern, savedPatterns []*bundlePattern) {
 	registry = nil
+	allPatterns = nil
+
+	// Restore bundle patterns first so allPatterns and registry agree.
+	// savedRegs already contains these pointers; re-registering is a no-op
+	// append, so we rely on savedPatterns being authoritative for the
+	// bundle slice and savedRegs being authoritative for the rest.
+	allPatterns = append(allPatterns, savedPatterns...)
 	for _, p := range regs {
 		Register(p)
 	}
-	// allPatterns gets rebuilt from registry on next loadBundle call, so we
-	// don't need to restore it explicitly — just nil it out.
-	allPatterns = nil
 }

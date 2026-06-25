@@ -6,9 +6,11 @@
 // compiles and the test is discoverable via `go test -list`.
 //
 // What's being asserted when PR #95 ships:
-//   - files <= maxBytes: full content returned
+//   - files < maxBytes: full content returned
+//   - files == maxBytes: full content returned (boundary inclusive)
 //   - files >  maxBytes: ErrFileTooLarge returned, no content read
-//   - files == 0 or unreadable: error returned, not silently dropped
+//   - files == 0: empty content returned, no error (zero is a valid size)
+//   - files unreadable (perm denied): read error surfaced, not silently dropped
 //
 // Keep this file's helpers (writeFileWithSize) — PR #95's tests will reuse
 // them.
@@ -27,9 +29,10 @@ import (
 // production helper exists.
 var ErrFileTooLarge = errors.New("core: file exceeds configured max bytes")
 
-// writeFileWithSize creates a sparse file of exactly `size` bytes at the
-// given path. Uses Seek+Truncate so the on-disk allocation matches the
-// requested size without actually writing that much data.
+// writeFileWithSize creates a file of exactly `size` bytes at the given
+// path. Uses Truncate so it works for size==0 (Seek(size-1) would fail for
+// size==0 because there's no negative offset to seek to in a fresh file).
+// Sparse-friendly: no actual data is written for non-zero sizes.
 func writeFileWithSize(t *testing.T, path string, size int64) {
 	t.Helper()
 	f, err := os.Create(path)
@@ -37,11 +40,8 @@ func writeFileWithSize(t *testing.T, path string, size int64) {
 		t.Fatalf("create %s: %v", path, err)
 	}
 	defer f.Close()
-	if _, err := f.Seek(size-1, 0); err != nil {
-		t.Fatalf("seek %s: %v", path, err)
-	}
-	if _, err := f.Write([]byte{0}); err != nil {
-		t.Fatalf("write byte %s: %v", path, err)
+	if err := f.Truncate(size); err != nil {
+		t.Fatalf("truncate %s to %d: %v", path, size, err)
 	}
 }
 

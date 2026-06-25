@@ -116,7 +116,7 @@ func TestCategoryCoverage(t *testing.T) {
 	}
 
 	msg := "categories without a detection fixture"
-	if os.Getenv("ATHEON_ALLOW_PARTIAL_COVERAGE") != "" {
+	if os.Getenv("ATHEON_ALLOW_PARTIAL_COVERAGE") == "1" {
 		t.Logf("%s (suppressed via ATHEON_ALLOW_PARTIAL_COVERAGE): %v", msg, missing)
 		return
 	}

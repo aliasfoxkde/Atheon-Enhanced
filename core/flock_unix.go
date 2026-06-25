@@ -19,23 +19,29 @@ import (
 // rename in atomicWriteFile, it gives us read-modify-write atomicity for
 // the pattern_state.json file.
 func withFileLock(path string, fn func() error) error {
+	// path is the user-home lockfile (~/.atheon/patterns.bundle.lock or
+	// ~/.atheon/pattern_state.json.lock). It is computed inside this
+	// package from os.UserHomeDir() — not a request-controlled value —
+	// so G304 (potential file inclusion) does not apply.
+	// #nosec G304
 	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0o600)
 	if err != nil {
 		// ENOENT is fine — first save creates the file; we'll try again.
 		if !os.IsNotExist(err) {
 			return fmt.Errorf("flock open: %w", err)
 		}
+		// #nosec G304 -- see comment above
 		f, err = os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0o600)
 		if err != nil {
 			return fmt.Errorf("flock create: %w", err)
 		}
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX); err != nil {
 		return fmt.Errorf("flock acquire: %w", err)
 	}
-	defer syscall.Flock(int(f.Fd()), syscall.LOCK_UN)
+	defer func() { _ = syscall.Flock(int(f.Fd()), syscall.LOCK_UN) }()
 
 	return fn()
 }

@@ -34,7 +34,7 @@ Branch prefix: feature/ | fix/ | docs/ | test/ | refactor/
 - [ ] `go test ./... -p 1` — OK (note `-p 1` is mandatory, see ADR 0006)
 - [ ] `go build ./...` — OK
 - [ ] `golangci-lint run .` — 0 issues
-- [ ] `./scripts/pattern-count.sh` — count matches docs (if touching patterns)
+- [ ] `./scripts/pattern-count.sh --total` — source count matches bundle (if touching patterns)
 
 ## Quality gates (reviewer-facing)
 

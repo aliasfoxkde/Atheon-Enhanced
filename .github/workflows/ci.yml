@@ -161,8 +161,14 @@ jobs:
           fi
           echo "✅ No TODO comments in production code"
 
-          # fmt.Debug / log.Debug in production (non-test) core/*.go
-          DEBUGS=$(grep -rn "fmt\.Debug\|log\.Debug" core/*.go 2>/dev/null | grep -v "_test.go" || true)
+          # fmt.Debug / log.Debug in production (non-test) core/*.go.
+          # Note the explicit word boundary after 'log' — without it the
+          # grep matches slog.Debug calls (which use the stdlib log/slog
+          # package; slog is intentional structured-logging output, not
+          # a forgotten debug print). Wave 8 PR #93 added slog.Debug
+          # observability calls and the false-positive this caused is
+          # what motivated the word-boundary fix.
+          DEBUGS=$(grep -rnE "fmt\.Debug|\blog\.Debug\b" core/*.go 2>/dev/null | grep -v "_test.go" || true)
           if [ -n "$DEBUGS" ]; then
             echo "❌ Debug statements in production code:"
             echo "$DEBUGS"
@@ -241,6 +247,39 @@ jobs:
           go-version: "${{ vars.GO_VERSION || '1.23' }}"
           cache: true
           cache-dependency-path: go.sum
+
+      - name: Set up Python
+        # The pattern validator (scripts/validate-patterns.py) only needs
+        # PyYAML, which is preinstalled on the runner image, but we pin
+        # explicitly so the dependency is documented and the install is
+        # idempotent on minimal runners. No `cache: pip` — that requires
+        # either requirements.txt or pyproject.toml, which this repo
+        # doesn't have, and the validator's deps are too small to be
+        # worth caching anyway.
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v5.6.0
+        with:
+          python-version: "3.12"
+
+      - name: Install PyYAML
+        run: pip install --quiet pyyaml
+
+      - name: Validate pattern YAMLs
+        # Pre-bundle structural check: required fields, duplicate names,
+        # severity values, declared-category-vs-dir consistency. The Go
+        # bundler does an authoritative RE2 compile in the next step, so
+        # this catches the common typos early without duplicating that
+        # work.
+        run: python3 scripts/validate-patterns.py community/
+
+      - name: Rebuild patterns.bundle from source
+        # Authoritative RE2 compile of every community/**/*.yaml. Without
+        # this step, a pattern whose regex is RE2-incompatible (e.g.
+        # uses PCRE lookahead) can pass the structural validator and
+        # the bundle freshness check, then break at runtime when
+        # scanLines hits the uncompilable regex. Bundling here means CI
+        # catches the breakage immediately, and the produced bundle
+        # becomes the source of truth for the count check below.
+        run: go run ./bundler
 
       - name: Build binaries
         run: |

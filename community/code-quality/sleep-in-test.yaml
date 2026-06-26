@@ -1,4 +1,5 @@
 name: sleep-in-test
-match: 'time\.Sleep\s*\('
+# Scoped to Go/Python test files: *_test.go, test_*.go, *_bench*.go, *_test.py, test_*.py
+match: '(?i)(?=((?:^|/)(?:[^/]*_test\.go|test_[^/]*\.go|[^/]*_bench[^/]*\.go|[^/]*_test\.py|test_[^/]*\.py)))time\.Sleep\s*\('
 severity: low
 enabled: true

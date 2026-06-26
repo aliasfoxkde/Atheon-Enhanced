@@ -1,3 +1,4 @@
 name: mock-stub
-match: '(?i)(mock.*data|stub.*function|fixture.*test|test.*double)'
+# Scoped to test files only: _test.py, test_*.py, *_test.py, spec.rb, *_test.go, test_*.go, *_spec.rb
+match: '(?i)(?=((?:^|/)(?:[^/]*_test\.py|test_[^/]*\.py|test_[^/]*\.go|[^/]*_test\.go|[^/]*_tests?\.go|[^/]*_spec\.rb|spec_[^/]*\.rb)))(?:mock\s+\w*data|stub\s+\w*function|fixture\s+\w*test|test\s+\w*double)'
 severity: low

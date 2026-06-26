@@ -1,3 +1,4 @@
 name: fake-data
-match: '(?i)(lorem ipsum|dummy.*data|test.*pattern|placeholder.*text)'
+# Scoped to test files only: _test.py, test_*.py, *_test.py, spec.rb, *_test.go, test_*.go, *_spec.rb
+match: '(?i)(?=((?:^|/)(?:[^/]*_test\.py|test_[^/]*\.py|test_[^/]*\.go|[^/]*_test\.go|[^/]*_tests?\.go|[^/]*_spec\.rb|spec_[^/]*\.rb)))(?:lorem\s+ipsum|dummy\s+data|test\s+pattern|placeholder\s+text)'
 severity: low

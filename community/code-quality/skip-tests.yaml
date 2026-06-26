@@ -1,3 +1,6 @@
 name: skip-tests
-match: '(?i)(mvn|gradle|pytest).*skip.*test|DskipTests'
+# Scoped to build/CI files: pom.xml, build.gradle, Dockerfile, Makefile,
+# .github/workflows/*.yml, Jenkinsfile, etc. — not general source code where
+# "mvn skip" or "pytest skip" in a comment would false-fire.
+match: '(?i)(?=((?:^|/)(?:pom\.xml|build\.gradle|build\.gradle\.kts|settings\.gradle|gradle\.properties|Dockerfile|Makefile|Jenkinsfile|\.github/workflows/[^/]*\.ya?ml|\.gitlab-ci\.yml|\.travis\.yml|tox\.ini|pytest\.ini|setup\.cfg)))\b(?:mvnw?\b.*skip|gradle\b.*skip|pytest\b.*skip|DskipTests|-DskipTests)'
 severity: low

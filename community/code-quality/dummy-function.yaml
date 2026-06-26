@@ -1,3 +1,4 @@
 name: dummy-function
-match: '(?i)def.*dummy|function.*mock|class.*fake|test.*shim'
+# Scoped to test files only: _test.py, test_*.py, *_test.py, spec.rb, *_test.go, test_*.go, *_spec.rb
+match: '(?i)(?=((?:^|/)(?:[^/]*_test\.py|test_[^/]*\.py|test_[^/]*\.go|[^/]*_test\.go|[^/]*_tests?\.go|[^/]*_spec\.rb|spec_[^/]*\.rb)))(?:def\s+\w*(?:dummy|fake|test|stub)\w*|function\s+\w*(?:dummy|fake|mock)\w*\s*\(|class\s+\w*(?:dummy|fake|test)\w*\s*[{(])'
 severity: low

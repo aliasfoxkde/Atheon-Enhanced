@@ -70,7 +70,7 @@ func (p *bundlePattern) Matches(line string) bool { return p.enabled && p.re.Mat
 // Unexported because it exposes RE2's internal offsets, which aren't
 // stable across pattern implementations (only bundlePattern has a
 // compiled regex to query).
-func (p *bundlePattern) matchSpan(line string) (int, int) {
+func (p *bundlePattern) matchSpan(line string) (start, end int) {
 	if !p.enabled || p.re == nil {
 		return -1, -1
 	}

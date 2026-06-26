@@ -400,34 +400,35 @@ func scanLines(ctx context.Context, content, file string) []Finding {
 				continue
 			}
 			for _, p := range cs.patterns {
-				if p.Matches(line) {
-					lineNum := i + 1
-					if lineNum == 0 {
-						lineNum = 1
-					}
-					// Column is the 1-indexed byte offset of the match's
-					// first byte. Only bundlePattern can supply it (other
-					// Pattern implementations don't carry a compiled
-					// regex); for them we leave Column == 0 and downstream
-					// consumers treat 0 as "unknown". The type-assertion is
-					// the cheapest way to gate without widening the public
-					// Pattern interface — adding a method would break every
-					// external implementer.
-					col := 0
-					if bp, ok := p.(*bundlePattern); ok {
-						if start, _ := bp.matchSpan(line); start >= 0 {
-							col = start + 1
-						}
-					}
-					findings = append(findings, Finding{
-						Pattern:  p.Name(),
-						File:     file,
-						Line:     lineNum,
-						Column:   col,
-						Content:  strings.TrimSpace(line),
-						Severity: p.Severity(),
-					})
+				if !p.Matches(line) {
+					continue
 				}
+				lineNum := i + 1
+				if lineNum == 0 {
+					lineNum = 1
+				}
+				// Column is the 1-indexed byte offset of the match's
+				// first byte. Only bundlePattern can supply it (other
+				// Pattern implementations don't carry a compiled
+				// regex); for them we leave Column == 0 and downstream
+				// consumers treat 0 as "unknown". The type-assertion is
+				// the cheapest way to gate without widening the public
+				// Pattern interface — adding a method would break every
+				// external implementer.
+				col := 0
+				if bp, ok := p.(*bundlePattern); ok {
+					if start, _ := bp.matchSpan(line); start >= 0 {
+						col = start + 1
+					}
+				}
+				findings = append(findings, Finding{
+					Pattern:  p.Name(),
+					File:     file,
+					Line:     lineNum,
+					Column:   col,
+					Content:  strings.TrimSpace(line),
+					Severity: p.Severity(),
+				})
 			}
 		}
 	}

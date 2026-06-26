@@ -112,7 +112,7 @@ jobs:
         # Run golangci-lint via official install script to get a fresh
         # binary each run, avoiding go install caching issues.
         run: |
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- v2.8.0
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- v2.6.1
           ./bin/golangci-lint --timeout=5m ./...
 
 

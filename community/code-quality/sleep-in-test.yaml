@@ -1,5 +1,5 @@
 name: sleep-in-test
-match: (?i)(?=((?:^|/)(?:[^/]*_test\.go|test_[^/]*\.go|[^/]*_bench[^/]*\.go|[^/]*_test\.py|test_[^/]*\.py)))time\.Sleep\s*\(
+match: (?i)(?:(?:^|/)(?:[^/]*_test\.go|test_[^/]*\.go|[^/]*_bench[^/]*\.go|[^/]*_test\.py|test_[^/]*\.py))time\.Sleep\s*\(
 severity: low
 enabled: true
 description: 'Pattern: ''sleep in test''. Pattern in category ''''. This is a low-severity

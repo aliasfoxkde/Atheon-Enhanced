@@ -1,5 +1,5 @@
 name: mock-stub
-match: (?i)(?=((?:^|/)(?:[^/]*_test\.py|test_[^/]*\.py|test_[^/]*\.go|[^/]*_test\.go|[^/]*_tests?\.go|[^/]*_spec\.rb|spec_[^/]*\.rb)))(?:mock\s+\w*data|stub\s+\w*function|fixture\s+\w*test|test\s+\w*double)
+match: (?i)(?:(?:^|/)(?:[^/]*_test\.py|test_[^/]*\.py|test_[^/]*\.go|[^/]*_test\.go|[^/]*_tests?\.go|[^/]*_spec\.rb|spec_[^/]*\.rb))(?:mock\s+\w*data|stub\s+\w*function|fixture\s+\w*test|test\s+\w*double)
 severity: low
 description: 'Pattern: ''mock stub''. Pattern in category ''''. This is a low-severity
   issue representing a minor risk or code quality concern.'

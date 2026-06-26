@@ -1,5 +1,5 @@
 name: fake-data
-match: (?i)(?=((?:^|/)(?:[^/]*_test\.py|test_[^/]*\.py|test_[^/]*\.go|[^/]*_test\.go|[^/]*_tests?\.go|[^/]*_spec\.rb|spec_[^/]*\.rb)))(?:lorem\s+ipsum|dummy\s+data|test\s+pattern|placeholder\s+text)
+match: (?i)(?:(?:^|/)(?:[^/]*_test\.py|test_[^/]*\.py|test_[^/]*\.go|[^/]*_test\.go|[^/]*_tests?\.go|[^/]*_spec\.rb|spec_[^/]*\.rb))(?:lorem\s+ipsum|dummy\s+data|test\s+pattern|placeholder\s+text)
 severity: low
 description: 'Pattern: ''fake data''. Pattern in category ''''. This is a low-severity
   issue representing a minor risk or code quality concern.'

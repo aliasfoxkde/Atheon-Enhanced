@@ -1,5 +1,5 @@
 name: skip-tests
-match: (?i)(?=((?:^|/)(?:pom\.xml|build\.gradle|build\.gradle\.kts|settings\.gradle|gradle\.properties|Dockerfile|Makefile|Jenkinsfile|\.github/workflows/[^/]*\.ya?ml|\.gitlab-ci\.yml|\.travis\.yml|tox\.ini|pytest\.ini|setup\.cfg)))\b(?:mvnw?\b.*skip|gradle\b.*skip|pytest\b.*skip|DskipTests|-DskipTests)
+match: (?i)(?:(?:^|/)(?:pom\.xml|build\.gradle|build\.gradle\.kts|settings\.gradle|gradle\.properties|Dockerfile|Makefile|Jenkinsfile|\.github/workflows/[^/]*\.ya?ml|\.gitlab-ci\.yml|\.travis\.yml|tox\.ini|pytest\.ini|setup\.cfg))\b(?:mvnw?\b.*skip|gradle\b.*skip|pytest\b.*skip|DskipTests|-DskipTests)
 severity: low
 description: 'Detected potential CI/security bypass: ''skip tests''. Bypass mechanisms
   should be carefully reviewed and avoided in production. This is a low-severity issue

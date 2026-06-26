@@ -1,5 +1,5 @@
 name: dummy-function
-match: (?i)(?=((?:^|/)(?:[^/]*_test\.py|test_[^/]*\.py|test_[^/]*\.go|[^/]*_test\.go|[^/]*_tests?\.go|[^/]*_spec\.rb|spec_[^/]*\.rb)))(?:def\s+\w*(?:dummy|fake|test|stub)\w*|function\s+\w*(?:dummy|fake|mock)\w*\s*\(|class\s+\w*(?:dummy|fake|test)\w*\s*[{(])
+match: (?i)(?:(?:^|/)(?:[^/]*_test\.py|test_[^/]*\.py|test_[^/]*\.go|[^/]*_test\.go|[^/]*_tests?\.go|[^/]*_spec\.rb|spec_[^/]*\.rb))(?:def\s+\w*(?:dummy|fake|test|stub)\w*|function\s+\w*(?:dummy|fake|mock)\w*\s*\(|class\s+\w*(?:dummy|fake|test)\w*\s*[{(])
 severity: low
 description: 'Pattern: ''dummy function''. Pattern in category ''''. This is a low-severity
   issue representing a minor risk or code quality concern.'

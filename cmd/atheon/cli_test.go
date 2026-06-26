@@ -363,7 +363,7 @@ func TestUpdateCommand(t *testing.T) {
 	// same binary see a full pattern set (DownloadBundle replaces allPatterns).
 	defer core.ReloadBundle()
 
-	if err := core.DownloadBundle(context.Background()); err != nil {
+	if err := core.DownloadBundle(context.Background(), false); err != nil {
 		t.Fatalf("DownloadBundle failed: %v", err)
 	}
 }

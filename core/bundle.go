@@ -341,6 +341,10 @@ func SetBundleDownloadURL(url string) func() {
 // bundle, prints a summary of added/removed patterns, and persists the new bundle
 // to ~/.atheon/patterns.bundle.
 //
+// If force is false and the bundle appears fresh (ETag matches a recent check),
+// DownloadBundle returns nil immediately without contacting the server. The
+// 24-hour freshness window avoids a round-trip on every scan.
+//
 // The bundle is loaded into memory before being written to disk; if loadBundle
 // fails the on-disk bundle is left untouched.
 //
@@ -349,16 +353,28 @@ func SetBundleDownloadURL(url string) func() {
 //
 // On any non-success HTTP status code, DownloadBundle returns an error wrapping
 // ErrBundleDownload so callers can use errors.Is.
-func DownloadBundle(ctx context.Context) error {
+func DownloadBundle(ctx context.Context, force bool) error {
 	start := time.Now()
-	slog.Info("bundle download started", "url", *bundleDownloadURL.Load())
+	url := *bundleDownloadURL.Load()
+	slog.Info("bundle download started", "url", url, "force", force)
+
+	// Stale-bundle check: if not forced, see if we've checked recently with a
+	// matching ETag. This skips the network round-trip on repeated scans.
+	if !force {
+		skip, etag := shouldSkipDownload()
+		if skip {
+			slog.Info("bundle download skipped (fresh)", "etag", etag)
+			return nil
+		}
+	}
+
 	oldPatterns := currentPatternNames()
 
-	data, err := fetchBundleData(ctx)
+	data, etag, err := fetchBundleData(ctx)
 	if err != nil {
 		return err
 	}
-	slog.Info("bundle download complete", "bytes", len(data), "elapsed_ms", time.Since(start).Milliseconds())
+	slog.Info("bundle download complete", "bytes", len(data), "elapsed_ms", time.Since(start).Milliseconds(), "etag", etag)
 
 	dir, err := ensureAtheonDir()
 	if err != nil {
@@ -389,7 +405,53 @@ func DownloadBundle(ctx context.Context) error {
 	if err := atomicWriteFile(filepath.Join(dir, "patterns.bundle"), data, 0o600); err != nil {
 		return err
 	}
+
+	// Record the ETag and timestamp so the next call can skip if unchanged.
+	if err := recordBundleETag(etag); err != nil {
+		slog.Warn("failed to record bundle ETag", "err", err)
+	}
+
 	return nil
+}
+
+// shouldSkipDownload returns (true, etag) if the bundle appears fresh:
+// the last check was within 24 hours and the stored ETag matches the
+// upstream value. Force downloads always return (false, "").
+func shouldSkipDownload() (skipped bool, etag string) {
+	etagVal, lastChecked, err := loadBundleETag()
+	if err != nil || etagVal == "" {
+		return false, ""
+	}
+	// 24-hour freshness window
+	if time.Since(lastChecked) < 24*time.Hour {
+		return true, etagVal
+	}
+	return false, ""
+}
+
+// recordBundleETag persists the ETag and timestamp to the pattern state file.
+func recordBundleETag(etag string) error {
+	return withFileLock(stateFile(), func() error {
+		state, err := loadPatternState()
+		if err != nil {
+			return err
+		}
+		state.BundleETag = etag
+		state.BundleLastChecked = time.Now().UnixNano()
+		return savePatternState(state)
+	})
+}
+
+// loadBundleETag returns the stored ETag and last-checked time.
+func loadBundleETag() (etag string, lastChecked time.Time, err error) {
+	state, err := loadPatternState()
+	if err != nil {
+		return "", time.Time{}, err
+	}
+	if state.BundleETag == "" || state.BundleLastChecked == 0 {
+		return "", time.Time{}, nil
+	}
+	return state.BundleETag, time.Unix(0, state.BundleLastChecked), nil
 }
 
 // currentPatternNames returns the names of every pattern currently in
@@ -405,33 +467,33 @@ func currentPatternNames() []string {
 }
 
 // fetchBundleData performs the HTTP GET against bundleDownloadURL and
-// returns the response body on success.
-func fetchBundleData(ctx context.Context) ([]byte, error) {
+// returns the response body and ETag header on success.
+func fetchBundleData(ctx context.Context) (data []byte, etag string, err error) {
 	client := &http.Client{Timeout: 30 * time.Second}
 	urlPtr := bundleDownloadURL.Load()
 	if urlPtr == nil {
-		return nil, fmt.Errorf("%w: bundle download URL not initialised", ErrBundleDownload)
+		return nil, "", fmt.Errorf("%w: bundle download URL not initialised", ErrBundleDownload)
 	}
 	// bundleDownloadURL is configured via SetBundleDownloadURL and only
 	// ever points at https://github.com/... or a test stub. SSRF surface
 	// is bounded by the controlled allow-list maintained in this package.
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, *urlPtr, http.NoBody)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrBundleDownload, err)
+		return nil, "", fmt.Errorf("%w: %v", ErrBundleDownload, err)
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrBundleDownload, err)
+		return nil, "", fmt.Errorf("%w: %v", ErrBundleDownload, err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("%w: server returned %d", ErrBundleDownload, resp.StatusCode)
+		return nil, "", fmt.Errorf("%w: server returned %d", ErrBundleDownload, resp.StatusCode)
 	}
-	data, err := io.ReadAll(resp.Body)
+	data, err = io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrBundleDownload, err)
+		return nil, "", fmt.Errorf("%w: %v", ErrBundleDownload, err)
 	}
-	return data, nil
+	return data, resp.Header.Get("ETag"), nil
 }
 
 // ensureAtheonDir creates (if needed) and returns the ~/.atheon path.

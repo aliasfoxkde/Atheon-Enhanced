@@ -94,7 +94,7 @@ func run(ctx context.Context, args []string) int {
 	switch args[0] {
 	case "update":
 		fmt.Println("downloading patterns bundle...")
-		if err := core.DownloadBundle(ctx); err != nil {
+		if err := core.DownloadBundle(ctx, false); err != nil {
 			fmt.Fprintln(os.Stderr, "error:", err)
 			return 1
 		}

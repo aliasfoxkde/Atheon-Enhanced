@@ -413,7 +413,7 @@ func TestDownloadBundleHTTPError(t *testing.T) {
 	defer restoreURL()
 
 	// DownloadBundle should return error for 404
-	err := core.DownloadBundle(context.Background())
+	err := core.DownloadBundle(context.Background(), false)
 	if err == nil {
 		t.Error("expected error for HTTP 404 response, got nil")
 	}
@@ -432,7 +432,7 @@ func TestDownloadBundleNetworkError(t *testing.T) {
 	defer restoreURL()
 
 	// DownloadBundle should return error for connection failure
-	err := core.DownloadBundle(context.Background())
+	err := core.DownloadBundle(context.Background(), false)
 	if err == nil {
 		t.Error("expected error for connection failure, got nil")
 	}
@@ -449,7 +449,7 @@ func TestDownloadBundleParseError(t *testing.T) {
 	restoreURL := core.SetBundleDownloadURL(server.URL)
 	defer restoreURL()
 
-	err := core.DownloadBundle(context.Background())
+	err := core.DownloadBundle(context.Background(), false)
 	if err == nil {
 		t.Error("expected error when response is not a valid gzip bundle, got nil")
 	}
@@ -539,7 +539,7 @@ func TestDownloadBundleNoChanges(t *testing.T) {
 	restoreURL := core.SetBundleDownloadURL(url)
 	defer restoreURL()
 
-	if err := core.DownloadBundle(context.Background()); err != nil {
+	if err := core.DownloadBundle(context.Background(), false); err != nil {
 		t.Fatalf("DownloadBundle no-changes: %v", err)
 	}
 }
@@ -560,7 +560,7 @@ func TestDownloadBundleRemovedOnly(t *testing.T) {
 	restoreURL := core.SetBundleDownloadURL(url)
 	defer restoreURL()
 
-	if err := core.DownloadBundle(context.Background()); err != nil {
+	if err := core.DownloadBundle(context.Background(), false); err != nil {
 		t.Fatalf("DownloadBundle removed-only: %v", err)
 	}
 }
@@ -582,7 +582,7 @@ func TestDownloadBundleAddedOnly(t *testing.T) {
 	restoreURL := core.SetBundleDownloadURL(url)
 	defer restoreURL()
 
-	if err := core.DownloadBundle(context.Background()); err != nil {
+	if err := core.DownloadBundle(context.Background(), false); err != nil {
 		t.Fatalf("DownloadBundle added-only: %v", err)
 	}
 }

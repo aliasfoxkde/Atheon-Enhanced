@@ -94,7 +94,7 @@ func TestScanEnvCanceledMidStream(t *testing.T) {
 func TestDownloadBundleCanceled(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	err := DownloadBundle(ctx)
+	err := DownloadBundle(ctx, false)
 	if err == nil {
 		t.Error("expected error from canceled DownloadBundle")
 	}

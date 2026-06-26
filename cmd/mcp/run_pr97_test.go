@@ -91,7 +91,7 @@ func TestMCPDispatchRecoverIsolated(t *testing.T) {
 
 	// Now go through the proper dispatchRequest → handleCall path
 	// by passing a params envelope that references our panic handler.
-	// dispatchRequest for tools/call delegates to handleCall(ctx, req.Params).
+	// dispatchRequest for tools/call delegates to handleCall(ctx, req.ID, req.Params).
 	req.Params = params
 	result, rerr = dispatchRequest(context.Background(), req)
 	if result != nil {

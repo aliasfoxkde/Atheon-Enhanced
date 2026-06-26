@@ -48,7 +48,7 @@ func TestDownloadBundleMockOK(t *testing.T) {
 		SetActiveCategories(nil)
 	}()
 
-	if err := DownloadBundle(context.Background()); err != nil {
+	if err := DownloadBundle(context.Background(), false); err != nil {
 		t.Fatalf("DownloadBundle failed: %v", err)
 	}
 
@@ -84,7 +84,7 @@ func TestDownloadBundleMockServerError(t *testing.T) {
 	restore := SetBundleDownloadURL(srv.URL)
 	defer restore()
 
-	err := DownloadBundle(context.Background())
+	err := DownloadBundle(context.Background(), false)
 	if err == nil {
 		t.Fatal("expected error from server returning 500")
 	}
@@ -105,7 +105,7 @@ func TestDownloadBundleMockBadGzip(t *testing.T) {
 	restore := SetBundleDownloadURL(srv.URL)
 	defer restore()
 
-	err := DownloadBundle(context.Background())
+	err := DownloadBundle(context.Background(), false)
 	if err == nil {
 		t.Fatal("expected error from server returning non-gzip data")
 	}
@@ -123,7 +123,7 @@ func TestDownloadBundleMockBadJSON(t *testing.T) {
 	restore := SetBundleDownloadURL(srv.URL)
 	defer restore()
 
-	err := DownloadBundle(context.Background())
+	err := DownloadBundle(context.Background(), false)
 	if err == nil {
 		t.Fatal("expected error from server returning bad JSON")
 	}
@@ -157,7 +157,7 @@ func TestDownloadBundleMockMkdirError(t *testing.T) {
 	}
 	t.Setenv("HOME", filepath.Join(blocker, "subdir"))
 
-	err := DownloadBundle(context.Background())
+	err := DownloadBundle(context.Background(), false)
 	if err == nil {
 		t.Fatal("expected error when HOME points through a file")
 	}
@@ -190,7 +190,7 @@ func TestDownloadBundleMockChangesReported(t *testing.T) {
 	restore := SetBundleDownloadURL(srv.URL)
 	defer restore()
 
-	if err := DownloadBundle(context.Background()); err != nil {
+	if err := DownloadBundle(context.Background(), false); err != nil {
 		t.Fatalf("DownloadBundle failed: %v", err)
 	}
 }
@@ -205,7 +205,7 @@ func TestDownloadBundleNetworkError(t *testing.T) {
 	restore := SetBundleDownloadURL(srv.URL)
 	defer restore()
 
-	err := DownloadBundle(context.Background())
+	err := DownloadBundle(context.Background(), false)
 	if err == nil {
 		t.Error("expected network error from closed server URL")
 	}
@@ -238,7 +238,7 @@ func TestDownloadBundleMockMkdirErrorUserProfile(t *testing.T) {
 	// Setting it to a file path makes os.MkdirAll(blocker/.atheon) fail.
 	t.Setenv("USERPROFILE", blocker)
 
-	err := DownloadBundle(context.Background())
+	err := DownloadBundle(context.Background(), false)
 	if err == nil {
 		t.Fatal("expected error when USERPROFILE points to a file")
 	}
@@ -251,7 +251,7 @@ func TestFetchBundleDataInvalidURL(t *testing.T) {
 	restore := SetBundleDownloadURL("http://\x00invalid-url")
 	defer restore()
 
-	err := DownloadBundle(context.Background())
+	err := DownloadBundle(context.Background(), false)
 	if err == nil {
 		t.Error("expected error from http.NewRequestWithContext with invalid URL")
 	}
@@ -279,7 +279,7 @@ func TestDownloadBundleReadAllError(t *testing.T) {
 	restore := SetBundleDownloadURL(srv.URL)
 	defer restore()
 
-	err := DownloadBundle(context.Background())
+	err := DownloadBundle(context.Background(), false)
 	if err == nil {
 		t.Error("expected error from server with truncated body")
 	}

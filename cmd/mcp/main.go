@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -95,6 +96,37 @@ func (rl *rateLimiter) Allow() bool {
 // mcpRateLimiter is the global rate limiter for MCP requests.
 // Allows 10 requests per second with a burst of 20.
 var mcpRateLimiter = newRateLimiter(10, 20)
+
+// activeRequests tracks in-flight request IDs and their cancel functions.
+// Used to implement $/cancelRequest: when a cancel notification arrives,
+// the cancel function is called, aborting the in-flight handler.
+var activeRequests sync.Map
+
+// cancelRequestCode is the JSON-RPC error code returned when a request
+// was successfully canceled per the MCP spec.
+const cancelRequestCode = -32802
+
+// normalizeID converts a JSON-RPC request ID to a string for use as a
+// sync.Map key. JSON-RPC allows IDs to be strings, numbers, or null.
+// sync.Map requires interface{} keys, so we stringify for consistency
+// and to avoid json.Number vs int mismatches (e.g. "1" != 1).
+func normalizeID(id any) string {
+	if id == nil {
+		return ""
+	}
+	switch v := id.(type) {
+	case string:
+		return v
+	case float64:
+		return strconv.FormatFloat(v, 'f', -1, 64)
+	case int:
+		return strconv.Itoa(v)
+	case json.Number:
+		return v.String()
+	default:
+		return fmt.Sprintf("%v", id)
+	}
+}
 
 // JSON-RPC method names handled by the MCP server. Extracted as
 // constants so goconst can verify they're not duplicated and so
@@ -292,7 +324,21 @@ func dispatchRequest(ctx context.Context, req *request) (result any, rerr *rpcEr
 	case methodToolsList:
 		return map[string]any{"tools": toolList()}, nil
 	case methodToolsCall:
-		return handleCall(ctx, req.Params)
+		return handleCall(ctx, req.ID, req.Params)
+	case "$/cancelRequest":
+		// JSON-RPC cancel notification: mark the request ID as canceled.
+		// handleCall checks activeRequests before invoking the tool;
+		// if the ID is present it returns -32802 immediately.
+		var cancel struct {
+			ID any `json:"id"`
+		}
+		if err := json.Unmarshal(req.Params, &cancel); err != nil {
+			return nil, nil // notifications return no response
+		}
+		if key := normalizeID(cancel.ID); key != "" {
+			activeRequests.Store(key, struct{}{})
+		}
+		return nil, nil
 	default:
 		return nil, &rpcError{Code: -32601, Message: "method not found"}
 	}
@@ -358,7 +404,12 @@ func toolList() []map[string]any {
 		{
 			"name":        "update_bundle",
 			"description": "Download the latest pattern bundle from the configured URL",
-			"inputSchema": schema([]string{}, map[string]any{}),
+			"inputSchema": schema([]string{}, map[string]any{
+				"force": map[string]any{
+					"type":        "boolean",
+					"description": "bypass the 24-hour freshness cache and force a re-download",
+				},
+			}),
 		},
 	}
 }
@@ -384,7 +435,19 @@ var toolHandlers = map[string]toolHandler{
 // handler, and dispatches. Rate-limit is applied at the top of run()
 // so initialize/tools/list floods count against the same token bucket
 // as tools/call (PR #97).
-func handleCall(ctx context.Context, params json.RawMessage) (any, *rpcError) {
+//
+// Cancellation: if the request ID appears in the activeRequests map
+// (set by a prior $/cancelRequest notification), handleCall returns
+// -32802 immediately without invoking the tool. This prevents a
+// canceled request from wasting CPU on a long-running scan.
+func handleCall(ctx context.Context, id any, params json.RawMessage) (any, *rpcError) {
+	// Check cancel map before doing any work.
+	if key := normalizeID(id); key != "" {
+		if _, canceled := activeRequests.LoadAndDelete(key); canceled {
+			return nil, &rpcError{Code: cancelRequestCode, Message: "request was canceled"}
+		}
+	}
+
 	var p struct {
 		Name      string          `json:"name"`
 		Arguments json.RawMessage `json:"arguments"`
@@ -403,6 +466,30 @@ func handleCall(ctx context.Context, params json.RawMessage) (any, *rpcError) {
 // same JSON-RPC error shape on argument parse failure.
 func invalidParams(err error) *rpcError {
 	return &rpcError{Code: -32602, Message: "invalid params: " + err.Error()}
+}
+
+// safeError maps a Go error to a user-facing JSON-RPC error message that
+// contains no raw filesystem paths, syscall strings, or internal details.
+// This prevents the MCP server from leaking host structure to AI agents
+// that parse error messages (a HIGH-severity finding from the Wave 9 audit).
+//
+// Mapping rules:
+//   - os.IsNotExist → "file not found"
+//   - os.IsPermission → "permission denied"
+//   - core.ErrFileTooLarge → "file exceeds size limit"
+//   - everything else → "internal error: <category>" (no raw message)
+func safeError(err error) string {
+	if err == nil {
+		return "unknown error"
+	}
+	switch {
+	case os.IsNotExist(err):
+		return "file not found"
+	case os.IsPermission(err):
+		return "permission denied"
+	default:
+		return "internal error"
+	}
 }
 
 func handleScanString(ctx context.Context, raw json.RawMessage) (any, *rpcError) {
@@ -443,7 +530,7 @@ func handleScanFile(ctx context.Context, raw json.RawMessage) (any, *rpcError) {
 	core.SetActiveCategories(args.Categories)
 	findings, _, err := core.ScanFile(ctx, args.Path)
 	if err != nil {
-		return nil, &rpcError{Code: -32603, Message: err.Error()}
+		return nil, &rpcError{Code: -32603, Message: safeError(err)}
 	}
 	return textResult(findings), nil
 }
@@ -465,7 +552,7 @@ func handleScanDir(ctx context.Context, raw json.RawMessage) (any, *rpcError) {
 	// historical follow-symlinks behaviour behind an opt-in flag.
 	findings, _, err := core.ScanDir(ctx, args.Path, core.ScanOpts{NoFollowSymlinks: true})
 	if err != nil {
-		return nil, &rpcError{Code: -32603, Message: err.Error()}
+		return nil, &rpcError{Code: -32603, Message: safeError(err)}
 	}
 	return textResult(findings), nil
 }
@@ -507,9 +594,15 @@ func handleListCategories(_ context.Context, _ json.RawMessage) (any, *rpcError)
 	return categoriesResult(core.Categories()), nil
 }
 
-func handleUpdateBundle(ctx context.Context, _ json.RawMessage) (any, *rpcError) {
-	if err := core.DownloadBundle(ctx); err != nil {
-		return nil, &rpcError{Code: -32603, Message: err.Error()}
+func handleUpdateBundle(ctx context.Context, raw json.RawMessage) (any, *rpcError) {
+	var args struct {
+		Force bool `json:"force"`
+	}
+	if err := json.Unmarshal(raw, &args); err != nil {
+		return nil, invalidParams(err)
+	}
+	if err := core.DownloadBundle(ctx, args.Force); err != nil {
+		return nil, &rpcError{Code: -32603, Message: safeError(err)}
 	}
 	return map[string]any{
 		"content": []map[string]any{{

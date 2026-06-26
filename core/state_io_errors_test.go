@@ -105,7 +105,7 @@ func TestDownloadBundleNoChanges(t *testing.T) {
 	restore := SetBundleDownloadURL(srv.URL)
 	defer restore()
 
-	if err := DownloadBundle(context.Background()); err != nil {
+	if err := DownloadBundle(context.Background(), false); err != nil {
 		t.Fatalf("DownloadBundle failed: %v", err)
 	}
 }
@@ -154,7 +154,7 @@ func TestDownloadBundleWriteFileError(t *testing.T) {
 	}
 	defer os.Chmod(stateDir, 0o755)
 
-	err := DownloadBundle(context.Background())
+	err := DownloadBundle(context.Background(), false)
 	if err == nil {
 		t.Error("expected error from DownloadBundle when .atheon unwritable")
 	}

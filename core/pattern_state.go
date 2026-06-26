@@ -8,11 +8,20 @@ import (
 	"path/filepath"
 )
 
-// PatternState stores the enabled/disabled state of patterns. It is
-// persisted to ~/.atheon/pattern_state.json between invocations so user
-// preferences survive across runs.
+// PatternState stores the enabled/disabled state of patterns and metadata
+// about the downloaded bundle. It is persisted to ~/.atheon/pattern_state.json
+// between invocations so user preferences survive across runs.
 type PatternState struct {
 	Patterns map[string]bool `json:"patterns"` // pattern name -> enabled state
+	// BundleETag is the ETag returned by the upstream bundle server on the
+	// last successful download. Used to skip redundant downloads when the
+	// upstream bundle hasn't changed.
+	BundleETag string `json:"bundleETag,omitempty"`
+	// BundleLastChecked is the time of the last bundle download attempt
+	// (successful or not). Used together with BundleETag to implement
+	// stale-bundle detection: if the bundle is recent (<24h) and the ETag
+	// matches, skip the download entirely.
+	BundleLastChecked int64 `json:"bundleLastChecked,omitempty"` // Unix nanos, 0 = never checked
 }
 
 // stateFile returns the path to the pattern state file

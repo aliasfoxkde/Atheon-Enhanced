@@ -18,13 +18,20 @@ import (
 // zero-token limiter and restore the original via defer.
 func TestMain(m *testing.M) {
 	mcpRateLimiter = newRateLimiter(10000, 10000)
+	// Reset cancel map between test runs so tests that store cancel entries
+	// (TestCancelRequestHandler) don't bleed into unrelated tests that reuse
+	// the same request ID.
+	activeRequests.Range(func(key, _ any) bool {
+		activeRequests.Delete(key)
+		return true
+	})
 	os.Exit(m.Run())
 }
 
 // TestHandleCallScanFileMissing returns an error for a missing file.
 func TestHandleCallScanFileMissing(t *testing.T) {
 	params := json.RawMessage(`{"name":"scan_file","arguments":{"path":"/this/does/not/exist/anywhere"}}`)
-	_, rerr := handleCall(context.Background(), params)
+	_, rerr := handleCall(context.Background(), nil, params)
 	if rerr == nil {
 		t.Error("expected error for missing file")
 	}
@@ -36,7 +43,7 @@ func TestHandleCallScanFileMissing(t *testing.T) {
 // TestHandleCallScanDirMissing returns an error for a missing directory.
 func TestHandleCallScanDirMissing(t *testing.T) {
 	params := json.RawMessage(`{"name":"scan_dir","arguments":{"path":"/this/does/not/exist/anywhere"}}`)
-	_, rerr := handleCall(context.Background(), params)
+	_, rerr := handleCall(context.Background(), nil, params)
 	// ScanDir silently returns empty results for missing paths instead of
 	// an error; verify that is the case and only error out if a non-nil
 	// error code is returned with an unexpected value.
@@ -48,7 +55,7 @@ func TestHandleCallScanDirMissing(t *testing.T) {
 // TestHandleCallUnknownTool returns an error for an unknown tool name.
 func TestHandleCallUnknownTool(t *testing.T) {
 	params := json.RawMessage(`{"name":"nuke_server","arguments":{}}`)
-	_, rerr := handleCall(context.Background(), params)
+	_, rerr := handleCall(context.Background(), nil, params)
 	if rerr == nil || rerr.Code != -32601 {
 		t.Errorf("expected method-not-found -32601, got %v", rerr)
 	}
@@ -60,7 +67,7 @@ func TestHandleCallUnknownTool(t *testing.T) {
 // TestHandleCallScanStringBadArgs returns an error for invalid scan_string args.
 func TestHandleCallScanStringBadArgs(t *testing.T) {
 	params := json.RawMessage(`{"name":"scan_string","arguments":{"content":123}}`)
-	_, rerr := handleCall(context.Background(), params)
+	_, rerr := handleCall(context.Background(), nil, params)
 	if rerr == nil || rerr.Code != -32602 {
 		t.Errorf("expected invalid-params -32602, got %v", rerr)
 	}
@@ -69,7 +76,7 @@ func TestHandleCallScanStringBadArgs(t *testing.T) {
 // TestHandleCallScanFileBadArgs returns an error for invalid scan_file args.
 func TestHandleCallScanFileBadArgs(t *testing.T) {
 	params := json.RawMessage(`{"name":"scan_file","arguments":{"path":123}}`)
-	_, rerr := handleCall(context.Background(), params)
+	_, rerr := handleCall(context.Background(), nil, params)
 	if rerr == nil || rerr.Code != -32602 {
 		t.Errorf("expected invalid-params -32602, got %v", rerr)
 	}
@@ -78,7 +85,7 @@ func TestHandleCallScanFileBadArgs(t *testing.T) {
 // TestHandleCallScanDirBadArgs returns an error for invalid scan_dir args.
 func TestHandleCallScanDirBadArgs(t *testing.T) {
 	params := json.RawMessage(`{"name":"scan_dir","arguments":{"path":123}}`)
-	_, rerr := handleCall(context.Background(), params)
+	_, rerr := handleCall(context.Background(), nil, params)
 	if rerr == nil || rerr.Code != -32602 {
 		t.Errorf("expected invalid-params -32602, got %v", rerr)
 	}
@@ -128,7 +135,7 @@ var key = "AKIAIOSFODNN7EXAMPLE"
 
 	pathJSON, _ := json.Marshal(tmp.Name())
 	params := json.RawMessage(`{"name":"scan_file","arguments":{"path":` + string(pathJSON) + `,"categories":["secrets"]}}`)
-	result, rerr := handleCall(context.Background(), params)
+	result, rerr := handleCall(context.Background(), nil, params)
 	if rerr != nil {
 		t.Fatalf("unexpected error: %v", rerr)
 	}
@@ -141,7 +148,7 @@ var key = "AKIAIOSFODNN7EXAMPLE"
 // for scan_string.
 func TestHandleCallScanStringWithCategories(t *testing.T) {
 	params := json.RawMessage(`{"name":"scan_string","arguments":{"content":"AKIAIOSFODNN7EXAMPLE","source":"test","categories":["secrets"]}}`)
-	result, rerr := handleCall(context.Background(), params)
+	result, rerr := handleCall(context.Background(), nil, params)
 	if rerr != nil {
 		t.Fatalf("unexpected error: %v", rerr)
 	}
@@ -155,7 +162,7 @@ func TestHandleCallScanStringWithCategories(t *testing.T) {
 func TestHandleCallScanStringDefaultSource(t *testing.T) {
 	// No "source" field — should default to "stdin"
 	params := json.RawMessage(`{"name":"scan_string","arguments":{"content":"AKIAIOSFODNN7EXAMPLE"}}`)
-	result, rerr := handleCall(context.Background(), params)
+	result, rerr := handleCall(context.Background(), nil, params)
 	if rerr != nil {
 		t.Fatalf("unexpected error: %v", rerr)
 	}
@@ -173,7 +180,7 @@ func TestHandleCallScanDirError(t *testing.T) {
 
 	pathJSON, _ := json.Marshal(tmp.Name())
 	params := json.RawMessage(`{"name":"scan_dir","arguments":{"path":` + string(pathJSON) + `}}`)
-	_, rerr := handleCall(context.Background(), params)
+	_, rerr := handleCall(context.Background(), nil, params)
 	// Either returns error or empty result depending on impl
 	if rerr != nil && rerr.Code != -32603 {
 		t.Errorf("unexpected error code %d", rerr.Code)
@@ -192,7 +199,7 @@ var k = "AKIAIOSFODNN7EXAMPLE"
 
 	dirJSON, _ := json.Marshal(filepath.Clean(dir))
 	params := json.RawMessage(`{"name":"scan_dir","arguments":{"path":` + string(dirJSON) + `,"categories":["secrets"]}}`)
-	result, rerr := handleCall(context.Background(), params)
+	result, rerr := handleCall(context.Background(), nil, params)
 	if rerr != nil {
 		t.Fatalf("unexpected error: %v", rerr)
 	}
@@ -266,7 +273,7 @@ func TestMainExercisesToolsCall(t *testing.T) {
 	if req.Method != "tools/call" {
 		t.Fatal("expected tools/call")
 	}
-	result, rerr := handleCall(context.Background(), req.Params)
+	result, rerr := handleCall(context.Background(), nil, req.Params)
 	if rerr != nil {
 		t.Fatalf("unexpected error: %v", rerr)
 	}
@@ -309,7 +316,7 @@ func TestHandleCallDoesNotRateLimit(t *testing.T) {
 	// already consumed (or denied) upstream in run(). We pass a
 	// trivially-scannable content so the call succeeds end-to-end.
 	params := json.RawMessage(`{"name":"scan_string","arguments":{"content":"hello","source":"test"}}`)
-	result, rerr := handleCall(context.Background(), params)
+	result, rerr := handleCall(context.Background(), nil, params)
 	if rerr != nil {
 		t.Errorf("handleCall should not rate-limit (PR #97 contract); got rpcError %d (%s)",
 			rerr.Code, rerr.Message)
@@ -321,7 +328,7 @@ func TestHandleCallDoesNotRateLimit(t *testing.T) {
 
 // TestHandleCallInvalidTopLevelJSON exercises the json.Unmarshal failure in handleCall.
 func TestHandleCallInvalidTopLevelJSON(t *testing.T) {
-	_, rerr := handleCall(context.Background(), json.RawMessage(`{invalid`))
+	_, rerr := handleCall(context.Background(), nil, json.RawMessage(`{invalid`))
 	if rerr == nil {
 		t.Error("expected rpcError for invalid top-level JSON")
 	}
@@ -335,7 +342,7 @@ func TestHandleCallInvalidTopLevelJSON(t *testing.T) {
 func TestHandleCallScanEnv(t *testing.T) {
 	t.Setenv("ATHEON_TEST_SECRET", "AKIAIOSFODNN7EXAMPLE")
 	params := json.RawMessage(`{"name":"scan_env","arguments":{"categories":["secrets"]}}`)
-	result, rerr := handleCall(context.Background(), params)
+	result, rerr := handleCall(context.Background(), nil, params)
 	if rerr != nil {
 		t.Fatalf("unexpected error: %v", rerr)
 	}
@@ -359,7 +366,7 @@ func TestHandleCallScanEnv(t *testing.T) {
 // TestHandleCallListPatterns exercises the new list_patterns tool.
 func TestHandleCallListPatterns(t *testing.T) {
 	params := json.RawMessage(`{"name":"list_patterns","arguments":{}}`)
-	result, rerr := handleCall(context.Background(), params)
+	result, rerr := handleCall(context.Background(), nil, params)
 	if rerr != nil {
 		t.Fatalf("unexpected error: %v", rerr)
 	}
@@ -378,7 +385,7 @@ func TestHandleCallListPatterns(t *testing.T) {
 // TestHandleCallListPatternsCategory exercises list_patterns with a category filter.
 func TestHandleCallListPatternsCategory(t *testing.T) {
 	params := json.RawMessage(`{"name":"list_patterns","arguments":{"category":"secrets"}}`)
-	result, rerr := handleCall(context.Background(), params)
+	result, rerr := handleCall(context.Background(), nil, params)
 	if rerr != nil {
 		t.Fatalf("unexpected error: %v", rerr)
 	}
@@ -396,7 +403,7 @@ func TestHandleCallListPatternsCategory(t *testing.T) {
 // TestHandleCallListCategories exercises the new list_categories tool.
 func TestHandleCallListCategories(t *testing.T) {
 	params := json.RawMessage(`{"name":"list_categories","arguments":{}}`)
-	result, rerr := handleCall(context.Background(), params)
+	result, rerr := handleCall(context.Background(), nil, params)
 	if rerr != nil {
 		t.Fatalf("unexpected error: %v", rerr)
 	}
@@ -416,7 +423,7 @@ func TestHandleCallUpdateBundle(t *testing.T) {
 	defer restore()
 
 	params := json.RawMessage(`{"name":"update_bundle","arguments":{}}`)
-	_, rerr := handleCall(context.Background(), params)
+	_, rerr := handleCall(context.Background(), nil, params)
 	// We don't assert success or failure here — only that the tool path
 	// runs without panicking. The download URL is intentionally bogus.
 	if rerr != nil && rerr.Code != -32603 {

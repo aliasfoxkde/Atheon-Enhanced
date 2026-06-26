@@ -8,6 +8,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `cmd/mcp/main.go` `$/cancelRequest` notification handler: stores
+  active request IDs in a `sync.Map` and returns `-32802` (Request
+  Cancelled) when a subsequent `tools/call` arrives with a matching
+  ID. This lets AI agents cancel long-running scans without killing
+  the MCP server.
+- `cmd/mcp/main.go` `safeError(err)` helper: maps `os.IsNotExist` →
+  `"file not found"`, `os.IsPermission` → `"permission denied"`,
+  everything else → `"internal error"`. Replaces bare `err.Error()`
+  calls in `handleScanFile`, `handleScanDir`, and `handleUpdateBundle`,
+  preventing the MCP server from leaking raw filesystem paths and
+  syscall strings to AI agents that parse error messages (HIGH risk
+  finding from Wave 9 audit).
+- `core/bundle.go` ETag-based stale-bundle detection: `DownloadBundle`
+  now accepts a `force` parameter. When `force=false` (the default),
+  a HEAD-less 24-hour freshness window skips the network round-trip
+  if the upstream bundle hasn't changed. The `update_bundle` MCP
+  tool gains a `force: bool` parameter to bypass the cache.
+- `core/pattern_state.go` `PatternState` gains `BundleETag` and
+  `BundleLastChecked` fields for stale-bundle detection.
+- `core/bundle.go` `fetchBundleData` now returns the `ETag` header
+  alongside the bundle bytes; `recordBundleETag` persists it to the
+  state file on a successful download.
+- `cmd/mcp/run_pr97_test.go` `TestCancelRequestHandler`,
+  `TestCancelRequestNoID`, `TestCancelRequestUnknownMethod`: cancel
+  protocol tests.
+- `cmd/mcp/mcp_error_sanitization_test.go`: `TestSafeError{NotExist,
+  Permission,Generic,Nil}` verify the `safeError` contract.
+- `core/bundle_etag_test.go`: `TestShouldSkipDownload{Fresh,Stale,
+  NoState,EmptyETag}`, `TestRecordBundleETag`, `TestLoadBundleETag`
+  cover the ETag tracking and stale-bundle logic.
 - `core.ScanOpts` struct with `NoFollowSymlinks` and `MaxFileSize`
   fields; `ScanDir` now takes the opts as a third argument. The CLI
   defaults to follow-symlinks and the package-level `maxFileSize`

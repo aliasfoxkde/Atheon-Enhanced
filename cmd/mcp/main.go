@@ -552,7 +552,7 @@ func sandboxPath(path string) (string, error) {
 	}
 	cwd, err := os.Getwd()
 	if err != nil {
-		return realPath, nil
+		return realPath, nil //nolint:nilerr // intentionally returning nil for Getwd errors
 	}
 	cwdReal, err := filepath.EvalSymlinks(cwd)
 	if err != nil {

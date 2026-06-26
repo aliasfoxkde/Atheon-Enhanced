@@ -112,7 +112,7 @@ func TestDownloadBundleNoChanges(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	restore := SetBundleDownloadURL(srv.URL + "/")
+	restore := testSetBundleURL(srv.URL + "/")
 	defer restore()
 
 	if err := DownloadBundle(context.Background(), false); err != nil {
@@ -154,7 +154,7 @@ func TestDownloadBundleWriteFileError(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	restore := SetBundleDownloadURL(srv.URL + "/")
+	restore := testSetBundleURL(srv.URL + "/")
 	defer restore()
 
 	// Use a fresh HOME with read-only .atheon

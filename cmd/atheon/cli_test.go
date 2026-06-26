@@ -370,7 +370,7 @@ func TestUpdateCommand(t *testing.T) {
 		}
 	}()
 
-	restore := core.SetBundleDownloadURL(srv.URL + "/")
+	restore := core.SetBundleDownloadURLForTest(srv.URL + "/")
 	defer restore()
 	// Reload the embedded bundle after this test so subsequent tests in the
 	// same binary see a full pattern set (DownloadBundle replaces allPatterns).

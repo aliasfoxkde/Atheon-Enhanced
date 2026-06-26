@@ -312,7 +312,7 @@ func TestRunUpdateSuccess(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	restoreURL := core.SetBundleDownloadURL(srv.URL + "/")
+	restoreURL := core.SetBundleDownloadURLForTest(srv.URL + "/")
 	defer restoreURL()
 
 	// Save and restore the on-disk bundle so the test is non-destructive.
@@ -384,7 +384,7 @@ func TestRunUpdateDownloadError(t *testing.T) {
 	// fails deterministically without network access.
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 	srv.Close()
-	restore := core.SetBundleDownloadURL(srv.URL)
+	restore := core.SetBundleDownloadURLForTest(srv.URL)
 	defer restore()
 
 	if code := run(context.Background(), []string{"update"}); code != 1 {

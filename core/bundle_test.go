@@ -417,7 +417,7 @@ func TestDownloadBundleHTTPError(t *testing.T) {
 	defer server.Close()
 
 	// Override bundle download URL
-	restoreURL := core.SetBundleDownloadURL(server.URL + "/")
+	restoreURL := core.SetBundleDownloadURLForTest(server.URL + "/")
 	defer restoreURL()
 
 	// DownloadBundle should return error for 404
@@ -436,7 +436,7 @@ func TestDownloadBundleNetworkError(t *testing.T) {
 	server.Close() // Close immediately
 
 	// Override with closed server URL
-	restoreURL := core.SetBundleDownloadURL(server.URL + "/")
+	restoreURL := core.SetBundleDownloadURLForTest(server.URL + "/")
 	defer restoreURL()
 
 	// DownloadBundle should return error for connection failure
@@ -459,7 +459,7 @@ func TestDownloadBundleParseError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	restoreURL := core.SetBundleDownloadURL(server.URL + "/")
+	restoreURL := core.SetBundleDownloadURLForTest(server.URL + "/")
 	defer restoreURL()
 
 	err := core.DownloadBundle(context.Background(), false)
@@ -560,7 +560,7 @@ func TestDownloadBundleNoChanges(t *testing.T) {
 	url, closeSrv := serveBundle(t, bundle)
 	defer closeSrv()
 
-	restoreURL := core.SetBundleDownloadURL(url)
+	restoreURL := core.SetBundleDownloadURLForTest(url)
 	defer restoreURL()
 
 	if err := core.DownloadBundle(context.Background(), false); err != nil {
@@ -581,7 +581,7 @@ func TestDownloadBundleRemovedOnly(t *testing.T) {
 	url, closeSrv := serveBundle(t, bundle)
 	defer closeSrv()
 
-	restoreURL := core.SetBundleDownloadURL(url)
+	restoreURL := core.SetBundleDownloadURLForTest(url)
 	defer restoreURL()
 
 	if err := core.DownloadBundle(context.Background(), false); err != nil {
@@ -603,7 +603,7 @@ func TestDownloadBundleAddedOnly(t *testing.T) {
 	url, closeSrv := serveBundle(t, bundle)
 	defer closeSrv()
 
-	restoreURL := core.SetBundleDownloadURL(url)
+	restoreURL := core.SetBundleDownloadURLForTest(url)
 	defer restoreURL()
 
 	if err := core.DownloadBundle(context.Background(), false); err != nil {

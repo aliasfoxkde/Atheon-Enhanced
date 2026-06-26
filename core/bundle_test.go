@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -402,14 +404,20 @@ func TestPatternStatePersistence(t *testing.T) {
 
 // TestDownloadBundleHTTPError tests DownloadBundle with HTTP error response
 func TestDownloadBundleHTTPError(t *testing.T) {
-	// Create a test server that returns 404
+	// Create a test server that serves checksums.txt (to avoid hash verification
+	// blocking the 404 check) and returns 404 for the bundle.
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "checksums.txt") || r.URL.Path == "/checksums.txt" {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("deadbeef  patterns.bundle\n")) //nolint:errcheck
+			return
+		}
 		w.WriteHeader(http.StatusNotFound)
 	}))
 	defer server.Close()
 
 	// Override bundle download URL
-	restoreURL := core.SetBundleDownloadURL(server.URL)
+	restoreURL := core.SetBundleDownloadURL(server.URL + "/")
 	defer restoreURL()
 
 	// DownloadBundle should return error for 404
@@ -428,7 +436,7 @@ func TestDownloadBundleNetworkError(t *testing.T) {
 	server.Close() // Close immediately
 
 	// Override with closed server URL
-	restoreURL := core.SetBundleDownloadURL(server.URL)
+	restoreURL := core.SetBundleDownloadURL(server.URL + "/")
 	defer restoreURL()
 
 	// DownloadBundle should return error for connection failure
@@ -441,12 +449,17 @@ func TestDownloadBundleNetworkError(t *testing.T) {
 // TestDownloadBundleParseError tests DownloadBundle when the server returns non-gzip data.
 func TestDownloadBundleParseError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "checksums.txt") || r.URL.Path == "/checksums.txt" {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("deadbeef  patterns.bundle\n")) //nolint:errcheck
+			return
+		}
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("this is not gzip data"))
 	}))
 	defer server.Close()
 
-	restoreURL := core.SetBundleDownloadURL(server.URL)
+	restoreURL := core.SetBundleDownloadURL(server.URL + "/")
 	defer restoreURL()
 
 	err := core.DownloadBundle(context.Background(), false)
@@ -513,14 +526,25 @@ func bundleFromPatterns(t *testing.T, dropLast int, extra []struct{ name, catego
 	return makeTestBundle(pds)
 }
 
-// serveBundle starts a test HTTP server that always returns data and returns its URL.
+// serveBundle starts a test HTTP server that serves a bundle and a matching
+// checksums.txt so hash verification passes. Returns the server URL (with
+// trailing slash so checksums derivation works) and a close function.
 func serveBundle(t *testing.T, data []byte) (url string, close func()) {
 	t.Helper()
+	h := sha256.New()
+	h.Write(data)
+	checksumLine := hex.EncodeToString(h.Sum(nil)) + "  patterns.bundle\n"
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "checksums.txt") || r.URL.Path == "/checksums.txt" {
+			w.Header().Set("Content-Type", "text/plain")
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(checksumLine)) //nolint:errcheck
+			return
+		}
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write(data)
 	}))
-	return srv.URL, srv.Close
+	return srv.URL + "/", srv.Close
 }
 
 // TestDownloadBundleNoChanges exercises the printBundleDiff default ("no changes") branch.

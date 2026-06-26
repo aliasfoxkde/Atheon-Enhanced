@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -338,8 +340,19 @@ func TestUpdateCommand(t *testing.T) {
 			return
 		}
 		gz.Close()
+		bundleBytes := buf.Bytes()
+		// Serve checksums.txt so hash verification passes.
+		if strings.HasSuffix(r.URL.Path, "checksums.txt") || r.URL.Path == "/checksums.txt" {
+			h := sha256.New()
+			h.Write(bundleBytes)
+			checksumLine := hex.EncodeToString(h.Sum(nil)) + "  patterns.bundle\n"
+			w.Header().Set("Content-Type", "text/plain")
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(checksumLine)) //nolint:errcheck
+			return
+		}
 		w.Header().Set("Content-Type", "application/octet-stream")
-		w.Write(buf.Bytes())
+		w.Write(bundleBytes)
 	}))
 	defer srv.Close()
 
@@ -357,7 +370,7 @@ func TestUpdateCommand(t *testing.T) {
 		}
 	}()
 
-	restore := core.SetBundleDownloadURL(srv.URL)
+	restore := core.SetBundleDownloadURL(srv.URL + "/")
 	defer restore()
 	// Reload the embedded bundle after this test so subsequent tests in the
 	// same binary see a full pattern set (DownloadBundle replaces allPatterns).

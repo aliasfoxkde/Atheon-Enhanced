@@ -15,6 +15,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -336,11 +337,28 @@ func init() {
 func ptrString(s string) *string { return &s }
 
 // SetBundleDownloadURL swaps the upstream URL used by DownloadBundle. It
-// returns a restore function that callers should defer to reset the URL
-// after tests or short-lived overrides. Exported so external test
-// packages (e.g., the main binary's tests) can stub out network access.
-func SetBundleDownloadURL(url string) func() {
-	prev := bundleDownloadURL.Swap(ptrString(url))
+// rejects file:// and other non-HTTP schemes that could be used for SSRF
+// attacks (e.g., file:///etc/passwd to read local files, ftp:// to scan
+// internal networks). HTTP and HTTPS schemes pass through; any URL —
+// including malformed ones, localhost, and private IPs — proceeds to the
+// HTTP layer where DownloadBundle's context timeout provides safety.
+// Returns a restore function that callers should defer to reset the URL
+// after tests or short-lived overrides. Exported so external test packages
+// (e.g., the main binary's tests) can stub out network access.
+func SetBundleDownloadURL(rawURL string) func() {
+	if rawURL != "" {
+		u, err := url.Parse(rawURL)
+		if err == nil {
+			switch u.Scheme {
+			case "http", "https":
+				// Allowed — proceeds to HTTP layer.
+			default:
+				// Reject file://, ftp://, sftp://, etc.
+				panic("SetBundleDownloadURL: non-HTTP(S) scheme rejected: " + rawURL)
+			}
+		}
+	}
+	prev := bundleDownloadURL.Swap(ptrString(rawURL))
 	return func() { bundleDownloadURL.Store(prev) }
 }
 
@@ -385,7 +403,7 @@ func DownloadBundle(ctx context.Context, force bool) error {
 
 	// Verify SHA-256 hash against checksums.txt if available.
 	if err := verifyBundleHash(ctx, data); err != nil {
-		slog.Warn("bundle hash verification failed, proceeding anyway", "err", err)
+		return fmt.Errorf("%w: %w", ErrBundleHashMismatch, err)
 	}
 
 	slog.Info("bundle download complete", "bytes", len(data), "elapsed_ms", time.Since(start).Milliseconds(), "etag", etag)

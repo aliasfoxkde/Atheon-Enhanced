@@ -93,8 +93,8 @@ func TestVerifyBundleHashOK(t *testing.T) {
 	t.Cleanup(ReloadBundle)
 }
 
-// TestVerifyBundleHashMismatch verifies a mismatched hash is logged but
-// does not block the bundle update (warn-and-proceed per the implementation).
+// TestVerifyBundleHashMismatch verifies a mismatched hash causes DownloadBundle
+// to return an error wrapping ErrBundleHashMismatch.
 func TestVerifyBundleHashMismatch(t *testing.T) {
 	bundleData := minimalBundle()
 
@@ -122,11 +122,10 @@ func TestVerifyBundleHashMismatch(t *testing.T) {
 	t.Setenv("HOME", home)
 	writeValidState(home)
 
-	// Hash mismatch is logged but not propagated — bundle still loads.
-	if err := DownloadBundle(context.Background(), true); err != nil {
-		t.Fatalf("DownloadBundle should not fail on hash mismatch: %v", err)
+	// Hash mismatch is now fatal — bundle does not load.
+	if err := DownloadBundle(context.Background(), true); err == nil {
+		t.Fatal("expected error on hash mismatch")
 	}
-	t.Cleanup(ReloadBundle)
 }
 
 // TestVerifyBundleHashMissing verifies 404 on checksums.txt is silently skipped.

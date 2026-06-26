@@ -2,12 +2,15 @@ package core
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 )
 
@@ -97,12 +100,19 @@ func TestDownloadBundleNoChanges(t *testing.T) {
 	body := gzipBytes(jb)
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "checksums.txt") || r.URL.Path == "/checksums.txt" {
+			h := sha256.New()
+			h.Write(body)
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(hex.EncodeToString(h.Sum(nil)) + "  patterns.bundle\n")) //nolint:errcheck
+			return
+		}
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write(body)
 	}))
 	defer srv.Close()
 
-	restore := SetBundleDownloadURL(srv.URL)
+	restore := SetBundleDownloadURL(srv.URL + "/")
 	defer restore()
 
 	if err := DownloadBundle(context.Background(), false); err != nil {
@@ -132,12 +142,19 @@ func TestDownloadBundleWriteFileError(t *testing.T) {
 	body := buildTestBundleBytes(t, defs)
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "checksums.txt") || r.URL.Path == "/checksums.txt" {
+			h := sha256.New()
+			h.Write(body)
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(hex.EncodeToString(h.Sum(nil)) + "  patterns.bundle\n")) //nolint:errcheck
+			return
+		}
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write(body)
 	}))
 	defer srv.Close()
 
-	restore := SetBundleDownloadURL(srv.URL)
+	restore := SetBundleDownloadURL(srv.URL + "/")
 	defer restore()
 
 	// Use a fresh HOME with read-only .atheon

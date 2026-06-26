@@ -2,6 +2,8 @@ package core
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -23,6 +25,24 @@ func buildTestBundleBytes(t *testing.T, defs []PatternDef) []byte {
 	return gzipBytes(jb)
 }
 
+// checksumsHandler returns an http.HandlerFunc that serves checksums.txt
+// for a bundle of the given SHA-256 digest. The digest is computed from the
+// bundle bytes already gzip-compressed and ready to serve.
+func checksumsHandler(bundleBytes []byte) http.HandlerFunc {
+	h := sha256.New()
+	h.Write(bundleBytes)
+	hash := h.Sum(nil)
+	checksumLine := strings.TrimSpace(hex.EncodeToString(hash)) + "  patterns.bundle\n"
+	return func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "checksums.txt") || r.URL.Path == "/checksums.txt" {
+			w.Header().Set("Content-Type", "text/plain")
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(checksumLine)) //nolint:errcheck
+			return
+		}
+	}
+}
+
 // TestDownloadBundleMockOK exercises the happy path with a mock server.
 func TestDownloadBundleMockOK(t *testing.T) {
 	// Build a small but valid bundle
@@ -31,15 +51,19 @@ func TestDownloadBundleMockOK(t *testing.T) {
 		{Name: "dl-bundle-2", Category: "test", Match: `\bDL2\b`, Enabled: true},
 	}
 	body := buildTestBundleBytes(t, defs)
+	checksums := checksumsHandler(body)
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/octet-stream")
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write(body)
+		checksums(w, r)
+		if r.URL.Path != "checksums.txt" && r.URL.Path != "/checksums.txt" {
+			w.Header().Set("Content-Type", "application/octet-stream")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(body)
+		}
 	}))
 	defer srv.Close()
 
-	restore := SetBundleDownloadURL(srv.URL)
+	restore := SetBundleDownloadURL(srv.URL + "/")
 	defer restore()
 
 	// Restore the embedded bundle after this test
@@ -77,11 +101,17 @@ func TestDownloadBundleMockOK(t *testing.T) {
 // TestDownloadBundleMockServerError exercises the non-200 branch.
 func TestDownloadBundleMockServerError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "checksums.txt") || r.URL.Path == "/checksums.txt" {
+			// Serve a dummy checksums.txt so hash verification is not the failure.
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("deadbeef  patterns.bundle\n")) //nolint:errcheck
+			return
+		}
 		http.Error(w, "boom", http.StatusInternalServerError)
 	}))
 	defer srv.Close()
 
-	restore := SetBundleDownloadURL(srv.URL)
+	restore := SetBundleDownloadURL(srv.URL + "/")
 	defer restore()
 
 	err := DownloadBundle(context.Background(), false)
@@ -97,12 +127,17 @@ func TestDownloadBundleMockServerError(t *testing.T) {
 // inside DownloadBundle.
 func TestDownloadBundleMockBadGzip(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "checksums.txt") || r.URL.Path == "/checksums.txt" {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("deadbeef  patterns.bundle\n")) //nolint:errcheck
+			return
+		}
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("not gzip data"))
 	}))
 	defer srv.Close()
 
-	restore := SetBundleDownloadURL(srv.URL)
+	restore := SetBundleDownloadURL(srv.URL + "/")
 	defer restore()
 
 	err := DownloadBundle(context.Background(), false)
@@ -114,13 +149,18 @@ func TestDownloadBundleMockBadGzip(t *testing.T) {
 // TestDownloadBundleMockBadJSON exercises the JSON-decode error branch.
 func TestDownloadBundleMockBadJSON(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "checksums.txt") || r.URL.Path == "/checksums.txt" {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("deadbeef  patterns.bundle\n")) //nolint:errcheck
+			return
+		}
 		w.WriteHeader(http.StatusOK)
 		// Gzip-compress invalid JSON
 		_, _ = w.Write(gzipBytes([]byte("not json")))
 	}))
 	defer srv.Close()
 
-	restore := SetBundleDownloadURL(srv.URL)
+	restore := SetBundleDownloadURL(srv.URL + "/")
 	defer restore()
 
 	err := DownloadBundle(context.Background(), false)
@@ -139,14 +179,18 @@ func TestDownloadBundleMockMkdirError(t *testing.T) {
 	// Build a valid bundle so the early checks pass
 	defs := []PatternDef{{Name: "x", Category: "t", Match: `x`, Enabled: true}}
 	body := buildTestBundleBytes(t, defs)
+	checksums := checksumsHandler(body)
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write(body)
+		checksums(w, r)
+		if r.URL.Path != "checksums.txt" && r.URL.Path != "/checksums.txt" {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(body)
+		}
 	}))
 	defer srv.Close()
 
-	restore := SetBundleDownloadURL(srv.URL)
+	restore := SetBundleDownloadURL(srv.URL + "/")
 	defer restore()
 
 	// Point HOME at a path under a non-directory so MkdirAll fails
@@ -180,14 +224,18 @@ func TestDownloadBundleMockChangesReported(t *testing.T) {
 		{Name: "newly-added-pattern", Category: "test", Match: `\bNEW\b`, Enabled: true},
 	}
 	body := buildTestBundleBytes(t, defs)
+	checksums := checksumsHandler(body)
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write(body)
+		checksums(w, r)
+		if r.URL.Path != "checksums.txt" && r.URL.Path != "/checksums.txt" {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(body)
+		}
 	}))
 	defer srv.Close()
 
-	restore := SetBundleDownloadURL(srv.URL)
+	restore := SetBundleDownloadURL(srv.URL + "/")
 	defer restore()
 
 	if err := DownloadBundle(context.Background(), false); err != nil {
@@ -202,7 +250,7 @@ func TestDownloadBundleNetworkError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 	srv.Close() // immediately close so the URL is invalid
 
-	restore := SetBundleDownloadURL(srv.URL)
+	restore := SetBundleDownloadURL(srv.URL + "/")
 	defer restore()
 
 	err := DownloadBundle(context.Background(), false)
@@ -226,7 +274,7 @@ func TestDownloadBundleMockMkdirErrorUserProfile(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	restore := SetBundleDownloadURL(srv.URL)
+	restore := SetBundleDownloadURL(srv.URL + "/")
 	defer restore()
 
 	tmp := t.TempDir()
@@ -276,7 +324,7 @@ func TestDownloadBundleReadAllError(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	restore := SetBundleDownloadURL(srv.URL)
+	restore := SetBundleDownloadURL(srv.URL + "/")
 	defer restore()
 
 	err := DownloadBundle(context.Background(), false)

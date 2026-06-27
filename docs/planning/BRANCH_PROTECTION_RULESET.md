@@ -51,12 +51,14 @@ Security / Go Vulnerability Check
 ### Additional Settings
 
 - **Required linear history**: Enabled (no merge commits on main)
+- **Require deployments to succeed before merging**: Disabled (no GitHub Environments configured)
 - **Allow force pushes**: Disabled for all
 - **Allow deletions**: Disabled
 - **Block creation**: Enabled (prevents branch creation via API if protected)
 - **Required conversation resolution**: Enabled
 - **Lock branch**: Disabled
 - **Allow fork syncing**: Disabled
+- **Do not allow bypassing the above settings**: **Enabled** — enforces all above rules for administrators and custom roles with "bypass branch protections" permission
 
 ---
 
@@ -66,7 +68,9 @@ Security / Go Vulnerability Check
 
 | # | Gap | Risk | Resolution |
 |---|---|---|---|
-| 1 | **`enforce_admins: false`** | Admin users can bypass branch protection | **Requires GitHub admin UI action** — navigate to Settings → Branches → Protection rules → Enable "Include administrators" |
+| 1 | **`enforce_admins: false`** | Admin users can bypass branch protection entirely (push directly to main) | **Requires GitHub admin UI action** — navigate to Settings → Branches → Protection rules → Enable "Include administrators" |
+
+> **Note**: "Do not allow bypassing the above settings" IS enabled — this constrains users with explicit "bypass branch protections" permission, but does NOT address `enforce_admins: false`, which exempts admin users from all branch protection rules entirely.
 
 ### MEDIUM Priority
 

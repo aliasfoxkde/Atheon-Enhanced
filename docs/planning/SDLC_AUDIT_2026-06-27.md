@@ -244,11 +244,21 @@ Security / Go Vulnerability Check
 - [ ] Coverage trend dashboards
 - [ ] Self-scan trend tracking
 
+### Phase 5: Code Quality — COMPLETED ✓ (2026-06-27)
+
+- [x] Make MCP limits env-configurable — PR #117 (rate, burst, concurrent cap, timeouts, size caps)
+- [x] Make skipDirs/binaryExts env-configurable — PR #117 (ATHEON_SKIP_DIRS, ATHEON_BINARY_EXTS)
+- [x] Fix Makefile lint target hiding errors — PR #117 (removed `2>/dev/null`)
+- [x] Extract safeError to shared package — PR #119 (internal/errors)
+- [x] Reject HTTP redirects in bundle download — PR #120 (SSRF prevention)
+- [x] Fix pre-commit temp dir leak — PR #120 (ERR+EXIT trap)
+
+**Requires GitHub admin action:**
+- `enforce_admins: true` on branch protection
+
 ---
 
-**PR #115 Status (2026-06-27):** Release validation gate + CONTRIBUTING.md SDLC details.
-
-**PR #114 Status (2026-06-27):** Merged ✓ — auto-merge timeout fix, GO_VERSION fix, stale.yml, labeler.yml, sync.yml removal.
+**Merged PRs (2026-06-27):** #114, #115, #116, #117, #118, #119, #120
 
 ---
 

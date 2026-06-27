@@ -574,7 +574,7 @@ func sandboxPath(path string) (string, error) {
 		// Non-existent path — return cleaned path so the caller's ScanFile/ScanDir
 		// naturally reports the not-exist error. We intentionally return nil err
 		// so the path is still usable; the scanner will catch the real error.
-		return filepath.Clean(path), nil //nolint:nilerr
+		return filepath.Clean(path), nil //nolint:nilerr // non-existent paths are handled by scanner
 	}
 	cwd, err := os.Getwd()
 	if err != nil {

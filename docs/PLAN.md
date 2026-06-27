@@ -193,9 +193,8 @@ Three parallel Explore agents ran post-Wave 8: **MCP + DX**, **SARIF + Ecosystem
    - Run `go vet ./...` and `golangci-lint` with the latest version to catch any new lints
 
 3. **`gopkg.in/yaml.v3` deprecation**:
-   - The `yaml.v3` library is unmaintained (last release 2022); a migration to `github.com/goccy/go-yaml` is a larger change
-   - Add a tracking issue / deferred item; do not change in Wave 9
-   - Add a comment in `go.mod` noting this as a known technical debt item
+   - ~~The `yaml.v3` library is unmaintained~~ — **DONE in Wave 11 (PR #111)**. Migrated to `github.com/goccy/go-yaml`.
+   - No further action needed.
 
 **Files modified**: `cmd/atheon/main.go` (help text), `.github/workflows/ci.yml` (Go 1.25 matrix), `go.mod` (comment)
 
@@ -231,7 +230,7 @@ No fixed timeline. Each wave lands when ready. Velocity is gated by review throu
 
 **External**:
 - Go 1.21+ (1.22, 1.23, 1.24, 1.25 also tested in CI matrix)
-- `gopkg.in/yaml.v3` (only direct dep) — noted as unmaintained, migration to `github.com/goccy/go-yaml` deferred
+- `github.com/goccy/go-yaml` — migrated from `gopkg.in/yaml.v3` in Wave 11 (PR #111)
 - GitHub Actions runners (ubuntu, windows, macos)
 
 **Internal**:
@@ -242,4 +241,3 @@ No fixed timeline. Each wave lands when ready. Velocity is gated by review throu
 
 - Should `update_bundle` in the MCP server require confirmation or a `force` parameter? (Currently unconditional download.)
 - Should the bundle carry a schema version (`version: 2`) so consumers can detect when the wire format changes?
-- Should `goccy/go-yaml` migration land in Wave 9 or Wave 10? (Breaking API change requires careful review.)

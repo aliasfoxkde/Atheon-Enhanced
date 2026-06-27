@@ -20,12 +20,39 @@ jobs:
       github.event.pull_request.head.repo.full_name == github.repository
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # Bind PR-controlled values to env so they are never interpolated
-      # into the shell command body via ${{ }}.
       PR_NUMBER: ${{ github.event.pull_request.number }}
       REPO: ${{ github.repository }}
     steps:
+      - name: Check PR is mergeable
+        id: check
+        run: |
+          # Wait up to 60s for required status checks to complete
+          for i in $(seq 1 12); do
+            state=$(gh api repos/${REPO}/pulls/${PR_NUMBER} --jq '.mergeable_state')
+            echo "Attempt $i/12: mergeable_state=${state}"
+            case "${state}" in
+              clean|unstable)
+                echo "PR is mergeable, proceeding..."
+                exit 0
+                ;;
+              blocked)
+                echo "PR is blocked by required checks or reviews, waiting..."
+                ;;
+              dirty|unknown)
+                echo "PR has conflicts or is in an invalid state"
+                exit 1
+                ;;
+              *)
+                echo "Unexpected state: ${state}, waiting..."
+                ;;
+            esac
+            sleep 5
+          done
+          echo "Timeout waiting for PR to become mergeable"
+          exit 1
+
       - name: Enable auto-merge
+        if: steps.check.outcome == 'success'
         run: |
           gh pr merge "${PR_NUMBER}" \
             --repo "${REPO}" \

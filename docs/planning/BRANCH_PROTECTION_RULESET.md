@@ -79,6 +79,7 @@ Security / Go Vulnerability Check
 | 2 | **`stable/clean` unprotected** | Accidental force-push or deletion could break sync | Document as policy-only; or add protection rule |
 | 3 | **Single owner (`@aliasfoxkde`) for all paths** | Burnout / single point of failure | Add co-maintainers for specific categories |
 | 4 | **`dev/full-feature` is stale** | Confuses contributors | Remove from documentation or archive |
+| 5 | **`release` environment allows admin bypass** | `can_admins_bypass: true` lets admins skip deployment protection | Consider disabling if stricter deployment controls needed |
 
 ### LOW Priority
 
@@ -134,6 +135,54 @@ To add a co-maintainer for a specific category:
 /community/secrets/ @co-maintainer-username
 /community/web-security/ @security-reviewer
 ```
+
+---
+
+## Repository Settings
+
+### General Settings
+
+| Setting | Value | Notes |
+|---|---|---|
+| **Visibility** | Public | Anyone can see |
+| **Allow forking** | Yes | Fork PRs possible; labeler configured to skip forks |
+| **Delete branch on merge** | Enabled | Branches auto-deleted after squash merge |
+| **Allow auto-merge** | Enabled | Via `auto-merge.yml` workflow |
+| **Wiki** | Enabled | `wiki.yml` publishes `.github/wiki/*.md` |
+| **Pages** | Disabled | No GitHub Pages site configured |
+| **Releases** | Enabled | GoReleaser publishes to GitHub Releases |
+| **Discussions** | Disabled | Not currently used |
+
+### Environments
+
+| Environment | Purpose | Protection Rules |
+|---|---|---|
+| `release` | Deployment target for release workflow | Branch policy: protected branches only |
+
+The `release` environment is used by `release.yml` for tag-based deployments. It has `can_admins_bypass: true` meaning administrators can bypass deployment protection rules.
+
+### Actions Secrets (none currently)
+
+No repository-level Actions secrets are configured. Workflows use:
+- `CODECOV_TOKEN` — for coverage upload (repository secret)
+- `GH_PAT` — referenced in release workflow but may be unused (see PR #125)
+
+### Webhooks
+
+No custom webhooks are configured. Repository events are consumed via:
+- GitHub Actions triggers (`push`, `pull_request`, `workflow_dispatch`, etc.)
+- Community pattern review workflow uses GitHub Models API (no webhook)
+
+### Deployment Branch Policy
+
+```json
+{
+  "protected_branches": true,
+  "custom_branch_policies": false
+}
+```
+
+Only protected branches (e.g., `main`, tagged commits) can deploy to the `release` environment.
 
 ---
 

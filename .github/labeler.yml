@@ -1,0 +1,42 @@
+# PR labeler configuration
+# See: https://github.com/actions/labeler
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file: '.github/workflows/*'
+      - any-glob-to-any-file: 'Makefile'
+      - any-glob-to-any-file: '*.yml'
+      - any-glob-to-any-file: '*.yaml'
+
+docs:
+  - changed-files:
+      - any-glob-to-any-file: 'docs/**/*'
+      - any-glob-to-any-file: '*.md'
+
+core:
+  - changed-files:
+      - any-glob-to-any-file: 'core/**/*.go'
+
+mcp:
+  - changed-files:
+      - any-glob-to-any-file: 'cmd/mcp/**/*'
+
+cli:
+  - changed-files:
+      - any-glob-to-any-file: 'cmd/atheon/**/*'
+
+patterns:
+  - changed-files:
+      - any-glob-to-any-file: 'community/**/*.yaml'
+      - any-glob-to-any-file: 'core/pattern*.go'
+
+tests:
+  - changed-files:
+      - any-glob-to-any-file: '*_test.go'
+      - any-glob-to-any-file: '**/*_test.go'
+
+security:
+  - changed-files:
+      - any-glob-to-any-file: '.github/workflows/security.yml'
+      - any-glob-to-any-file: '**/secrets*'
+      - any-glob-to-any-file: '**/auth*'

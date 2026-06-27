@@ -1,0 +1,59 @@
+name: Stale PR/Issue Cleanup
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'  # Every Monday at 9:00 AM UTC
+
+  # Allow manual trigger
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    name: Mark Stale
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/stale@5daf1e915a5f0af01ddbcd89a43b8061ff4f1a89 # v9.0.0
+        with:
+          # Issues
+          days-before-issue-stale: 60
+          days-before-issue-close: 30
+          stale-issue-label: stale
+          close-issue-message: >
+            This issue has been marked stale because it has not had activity
+            in the last 60 days. It will be closed in 30 days if no further
+            action is taken.
+          stale-issue-template: |
+            This issue has been marked stale due to inactivity.
+
+            Please add a comment to keep it open, or it will be closed.
+
+          # PRs
+          days-before-pr-stale: 45
+          days-before-pr-close: 14
+          stale-pr-label: stale
+          close-pr-message: >
+            This PR has been marked stale due to inactivity (45 days).
+            It will be closed in 14 days if no further action is taken.
+          stale-pr-template: |
+            This PR has been marked stale due to inactivity.
+
+            Please update or close it to keep it active.
+
+          # Exempt labels
+          exempt-issue-labels: keep-open,security,bug
+          exempt-pr-labels: keep-open,in-progress
+
+          # Only process open items
+          only-labels: ''
+          any-of-labels: ''
+
+          # Operations
+          debug-only: false
+          ascend-again: true

@@ -110,7 +110,9 @@ func atomicWriteFile(path string, data []byte, perm os.FileMode) (retErr error) 
 	// Directory fsync — see core/atomic_file.go for the rationale.
 	// #nosec G304 -- see core/atomic_file.go for the path-safety analysis.
 	if dirFd, err := os.Open(dir); err == nil {
-		_ = dirFd.Sync()
+		if err := dirFd.Sync(); err != nil {
+			fmt.Fprintf(os.Stderr, "warn: directory fsync failed: dir=%s err=%v\n", dir, err)
+		}
 		_ = dirFd.Close()
 	}
 	return nil

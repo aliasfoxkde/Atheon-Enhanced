@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 )
@@ -65,7 +66,9 @@ func atomicWriteFile(path string, data []byte, perm os.FileMode) (retErr error) 
 	// controlled value. gosec G304 (file inclusion) does not apply.
 	// #nosec G304
 	if dirFd, err := os.Open(dir); err == nil {
-		_ = dirFd.Sync()
+		if err := dirFd.Sync(); err != nil {
+			slog.Warn("directory fsync failed", "dir", dir, "err", err)
+		}
 		_ = dirFd.Close()
 	}
 	return nil

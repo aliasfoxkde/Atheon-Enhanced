@@ -14,7 +14,7 @@ import (
 // OS-level errors to human-readable strings.
 func SafeError(err error) string {
 	if err == nil {
-		return "unknown error"
+		return "no error"
 	}
 	switch {
 	case os.IsNotExist(err):

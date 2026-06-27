@@ -1,0 +1,34 @@
+# <type>(<scope>): <short description>
+#
+# Types:   feat    - New feature
+#          fix     - Bug fix
+#          docs    - Documentation changes
+#          test    - Adding or updating tests
+#          refactor - Code refactoring (no feature/fix change)
+#          chore   - Maintenance tasks (deps, tooling)
+#          ci      - CI/CD changes
+#          build   - Build system changes
+#          perf    - Performance improvements
+#          release - Release/version changes
+#
+# Scope:   (optional) module or area affected
+#          e.g., feat(mcp), fix(bundle), docs(readme)
+#
+# Body:    Explain WHAT and WHY (not how)
+#          Wrap at 72 characters
+#
+# Footer:  BREAKING CHANGE: <description>
+#          or Closes #<issue>
+#
+# Examples:
+#   feat(mcp): add sandboxPath helper for path traversal protection
+#
+#   fix(bundle): verify hash before accepting download
+#   - Previously allowed corrupted bundles to pass silently
+#   - Now fails fast with clear error message
+#
+#   docs: add architecture diagram to README
+#
+#   Closes #123
+---
+

@@ -1,5 +1,5 @@
 name: todo-fixme
-match: (?i)(?:TODO|FIXME|HACK|XXX|BUG):
+match: "(?i)(?:TODO|FIXME|HACK|XXX|BUG):"
 severity: low
 enabled: true
 description: 'Pattern: Detect TODO/FIXME/HACK comments that need attention'

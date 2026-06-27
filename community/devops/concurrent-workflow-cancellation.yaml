@@ -1,5 +1,5 @@
 name: concurrent-workflow-cancellation
-match: (?i)concurrency:
+match: "(?i)concurrency:"
 severity: low
 enabled: true
 description: 'Pattern: concurrent-workflow-cancellation — Detects workflows with concurrency set but missing cancel-in-progress: true. Without this, multiple runs of the same workflow may execute simultaneously wasting resources.'

@@ -105,11 +105,11 @@ func TestMCPConcurrentCapMultipleHolders(t *testing.T) {
 
 	// Give holders time to enter dispatchRequest.
 	// Spin until counter reaches cap.
-	for i := 0; i < 1000 && mcpInflight.Load() < mcpConcurrentCap; i++ {
+	for i := 0; i < 1000 && mcpInflight.Load() < int64(mcpConcurrentCap); i++ {
 		time.Sleep(time.Millisecond)
 	}
 
-	if mcpInflight.Load() < mcpConcurrentCap {
+	if mcpInflight.Load() < int64(mcpConcurrentCap) {
 		t.Skipf("holders did not enter dispatchRequest in time (counter=%d), skipping", mcpInflight.Load())
 	}
 

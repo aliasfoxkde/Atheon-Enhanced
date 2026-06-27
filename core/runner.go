@@ -27,6 +27,30 @@ var binaryExts = map[string]bool{
 	".exe": true, ".bin": true, ".so": true, ".dylib": true,
 }
 
+func init() {
+	// ATHEON_SKIP_DIRS: comma-separated list of directory names to skip
+	if v := os.Getenv("ATHEON_SKIP_DIRS"); v != "" {
+		for _, d := range strings.Split(v, ",") {
+			d = strings.TrimSpace(d)
+			if d != "" {
+				skipDirs[d] = true
+			}
+		}
+	}
+	// ATHEON_BINARY_EXTS: comma-separated list of file extensions to skip
+	if v := os.Getenv("ATHEON_BINARY_EXTS"); v != "" {
+		for _, e := range strings.Split(v, ",") {
+			e = strings.TrimSpace(e)
+			if !strings.HasPrefix(e, ".") {
+				e = "." + e
+			}
+			if e != "" {
+				binaryExts[e] = true
+			}
+		}
+	}
+}
+
 // maxFileSize is the maximum file size to scan (10MB default).
 // Files larger than this are skipped to prevent memory exhaustion.
 const maxFileSize = 10 * 1024 * 1024

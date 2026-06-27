@@ -22,7 +22,7 @@ test-junit:
 lint:
 	go vet ./...
 	gofmt -l . | xargs -r false
-	$(TOOLS_DIR)/golangci-lint run --timeout=5m 2>/dev/null || golangci-lint run --timeout=5m 2>/dev/null || true
+	$(TOOLS_DIR)/golangci-lint run --timeout=5m || golangci-lint run --timeout=5m || true
 
 bundle:
 	go run ./bundler

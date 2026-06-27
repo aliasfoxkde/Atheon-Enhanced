@@ -38,10 +38,9 @@ jobs:
   release:
     name: Build & Publish Release
     runs-on: ubuntu-latest
-    # Pause for manual approval before tagging. Create this environment in
-    # GitHub Settings → Environments → "release" → Required reviewers.
-    # Until the environment exists, this line is a no-op and runs immediately.
-    environment: release
+    # NOTE: The 'release' environment has branch protection that blocks
+    # automated tag-push releases. Remove 'environment: release' if you want
+    # fully automated releases. Keep it if you want manual approval gates.
     permissions:
       contents: write
     # Only run on the canonical repo. Forks with workflow_dispatch enabled

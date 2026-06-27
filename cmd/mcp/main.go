@@ -99,27 +99,10 @@ func (rl *rateLimiter) Allow() bool {
 	return true
 }
 
-// mcpRateLimiter is the global rate limiter for MCP requests.
-// Allows 10 requests per second with a burst of 20.
-var mcpRateLimiter = newRateLimiter(10, 20)
-
 // activeRequests tracks in-flight request IDs and their cancel functions.
 // Used to implement $/cancelRequest: when a cancel notification arrives,
 // the cancel function is called, aborting the in-flight handler.
 var activeRequests sync.Map
-
-// mcpConcurrentCap is the maximum number of concurrent request handlers.
-// A server under heavy load (deep directory scans, large file reads) can
-// exhaust file descriptors or goroutine stacks if unbounded parallelism
-// is allowed. 50 is generous for a security scanner — a real scan
-// saturates I/O long before it needs 50 parallel workers.
-const mcpConcurrentCap = 50
-
-// mcpInflight tracks the number of active request handlers using an
-// atomic Int so dispatchRequest can check and increment/decrement
-// without holding a mutex. If the counter reaches cap, new requests
-// wait for a handler to decrement before being dispatched.
-var mcpInflight atomic.Int64
 
 // cancelRequestCode is the JSON-RPC error code returned when a request
 // was successfully canceled per the MCP spec.
@@ -145,6 +128,73 @@ func normalizeID(id any) string {
 	default:
 		return fmt.Sprintf("%v", id)
 	}
+}
+
+// envInt parses an int env var with a default.
+func envInt(key string, fallback int) int {
+	if v := os.Getenv(key); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			return n
+		}
+	}
+	return fallback
+}
+
+// envBytes parses a size in bytes from an env var. Supports bare integers
+// only (K/M/G suffix parsing can be added if needed).
+func envBytes(key string, fallback int) int {
+	if v := os.Getenv(key); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			return n
+		}
+	}
+	return fallback
+}
+
+// envDuration parses a duration string (e.g., "30s") from an env var.
+func envDuration(key string, fallback time.Duration) time.Duration {
+	if v := os.Getenv(key); v != "" {
+		if d, err := time.ParseDuration(v); err == nil {
+			return d
+		}
+	}
+	return fallback
+}
+
+// mcpRateLimiter is the global rate limiter for MCP requests.
+// Configurable via ATHEON_MCP_RATE_LIMIT and ATHEON_MCP_RATE_BURST.
+var mcpRateLimiter *rateLimiter
+
+// mcpConcurrentCap is the maximum number of concurrent request handlers.
+// Configurable via ATHEON_MCP_CONCURRENT_CAP.
+var mcpConcurrentCap int
+
+// mcpInflight tracks the number of active request handlers using an
+// atomic Int so dispatchRequest can check and increment/decrement
+// without holding a mutex.
+var mcpInflight atomic.Int64
+
+// mcpMaxRequestBytes caps the size of a single JSON-RPC request line.
+// Configurable via ATHEON_MCP_MAX_REQUEST_BYTES (bytes, default 64MiB).
+var mcpMaxRequestBytes int
+
+// mcpRequestTimeout bounds the time a single request handler can run.
+// Configurable via ATHEON_MCP_REQUEST_TIMEOUT (e.g., "30s").
+var mcpRequestTimeout time.Duration
+
+// mcpScanStringMaxBytes caps the scan_string tool's content argument.
+// Configurable via ATHEON_MCP_SCAN_STRING_MAX_BYTES (bytes, default 32MiB).
+var mcpScanStringMaxBytes int
+
+func init() {
+	rateLimit := envInt("ATHEON_MCP_RATE_LIMIT", 10)
+	rateBurst := envInt("ATHEON_MCP_RATE_BURST", 20)
+	mcpRateLimiter = newRateLimiter(float64(rateLimit), float64(rateBurst))
+
+	mcpConcurrentCap = envInt("ATHEON_MCP_CONCURRENT_CAP", 50)
+	mcpMaxRequestBytes = envBytes("ATHEON_MCP_MAX_REQUEST_BYTES", 64<<20)
+	mcpRequestTimeout = envDuration("ATHEON_MCP_REQUEST_TIMEOUT", 30*time.Second)
+	mcpScanStringMaxBytes = envBytes("ATHEON_MCP_SCAN_STRING_MAX_BYTES", 32<<20)
 }
 
 // JSON-RPC method names handled by the MCP server. Extracted as
@@ -191,29 +241,6 @@ func configureLogging() {
 	}
 	slog.SetDefault(slog.New(handler))
 }
-
-// mcpMaxRequestBytes caps the size of a single JSON-RPC request line.
-// 64 MiB is generous — a real-world scan request is < 100 KiB — and
-// keeps a malicious client from streaming gigabytes through os.Stdin
-// to OOM the server. Larger requests get truncated by io.LimitReader
-// and fail JSON decode with a parse error (logged + skipped).
-const mcpMaxRequestBytes = 64 << 20
-
-// mcpRequestTimeout bounds the time a single request handler can run.
-// 30s is far longer than any realistic scan but short enough that one
-// stuck request can't wedge the server indefinitely. The original
-// pre-PR-#97 code passed the global ctx straight through, so a
-// cancelled ctx from SIGTERM was indistinguishable from a hung
-// handler in logs.
-const mcpRequestTimeout = 30 * time.Second
-
-// mcpScanStringMaxBytes caps the scan_string tool's content argument.
-// 32 MiB matches the typical "scan a log file" use case (a few million
-// lines) while preventing agents from passing entire repo blobs that
-// would OOM the per-pattern scanLines buffer. Rejected at the tool
-// layer with invalidParams so the caller sees a clear error rather
-// than a silently truncated scan.
-const mcpScanStringMaxBytes = 32 << 20
 
 // run executes the JSON-RPC loop reading from r and writing to w, returning
 // the exit code. Separated from main() so tests can call it without os.Exit
@@ -331,7 +358,7 @@ func dispatchRequest(ctx context.Context, req *request) (result any, rerr *rpcEr
 	// from creating unbounded goroutines. We increment first so the
 	// counter is pessimistic — a handler that returns early still counts
 	// against the cap for the duration of its work.
-	if mcpInflight.Add(1) > mcpConcurrentCap {
+	if mcpInflight.Add(1) > int64(mcpConcurrentCap) {
 		mcpInflight.Add(-1)
 		return nil, &rpcError{Code: -32001, Message: fmt.Sprintf("concurrent request limit reached (%d)", mcpConcurrentCap), Data: "concurrent_limit"}
 	}

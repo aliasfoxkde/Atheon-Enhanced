@@ -756,9 +756,9 @@ func textResult(findings []core.Finding) map[string]any {
 	}
 	return map[string]any{
 		"content": []map[string]any{{
-			"type":               "text",
-			"text":               sb.String(),
-			"structuredContent":  structured,
+			"type":              "text",
+			"text":              sb.String(),
+			"structuredContent": structured,
 		}},
 	}
 }
@@ -799,9 +799,9 @@ func patternsResult(patterns []core.Pattern, category string) map[string]any {
 	}
 	return map[string]any{
 		"content": []map[string]any{{
-			"type":               "text",
-			"text":               sb.String(),
-			"structuredContent":  structured,
+			"type":              "text",
+			"text":              sb.String(),
+			"structuredContent": structured,
 		}},
 	}
 }
@@ -817,9 +817,9 @@ func categoriesResult(cats []string) map[string]any {
 	}
 	return map[string]any{
 		"content": []map[string]any{{
-			"type":               "text",
-			"text":               sb.String(),
-			"structuredContent":  cats,
+			"type":              "text",
+			"text":              sb.String(),
+			"structuredContent": cats,
 		}},
 	}
 }

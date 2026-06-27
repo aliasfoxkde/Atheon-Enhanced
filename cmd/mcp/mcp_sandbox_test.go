@@ -61,9 +61,11 @@ func TestSandboxPathAbsoluteAllowed(t *testing.T) {
 func TestSandboxPathSymlinkUnderCwdAllowed(t *testing.T) {
 	cwd, _ := os.Getwd()
 	// Create a symlink inside cwd that points to another file inside cwd.
+	// Use an absolute symlink target so it resolves correctly regardless of CWD.
 	subdir := filepath.Join(cwd, "cmd")
 	link := filepath.Join(subdir, "testlink")
-	os.Symlink("mcp/main.go", link)
+	target := filepath.Join(cwd, "README.md") // exists, inside cwd
+	os.Symlink(target, link)
 	defer os.Remove(link)
 
 	got, err := sandboxPath(filepath.Join("cmd", "testlink"))

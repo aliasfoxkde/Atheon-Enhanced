@@ -771,20 +771,6 @@ func ensureAtheonDir() (string, error) {
 	return dir, nil
 }
 
-// parseBundle decodes a gzipped JSON bundle into PatternDefs.
-// parseBundle decodes a gzipped JSON bundle into PatternDefs.
-func parseBundle(data []byte) ([]PatternDef, error) {
-	decompressed, err := decompress(data)
-	if err != nil {
-		return nil, err
-	}
-	var defs []PatternDef
-	if err := decodeJSONStrict(decompressed, &defs); err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrBundleParse, err)
-	}
-	return defs, nil
-}
-
 // diffPatternNames computes the symmetric set difference between the
 // currently-loaded pattern names and a freshly-downloaded bundle.
 func diffPatternNames(oldPatterns []string, newDefs []PatternDef) (added, removed []string) {

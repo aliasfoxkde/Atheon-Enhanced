@@ -33,12 +33,16 @@ var embeddedBundle []byte
 // it appears inside a pattern bundle. Match holds the regular-expression
 // source; the compiled *regexp.Regexp is not part of the wire form. Severity
 // is optional — patterns that omit it default to "medium" (see DefaultSeverity).
+// Schema version 2 (bundle v2) adds Description, Reference, and Tags fields.
 type PatternDef struct {
-	Name     string `json:"name"`
-	Category string `json:"category"`
-	Match    string `json:"match"`
-	Enabled  bool   `json:"enabled"`
-	Severity string `json:"severity,omitempty"`
+	Name        string   `json:"name"`
+	Category    string   `json:"category"`
+	Match       string   `json:"match"`
+	Enabled     bool     `json:"enabled"`
+	Severity    string   `json:"severity,omitempty"`
+	Description string   `json:"description,omitempty"`
+	Reference   string   `json:"reference,omitempty"`
+	Tags        []string `json:"tags,omitempty"`
 }
 
 // DefaultSeverity is the severity assigned to patterns that don't declare one.
@@ -201,6 +205,48 @@ func trimSpace(data []byte) []byte {
 	return data[i:j]
 }
 
+// decodeBundleDefs parses the decompressed bundle data, handling both
+// schema v1 (flat []PatternDef) and schema v2 ({"schema_version":2,"data":[...]}).
+func decodeBundleDefs(decompressed []byte) ([]PatternDef, error) {
+	trimmed := trimSpace(decompressed)
+	if len(trimmed) == 0 {
+		return nil, fmt.Errorf("bundle: empty data")
+	}
+
+	// Detect v2 envelope: first non-whitespace char is '{'
+	if trimmed[0] == '{' {
+		// Validate no unknown fields in v2 envelope before unmarshaling.
+		var raw map[string]json.RawMessage
+		if err := json.Unmarshal(decompressed, &raw); err != nil {
+			return nil, fmt.Errorf("bundle v2 parse error: %v", err)
+		}
+		validEnv := map[string]struct{}{"schema_version": {}, "data": {}}
+		for k := range raw {
+			if _, ok := validEnv[k]; !ok {
+				return nil, fmt.Errorf("bundle v2: unknown field %q", k)
+			}
+		}
+		var v2 struct {
+			SchemaVersion int          `json:"schema_version"`
+			Data          []PatternDef `json:"data"`
+		}
+		if err := json.Unmarshal(decompressed, &v2); err != nil {
+			return nil, fmt.Errorf("bundle v2 parse error: %v", err)
+		}
+		if v2.SchemaVersion != 2 {
+			return nil, fmt.Errorf("bundle: unsupported schema version %d", v2.SchemaVersion)
+		}
+		return v2.Data, nil
+	}
+
+	// v1: flat array
+	var defs []PatternDef
+	if err := json.Unmarshal(decompressed, &defs); err != nil {
+		return nil, fmt.Errorf("bundle v1 parse error: %v", err)
+	}
+	return defs, nil
+}
+
 // decompress gzip-decompresses data and returns the raw bytes.
 func decompress(data []byte) ([]byte, error) {
 	r, err := gzip.NewReader(bytes.NewReader(data))
@@ -221,8 +267,8 @@ func loadBundle(data []byte) error {
 
 // loadBundleFrom loads patterns from already-decompressed JSON data.
 func loadBundleFrom(decompressed []byte) error {
-	var defs []PatternDef
-	if err := decodeJSONStrict(decompressed, &defs); err != nil {
+	defs, err := decodeBundleDefs(decompressed)
+	if err != nil {
 		return fmt.Errorf("%w: %v", ErrBundleParse, err)
 	}
 

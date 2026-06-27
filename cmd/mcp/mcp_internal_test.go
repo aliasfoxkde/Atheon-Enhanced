@@ -102,13 +102,21 @@ func TestTextResultEmpty(t *testing.T) {
 	if text != "no findings" {
 		t.Errorf("expected 'no findings', got: %s", text)
 	}
+	// structuredContent should be an empty array for zero findings
+	sc, ok := content[0]["structuredContent"].([]map[string]any)
+	if !ok {
+		t.Error("expected structuredContent to be []map[string]any")
+	}
+	if len(sc) != 0 {
+		t.Errorf("expected empty structuredContent, got %d items", len(sc))
+	}
 }
 
 // TestTextResultMultiple verifies textResult output for >0 findings.
 func TestTextResultMultiple(t *testing.T) {
 	findings := []core.Finding{
-		{Pattern: "p1", File: "a.go", Line: 1},
-		{Pattern: "p2", File: "b.go", Line: 2},
+		{Pattern: "p1", File: "a.go", Line: 1, Column: 5, Content: "key=val", Severity: "high", Category: "secrets", Fingerprint: "p1|a.go|1|5"},
+		{Pattern: "p2", File: "b.go", Line: 2, Column: 10, Content: "token=x", Severity: "critical", Category: "secrets", Fingerprint: "p2|b.go|2|10"},
 	}
 	res := textResult(findings)
 	content := res["content"].([]map[string]any)
@@ -121,6 +129,20 @@ func TestTextResultMultiple(t *testing.T) {
 	}
 	if !strings.Contains(text, "p2  b.go:2") {
 		t.Errorf("expected 'p2  b.go:2' in output, got: %s", text)
+	}
+	// Verify structuredContent
+	sc, ok := content[0]["structuredContent"].([]map[string]any)
+	if !ok {
+		t.Fatal("expected structuredContent to be []map[string]any")
+	}
+	if len(sc) != 2 {
+		t.Fatalf("expected 2 structured findings, got %d", len(sc))
+	}
+	if sc[0]["pattern"] != "p1" || sc[0]["file"] != "a.go" || sc[0]["line"].(int) != 1 || sc[0]["column"].(int) != 5 {
+		t.Errorf("unexpected structuredContent[0]: %+v", sc[0])
+	}
+	if sc[1]["pattern"] != "p2" || sc[1]["severity"] != "critical" {
+		t.Errorf("unexpected structuredContent[1]: %+v", sc[1])
 	}
 }
 

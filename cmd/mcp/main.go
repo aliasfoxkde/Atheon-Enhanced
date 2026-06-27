@@ -345,6 +345,10 @@ func run(ctx context.Context, r io.Reader, w io.Writer) int {
 // to reconnect. With recover() in place the bad request gets an error
 // response and the server keeps serving.
 func dispatchRequest(ctx context.Context, req *request) (result any, rerr *rpcError) {
+	// Track whether we incremented the inflight counter so the defer
+	// knows whether to decrement. This avoids a double-decrement when
+	// the cap-check early-return path also runs the defer.
+	didIncrement := false
 	//nolint:revive // intentional MCP server resilience: one tool panic must not kill the daemon
 	defer func() {
 		if r := recover(); r != nil {
@@ -352,7 +356,9 @@ func dispatchRequest(ctx context.Context, req *request) (result any, rerr *rpcEr
 			rerr = &rpcError{Code: -32603, Message: "internal error"}
 			result = nil
 		}
-		mcpInflight.Add(-1)
+		if didIncrement {
+			mcpInflight.Add(-1)
+		}
 	}()
 
 	// Concurrent request cap: check before doing any work. This prevents
@@ -361,9 +367,10 @@ func dispatchRequest(ctx context.Context, req *request) (result any, rerr *rpcEr
 	// counter is pessimistic — a handler that returns early still counts
 	// against the cap for the duration of its work.
 	if mcpInflight.Add(1) > int64(mcpConcurrentCap) {
-		mcpInflight.Add(-1)
+		mcpInflight.Add(-1) // undo the increment; didIncrement stays false
 		return nil, &rpcError{Code: -32001, Message: fmt.Sprintf("concurrent request limit reached (%d)", mcpConcurrentCap), Data: "concurrent_limit"}
 	}
+	didIncrement = true
 
 	// JSON-RPC 2.0 requires the jsonrpc field. Anything else is a
 	// protocol-level malformed request — return -32600 (Invalid
@@ -561,16 +568,17 @@ func sandboxPath(path string) (string, error) {
 	// Resolve symlinks. Catches cases like "cmd/../../etc/passwd".
 	realPath, err := filepath.EvalSymlinks(path)
 	if err != nil {
-		// Broken or non-existent — let ScanFile/ScanDir report it.
-		return path, nil //nolint:nilerr // intentionally returning nil for non-existent paths
+		// Broken or non-existent path — reject it rather than passing a
+		// raw path that may have traversal components still in it.
+		return "", os.ErrNotExist
 	}
 	cwd, err := os.Getwd()
 	if err != nil {
-		return realPath, nil //nolint:nilerr // intentionally returning nil when cwd lookup fails
+		return realPath, os.ErrPermission
 	}
 	cwdReal, err := filepath.EvalSymlinks(cwd)
 	if err != nil {
-		return realPath, nil //nolint:nilerr // intentionally returning nil when cwd symlinks resolve
+		return realPath, os.ErrPermission
 	}
 	// Block traversal: e.g. cwd/subdir -> /etc via symlink.
 	if !strings.HasPrefix(realPath, cwdReal) {
@@ -721,8 +729,27 @@ func textResult(findings []core.Finding) map[string]any {
 		}
 		fmt.Fprintf(&sb, "\n%d finding(s)", len(findings))
 	}
+	// structuredContent carries machine-readable findings for clients that
+	// need parsed output rather than plain text.
+	structured := make([]map[string]any, 0, len(findings))
+	for _, f := range findings {
+		structured = append(structured, map[string]any{
+			"pattern":     f.Pattern,
+			"file":        f.File,
+			"line":        f.Line,
+			"column":      f.Column,
+			"content":     f.Content,
+			"severity":    f.Severity,
+			"category":    f.Category,
+			"fingerprint": f.Fingerprint,
+		})
+	}
 	return map[string]any{
-		"content": []map[string]any{{"type": "text", "text": sb.String()}},
+		"content": []map[string]any{{
+			"type":               "text",
+			"text":               sb.String(),
+			"structuredContent":  structured,
+		}},
 	}
 }
 
@@ -734,6 +761,7 @@ func patternsResult(patterns []core.Pattern, category string) map[string]any {
 	fmt.Fprintf(&sb, "| Name | Category | Enabled |\n")
 	fmt.Fprintf(&sb, "|------|----------|---------|\n")
 	count := 0
+	structured := make([]map[string]any, 0)
 	for _, p := range patterns {
 		if category != "" && p.Category() != category {
 			continue
@@ -743,6 +771,11 @@ func patternsResult(patterns []core.Pattern, category string) map[string]any {
 			enabled = "yes"
 		}
 		fmt.Fprintf(&sb, "| %s | %s | %s |\n", p.Name(), p.Category(), enabled)
+		structured = append(structured, map[string]any{
+			"name":     p.Name(),
+			"category": p.Category(),
+			"enabled":  p.Enabled(),
+		})
 		count++
 	}
 	if count == 0 {
@@ -755,7 +788,11 @@ func patternsResult(patterns []core.Pattern, category string) map[string]any {
 		fmt.Fprintf(&sb, "\n%d pattern(s)", count)
 	}
 	return map[string]any{
-		"content": []map[string]any{{"type": "text", "text": sb.String()}},
+		"content": []map[string]any{{
+			"type":               "text",
+			"text":               sb.String(),
+			"structuredContent":  structured,
+		}},
 	}
 }
 
@@ -769,6 +806,10 @@ func categoriesResult(cats []string) map[string]any {
 		fmt.Fprintf(&sb, "%s\n\n%d categories", strings.Join(cats, ", "), len(cats))
 	}
 	return map[string]any{
-		"content": []map[string]any{{"type": "text", "text": sb.String()}},
+		"content": []map[string]any{{
+			"type":               "text",
+			"text":               sb.String(),
+			"structuredContent":  cats,
+		}},
 	}
 }

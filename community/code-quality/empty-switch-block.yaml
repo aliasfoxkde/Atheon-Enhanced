@@ -1,0 +1,10 @@
+name: empty-switch-block
+category: code-quality
+match: 'switch\s+[^;]+;\s*\{[\s]*\}'
+enabled: true
+description: "Empty switch block - possible missing case logic"
+severity: low
+reference: "https://refactoring.com/catalog/removeDeadCode.html"
+tags:
+  - dead-code
+  - empty-switch

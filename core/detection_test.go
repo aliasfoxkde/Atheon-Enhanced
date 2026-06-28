@@ -72,6 +72,14 @@ var detectionFixtures = []struct {
 	{"kubernetes", "latest-tag", "image: nginx:latest"},
 	{"metadata", "backup-file", "/backup/etc/passwd.bak"},
 	{"terraform", "db-public-access", "aws_db_instance.publicly_accessible = true"},
+	// Frameworks (Wave 13 expansion)
+	{"angular", "angular-bypass-security-trust", ".bypassSecurityTrustHTML("},
+	{"express", "express-eval-usage", "eval(req.body.code)"},
+	{"flask", "flask-debug-enabled", "app.run(debug=True)"},
+	{"laravel", "laravel-app-key-hardcoded", "APP_KEY=base64:abcdefghijklmnopqrstuvwxyz123456"},
+	{"rails", "rails-secret-key-hardcoded", "secret_key_base='0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'"},
+	{"spring", "spring-deserialization-readObject", "readObject()"},
+	{"vue", "vue-v-html-xss", "v-html=\"{{userInput}}\""},
 }
 
 // TestPatternDetection is the headline test: for every fixture, the

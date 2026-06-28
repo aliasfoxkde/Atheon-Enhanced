@@ -1,6 +1,7 @@
-name: angular-bypass-security-trust
-category: frameworks
-match: \.bypassSecurityTrust(HTML|Url|Script|Style|ResourceUrl)
-severity: high
+category: angular
+description: Angular security bypass detected. bypassSecurityTrust calls disable Angular's
+  built-in XSS protection and should be reviewed carefully.
 enabled: true
-description: 'Angular security bypass detected. bypassSecurityTrust calls disable Angular\'s built-in XSS protection and should be reviewed carefully.'
+match: \.bypassSecurityTrust(HTML|Url|Script|Style|ResourceUrl)
+name: angular-bypass-security-trust
+severity: high

@@ -1,0 +1,11 @@
+name: defer-unused
+category: code-quality
+match: 'defer\s+[^;]+\([^)]*\)\s*(?:\/\/.*)?$'
+enabled: true
+description: "Deferred call result not used - defer is discarded"
+severity: medium
+reference: "https://go.dev/blog/defer-panic-and-recover"
+tags:
+  - dead-code
+  - defer
+  - go

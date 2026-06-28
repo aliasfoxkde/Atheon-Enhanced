@@ -1,31 +1,65 @@
-# Research Notes
+# AST Pattern Research
 
-Research notes documenting audit findings, gaps, risks, and architectural decisions.
+## Problem Statement
 
-## Key Documents
+Current Atheon-Enhanced uses regex patterns only. Regex cannot detect:
+- SQL injection across string concatenation
+- Command injection via string building
+- Unsafe deserialization
+- Context-aware security issues
 
-- [ANALYSIS_REPORT.md](reports/ANALYSIS_REPORT.md) - Comprehensive audit findings
-- [FEATURE_COMPARISON.md](reports/FEATURE_COMPARISON.md) - Upstream vs enhanced comparison
+## Solution: Go AST Analysis
 
-## ADRs (Architecture Decision Records)
+Using Go's standard `go/ast` and `go/packages` for:
+1. No external dependencies
+2. Native Go code understanding
+3. Precise line/column reporting
 
-See [architecture/decisions/](architecture/decisions/) for architectural decisions.
+## Implementation Approach
 
-## Recent Research
+### Phase 1: Built-in AST Patterns (using standard library only)
 
-### Pattern Coverage Analysis
+Built-in patterns using `go/ast`:
+- `unsafe-deserialization` - encoding.BinaryUnmarshaler with user input
+- `sql-injection` - String concat in database queries
+- `command-injection` - exec.Command with string building
+- `path-traversal` - os.Open with user input in path
+- `hardcoded-credentials` - Credentials assigned without env var
+- `error-not-handled` - Unchecked error returns
 
-- 335 patterns across 23 categories
-- AI detection patterns: 21 (including anti-cheating/harness integrity)
-- Secrets patterns: 66
-- Code quality patterns: 53
+### Phase 2: AST Pattern File Format
 
-### Performance Considerations
+Extend pattern YAML to support AST-based patterns:
 
-- Streaming API enables memory-efficient scanning
-- Bundle compression reduces download size
-- Parallel pattern matching in core engine
+```yaml
+name: go-sql-injection
+type: ast  # new field
+language: go
+pattern: |
+  call(Query|Exec|Execute) with Concat(arg, userInput)
+severity: high
+```
 
-## Historical Notes
+### Phase 3: Integration
 
-See [RELEASE.md](RELEASE.md) for release history and [REPORTS/](reports/) for detailed analyses.
+- Add `atheon scan --ast` flag
+- AST patterns run alongside regex patterns
+- Unified Finding output
+
+## Constraints
+
+- Must work with Go 1.21+
+- No external C dependencies (no tree-sitter)
+- Performance: AST parsing is slower than regex
+- Option to disable AST scanning for speed
+
+## Technical Notes
+
+- Use `go/ast.Inspect` for tree traversal
+- Use `go/packages` for package-level analysis
+- AST patterns complement regex, don't replace
+
+## See Also
+
+- `core/ast_patterns.go` - Implementation
+- `docs/ROADMAP.md` - Future plans

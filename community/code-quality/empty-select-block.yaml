@@ -1,0 +1,11 @@
+name: empty-select-block
+category: code-quality
+match: 'select\s*\{[\s]*\}'
+enabled: true
+description: "Empty select block - will deadlock if no cases match"
+severity: high
+reference: "https://go.dev/blog/select"
+tags:
+  - dead-code
+  - empty-select
+  - go

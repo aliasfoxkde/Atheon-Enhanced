@@ -1,0 +1,10 @@
+name: empty-if-block
+category: code-quality
+match: 'if\s*\([^)]+\)\s*\{\s*\}'
+enabled: true
+description: "Empty if block - possible missing logic"
+severity: low
+reference: "https://refactoring.com/catalog/removeDeadCode.html"
+tags:
+  - dead-code
+  - empty-block

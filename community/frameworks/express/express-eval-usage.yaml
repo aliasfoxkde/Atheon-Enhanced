@@ -1,6 +1,7 @@
 name: express-eval-usage
-category: frameworks
+category: express
 match: eval\s*\(.*(?:req|request|body|params|query)
 severity: high
 enabled: true
-description: 'Express.js eval() with user input detected. This is a severe security vulnerability that can lead to remote code execution.'
+description: Express.js eval() with user input detected. This is a severe security
+  vulnerability that can lead to remote code execution.

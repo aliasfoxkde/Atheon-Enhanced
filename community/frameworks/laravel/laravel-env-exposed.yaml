@@ -1,6 +1,7 @@
 name: laravel-app-key-hardcoded
-category: frameworks
+category: laravel
 match: APP_KEY\s*=\s*(base64:)?[a-zA-Z0-9\/+=]{32,}
 severity: high
 enabled: true
-description: 'Laravel APP_KEY hardcoded in source. This cryptographic key should be stored in environment variables only.'
+description: Laravel APP_KEY hardcoded in source. This cryptographic key should be
+  stored in environment variables only.

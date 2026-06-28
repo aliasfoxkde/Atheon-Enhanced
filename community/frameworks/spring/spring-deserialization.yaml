@@ -1,6 +1,7 @@
 name: spring-deserialization-readObject
-category: frameworks
+category: spring
 match: (ObjectInputStream|readObject)\s*\(\s*\)
 severity: high
 enabled: true
-description: 'Java deserialization detected. Unsafe deserialization can lead to remote code execution attacks.'
+description: Java deserialization detected. Unsafe deserialization can lead to remote
+  code execution attacks.

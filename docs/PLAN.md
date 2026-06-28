@@ -1,29 +1,52 @@
-# Project Plan
+# AST Pattern Implementation Plan
 
-This document outlines the development phases and roadmap for Atheon-Enhanced.
+## Overview
 
-## Current Phase
+Add AST-based pattern analysis using Go's standard `go/ast` library to detect security issues that regex cannot find.
 
-See [TASKS.md](TASKS.md) for current tasks and [PROGRESS.md](PROGRESS.md) for completed work.
+## Phases
 
-## Phases Overview
+### Phase 1: Core AST Scanner
+- [x] Create `core/ast_patterns.go`
+- [x] Define `ASTFinding` and `ASTPattern` types
+- [x] Implement `ScanFileAST()` and `ScanDirAST()`
+- [ ] Add pattern registration
 
-| Phase | Description | Status |
-|-------|-------------|--------|
-| A | Documentation restoration | ✅ Complete |
-| B | CI/CD consolidation | ✅ Complete |
-| C | MCP completeness | ✅ Complete |
-| D | Pattern expansion | ✅ Complete |
-| E | ADRs | ✅ Complete |
-| F | Optional cleanup | 🔄 In Progress |
+### Phase 2: Built-in Patterns
+- [ ] `unsafe-deserialization` - encoding.Unmarshal with user input
+- [ ] `sql-injection` - String concat in Query/Exec
+- [ ] `command-injection` - exec.Command with concat
+- [ ] `path-traversal` - os.Open with user input
+- [ ] `hardcoded-credentials` - Direct assignment of secrets
+- [ ] `error-not-handled` - Unchecked error returns
 
-## Documentation
+### Phase 3: CLI Integration
+- [ ] Add `--ast` flag to `atheon scan`
+- [ ] Add `--ast-only` flag to skip regex
+- [ ] Add `--categories=ast-security` for AST patterns
 
-- [ROADMAP.md](ROADMAP.md) - Development roadmap
-- [RESEARCH.md](RESEARCH.md) - Research notes and decisions
-- [TASKS.md](TASKS.md) - Current task list
-- [PROGRESS.md](PROGRESS.md) - Progress tracking
+### Phase 4: Pattern Format Extension
+- [ ] Extend YAML format with `type: ast`
+- [ ] Add `language: go` field
+- [ ] Document AST pattern syntax
 
-## Contributing
+## Files to Create/Modify
 
-See [.github/CONTRIBUTING.md](../.github/CONTRIBUTING.md) for how to contribute.
+| File | Change |
+|------|--------|
+| `core/ast_patterns.go` | NEW - AST pattern engine |
+| `cmd/atheon/main.go` | Add --ast flags |
+| `community/ast-security/` | NEW - AST pattern YAML files |
+| `docs/guides/AST_PATTERNS.md` | NEW - User guide |
+
+## Testing
+
+- [ ] Add `core/ast_patterns_test.go`
+- [ ] Test each built-in pattern
+- [ ] Integration test with CLI
+
+## Rollout
+
+1. CLI flag `--ast` enables AST scanning
+2. AST patterns in separate category
+3. Performance: warn if scanning large codebases

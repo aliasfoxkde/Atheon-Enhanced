@@ -1,6 +1,7 @@
 name: rails-raw-sql-injection
-category: frameworks
+category: rails
 match: \.execute\s*\(.*[#\{]
 severity: high
 enabled: true
-description: 'Rails raw SQL execution detected. Using raw SQL with string interpolation can lead to SQL injection vulnerabilities.'
+description: Rails raw SQL execution detected. Using raw SQL with string interpolation
+  can lead to SQL injection vulnerabilities.

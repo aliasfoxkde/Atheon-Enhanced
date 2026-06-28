@@ -1,0 +1,10 @@
+name: empty-for-loop
+category: code-quality
+match: 'for\s*\{[\s]*\}'
+enabled: true
+description: "Empty for loop - possible missing iteration logic"
+severity: low
+reference: "https://refactoring.com/catalog/removeDeadCode.html"
+tags:
+  - dead-code
+  - empty-loop

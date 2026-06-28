@@ -1,6 +1,7 @@
 name: flask-debug-enabled
-category: frameworks
+category: flask
 match: app\.run\s*\(\s*debug\s*=\s*True
 severity: medium
 enabled: true
-description: 'Flask debug mode enabled. This should be disabled in production as it allows code execution and exposes sensitive information.'
+description: Flask debug mode enabled. This should be disabled in production as it
+  allows code execution and exposes sensitive information.

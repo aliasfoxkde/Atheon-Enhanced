@@ -1,6 +1,7 @@
 name: express-sql-injection
-category: frameworks
+category: express
 match: (query|execute)\s*\(.*[\+\`].*\$\{
 severity: high
 enabled: true
-description: 'Express.js SQL query with template literal interpolation detected. This can lead to SQL injection vulnerabilities.'
+description: Express.js SQL query with template literal interpolation detected. This
+  can lead to SQL injection vulnerabilities.

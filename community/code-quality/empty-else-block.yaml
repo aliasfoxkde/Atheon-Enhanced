@@ -1,0 +1,10 @@
+name: empty-else-block
+category: code-quality
+match: '\}\s*else\s*\{\s*\}'
+enabled: true
+description: "Empty else block - possible dead code"
+severity: low
+reference: "https://refactoring.com/catalog/removeDeadCode.html"
+tags:
+  - dead-code
+  - empty-block

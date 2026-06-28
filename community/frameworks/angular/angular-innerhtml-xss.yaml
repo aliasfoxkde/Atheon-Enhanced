@@ -1,6 +1,7 @@
-name: angular-innerhtml-xss
-category: frameworks
-match: \.innerHTML\s*=
-severity: high
+category: angular
+description: Angular innerHTML assignment detected. This can introduce XSS vulnerabilities
+  if the content is not sanitized with DomSanitizer.
 enabled: true
-description: 'Angular innerHTML assignment detected. This can introduce XSS vulnerabilities if the content is not sanitized with DomSanitizer.'
+match: \.innerHTML\s*=
+name: angular-innerhtml-xss
+severity: high

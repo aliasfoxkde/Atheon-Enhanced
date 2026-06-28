@@ -1,6 +1,7 @@
 name: laravel-raw-db-query
-category: frameworks
+category: laravel
 match: DB::(?:select|statement|unprepared)\s*\(.*[\"\'].*%s
 severity: high
 enabled: true
-description: 'Laravel raw database query with string formatting detected. This can lead to SQL injection vulnerabilities.'
+description: Laravel raw database query with string formatting detected. This can
+  lead to SQL injection vulnerabilities.

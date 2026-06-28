@@ -1,6 +1,7 @@
 name: flask-sqlalchemy-raw-sql
-category: frameworks
+category: flask
 match: (execute|raw_sql)\s*\(.*[%\#\{]
 severity: high
 enabled: true
-description: 'Flask-SQLAlchemy raw SQL detected with string interpolation. This can lead to SQL injection vulnerabilities.'
+description: Flask-SQLAlchemy raw SQL detected with string interpolation. This can
+  lead to SQL injection vulnerabilities.

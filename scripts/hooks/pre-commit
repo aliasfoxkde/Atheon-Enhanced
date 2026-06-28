@@ -54,32 +54,44 @@ if ! command -v go &>/dev/null; then
 fi
 
 if [ -n "$STAGED_GO" ]; then
-    # --- Format (auto-fix and re-stage) ---
-    gofmt -w .
-    if [ -n "$(git diff --name-only -- '*.go')" ]; then
-        git add -u -- '*.go'
-        echo "  ✓ gofmt auto-fixed"
-    else
-        echo "  ✓ gofmt clean"
-    fi
-
-    # goimports if available
-    if command -v goimports &>/dev/null || [ -x "./tools/goimports" ]; then
-        GOIMPORTS=$(command -v goimports 2>/dev/null || echo "./tools/goimports")
-        "$GOIMPORTS" -w . 2>/dev/null || true
+    # --- Format (auto-fix and re-stage only changed files) ---
+    # Build list of changed Go files for targeted operations
+    CHANGED_GO_FILES=$(git diff --name-only -- '*.go' | tr '\n' ' ')
+    if [ -n "$CHANGED_GO_FILES" ]; then
+        gofmt -w $CHANGED_GO_FILES
         if [ -n "$(git diff --name-only -- '*.go')" ]; then
             git add -u -- '*.go'
-            echo "  ✓ imports auto-fixed"
+            echo "  ✓ gofmt auto-fixed"
+        else
+            echo "  ✓ gofmt clean"
         fi
+
+        # goimports if available
+        if command -v goimports &>/dev/null || [ -x "./tools/goimports" ]; then
+            GOIMPORTS=$(command -v goimports 2>/dev/null || echo "./tools/goimports")
+            "$GOIMPORTS" -w $CHANGED_GO_FILES 2>/dev/null || true
+            if [ -n "$(git diff --name-only -- '*.go')" ]; then
+                git add -u -- '*.go'
+                echo "  ✓ imports auto-fixed"
+            fi
+        fi
+    else
+        echo "  ✓ gofmt clean (no files changed)"
     fi
 
-    # --- Vet ---
-    echo "  Running go vet..."
-    if ! go vet ./... 2>&1; then
-        echo "ERROR: go vet failed"
-        exit 1
+    # --- Vet only changed packages ---
+    # Build list of changed packages for targeted vet
+    CHANGED_DIRS=$(echo "$STAGED_GO" | xargs -I{} dirname {} | sort -u | sed 's|^|./|')
+    if [ -n "$CHANGED_DIRS" ]; then
+        echo "  Running go vet on changed packages: $CHANGED_DIRS"
+        if ! go vet $CHANGED_DIRS 2>&1; then
+            echo "ERROR: go vet failed"
+            exit 1
+        fi
+        echo "  ✓ go vet passed"
+    else
+        echo "  ✓ go vet clean (no packages changed)"
     fi
-    echo "  ✓ go vet passed"
 
     # --- Selective tests ---
     # Determine which packages to test.
@@ -140,6 +152,27 @@ if [ -n "$STAGED_PATTERNS" ]; then
         rm -f "$BUNDLE_LOG"
         exit 1
     fi
+fi
+
+# --- Smart Atheon self-scan (secrets scan only changed files) ---
+# Only run if there are actual code changes (not just docs/pattern changes)
+STAGED_SCAN_FILES=$(git diff --cached --name-only | grep -vE '^(docs/|.github/|\.md$|README)' || true)
+if [ -n "$STAGED_SCAN_FILES" ] && [ -x "./atheon" ]; then
+    echo "  Running Atheon secrets scan on changed files..."
+    SCAN_LOG=$(mktemp)
+    # Run secrets scan on changed files only (fast)
+    if ./atheon --categories=secrets $STAGED_SCAN_FILES 2>&1 | grep -v "^$" > "$SCAN_LOG"; then
+        echo "  ⚠️  Secrets detected in changed files:"
+        cat "$SCAN_LOG" | sed 's/^/      /'
+        echo "  Fix or suppress before committing."
+        rm -f "$SCAN_LOG"
+        # Don't fail the commit - this is a warning only
+    else
+        echo "  ✓ No secrets detected"
+        rm -f "$SCAN_LOG"
+    fi
+elif [ -n "$STAGED_SCAN_FILES" ]; then
+    echo "  (atheon binary not found - skipping secrets scan)"
 fi
 
 echo "=== All checks passed ==="

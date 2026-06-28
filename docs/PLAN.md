@@ -1,14 +1,29 @@
-# Plan
+# Project Plan
 
-This project follows the documentation contract specified in
-[`CLAUDE.md`](./CLAUDE.md). All canonical planning artifacts live under
-[`docs/`](./docs/); this file is a thin pointer kept at the repository
-root so tooling that expects top-level scaffolding docs finds them.
+This document outlines the development phases and roadmap for Atheon-Enhanced.
 
-- **Canonical PLAN content**: see [`docs/PLAN.md`](./docs/PLAN.md)
-  (Phases A–F: documentation restoration, CI consolidation, MCP
-  completeness, pattern expansion, ADRs, optional cleanup).
-- **Source-of-truth location**: `./docs/`
+## Current Phase
 
-For project rules, working agreements, and the documentation contract, see
-[`./CLAUDE.md`](./CLAUDE.md).
+See [TASKS.md](TASKS.md) for current tasks and [PROGRESS.md](PROGRESS.md) for completed work.
+
+## Phases Overview
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| A | Documentation restoration | ✅ Complete |
+| B | CI/CD consolidation | ✅ Complete |
+| C | MCP completeness | ✅ Complete |
+| D | Pattern expansion | ✅ Complete |
+| E | ADRs | ✅ Complete |
+| F | Optional cleanup | 🔄 In Progress |
+
+## Documentation
+
+- [ROADMAP.md](ROADMAP.md) - Development roadmap
+- [RESEARCH.md](RESEARCH.md) - Research notes and decisions
+- [TASKS.md](TASKS.md) - Current task list
+- [PROGRESS.md](PROGRESS.md) - Progress tracking
+
+## Contributing
+
+See [.github/CONTRIBUTING.md](../.github/CONTRIBUTING.md) for how to contribute.

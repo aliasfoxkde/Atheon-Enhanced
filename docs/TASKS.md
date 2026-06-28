@@ -1,13 +1,42 @@
 # Tasks
 
-This project follows the documentation contract specified in
-[`CLAUDE.md`](./CLAUDE.md). All canonical planning artifacts live under
-[`docs/`](./docs/); this file is a thin pointer kept at the repository
-root so tooling that expects top-level scaffolding docs finds them.
+Current and upcoming development tasks.
 
-- **Canonical TASKS content**: see [`docs/TASKS.md`](./docs/TASKS.md)
-  (55 tasks across Phases A–F; current sprint W26 2026-06-23).
-- **Source-of-truth location**: `./docs/`
+## In Progress
 
-For project rules, working agreements, and the documentation contract, see
-[`./CLAUDE.md`](./CLAUDE.md).
+- Documentation cleanup and consolidation
+- Code quality audit
+
+## Completed
+
+### Wave 13 (2026-06-27)
+- [x] Add anti-cheating AI detection patterns (21 patterns)
+- [x] Add magic number detection patterns
+- [x] Add AI harness anti-pattern patterns
+- [x] Expand frameworks patterns
+- [x] Fix auto-merge workflow (timeout exit 1 instead of 0)
+- [x] Add .github/SUPPORT.md
+- [x] Add .github/CHANGELOG.md
+- [x] Add .editorconfig
+- [x] Remove redundant documentation files
+- [x] Rename lowercase markdown files to UPPERCASE
+- [x] Generate README.md for each category folder
+- [x] Update community/README.md with accurate pattern counts
+
+### Wave 12 (2026-06-26)
+- [x] SDLC audit fixes
+- [x] Dependabot groups
+- [x] PR template improvements
+- [x] Release environment variables
+- [x] GO_VERSION in goreleaser
+
+## Backlog
+
+- Expand community/frameworks patterns (Django, React, Vue, Angular)
+- Smart pre-commit hooks (scan only changed files)
+- Pattern category README files with detailed descriptions
+
+## See Also
+
+- [PROGRESS.md](PROGRESS.md) - Completed work
+- [ROADMAP.md](ROADMAP.md) - Future plans

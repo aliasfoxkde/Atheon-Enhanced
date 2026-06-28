@@ -1,14 +1,31 @@
-# Research
+# Research Notes
 
-This project follows the documentation contract specified in
-[`CLAUDE.md`](./CLAUDE.md). All canonical planning artifacts live under
-[`docs/`](./docs/); this file is a thin pointer kept at the repository
-root so tooling that expects top-level scaffolding docs finds them.
+Research notes documenting audit findings, gaps, risks, and architectural decisions.
 
-- **Canonical RESEARCH content**: see [`docs/ANALYSIS_REPORT.md`](./docs/ANALYSIS_REPORT.md)
-  (audit findings, gaps, risks, and outside-the-box ideas captured
-  2026-06-23).
-- **Source-of-truth location**: `./docs/`
+## Key Documents
 
-For project rules, working agreements, and the documentation contract, see
-[`./CLAUDE.md`](./CLAUDE.md).
+- [ANALYSIS_REPORT.md](reports/ANALYSIS_REPORT.md) - Comprehensive audit findings
+- [FEATURE_COMPARISON.md](reports/FEATURE_COMPARISON.md) - Upstream vs enhanced comparison
+
+## ADRs (Architecture Decision Records)
+
+See [architecture/decisions/](architecture/decisions/) for architectural decisions.
+
+## Recent Research
+
+### Pattern Coverage Analysis
+
+- 335 patterns across 23 categories
+- AI detection patterns: 21 (including anti-cheating/harness integrity)
+- Secrets patterns: 66
+- Code quality patterns: 53
+
+### Performance Considerations
+
+- Streaming API enables memory-efficient scanning
+- Bundle compression reduces download size
+- Parallel pattern matching in core engine
+
+## Historical Notes
+
+See [RELEASE.md](RELEASE.md) for release history and [REPORTS/](reports/) for detailed analyses.

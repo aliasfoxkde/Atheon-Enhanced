@@ -206,12 +206,12 @@ Line 238: `./atheon-debug --debug-level=2 scan .` — no such flag exists in `cm
 
 **Fix:** Remove the line, or implement the flag.
 
-#### D9. `CHANGELOG.md` is at repo root, but user's `CLAUDE.md` specifies `CHANGELOG_RECENT.md`
+#### D9. `CHANGELOG.md` is at repo root, but user's `CLAUDE.md` specifies `CHANGELOG.md.md`
 The project follows Keep-a-Changelog correctly with a root `CHANGELOG.md`, but the canonical
-documentation contract in `CLAUDE.md` says `./docs/CHANGELOG_RECENT.md`. Either create a
+documentation contract in `CLAUDE.md` says `./docs/CHANGELOG.md.md`. Either create a
 symlink/copy or update the contract.
 
-**Fix:** Create `docs/CHANGELOG_RECENT.md` as either a "latest version only" excerpt or a symlink
+**Fix:** Create `docs/CHANGELOG.md.md` as either a "latest version only" excerpt or a symlink
 to `../CHANGELOG.md`.
 
 #### D10. `AGENTS.md` referenced in user's `CLAUDE.md` is missing
@@ -459,7 +459,7 @@ dry-run of `goreleaser release --skip=publish --snapshot` would catch config err
 
 | ID | Task | Files |
 |----|------|-------|
-| A1 | Generate `docs/CHANGELOG_RECENT.md` (symlink or 1-version excerpt of `CHANGELOG.md`) | `docs/` |
+| A1 | Generate `docs/CHANGELOG.md.md` (symlink or 1-version excerpt of `CHANGELOG.md`) | `docs/` |
 | A2 | Replace `docs/PLAN.md`, `docs/TASKS.md`, `docs/PROGRESS.md` with real content for Atheon-Enhanced | `docs/`, `docs/planning/` |
 | A3 | Add `AGENTS.md` per `CLAUDE.md` contract | root |
 | A4 | Update pattern count in `README.md`, `FAQ.md`, `INSTALL.md`, `SETUP.md`, `PATTERN_CATEGORIES.md` to actual 252/18 | 5 files |

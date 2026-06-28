@@ -301,12 +301,6 @@ var dangerousGetattrNames = map[string]bool{
 	"__import__": true,
 }
 
-// Dynamic import names
-var dangerousImportNames = map[string]bool{
-	"__import__": true,
-	"importlib":  true,
-}
-
 // detectDynamicGetattr detects AST7: getattr() with non-literal attribute name
 func detectDynamicGetattr(fset *token.FileSet, file *ast.File) []ASTFinding {
 	var findings []ASTFinding

@@ -6,8 +6,8 @@
 
 ![Go](https://img.shields.io/badge/Go-1.21%2B-00ADD8)
 ![License](https://img.shields.io/badge/license-MIT-green)
-![Patterns](https://img.shields.io/badge/patterns-274-blueviolet)
-![Categories](https://img.shields.io/badge/categories-19-orange)
+![Patterns](https://img.shields.io/badge/patterns-355+-blueviolet)
+![Categories](https://img.shields.io/badge/categories-24-orange)
 ![CI](https://github.com/aliasfoxkde/Atheon-Enhanced/actions/workflows/ci.yml/badge.svg)
 [![codecov](https://codecov.io/gh/aliasfoxkde/Atheon-Enhanced/graph/badge.svg)](https://codecov.io/gh/aliasfoxkde/Atheon-Enhanced)
 ![Stars](https://img.shields.io/github/stars/aliasfoxkde/Atheon-Enhanced?style=social)
@@ -33,7 +33,7 @@
 ### **Enhanced aliasfoxkde/Atheon (Atheon-Enhanced)** - Feature-Rich Testing Build
 - **Purpose**: Experimental "nightly build" testing the limits of pattern matching
 - **Focus**: Performance optimizations, advanced features, comprehensive pattern coverage
-- **Patterns**: 327+ patterns across 23 categories (community-driven, comprehensive coverage)
+- **Patterns**: 355+ patterns across 24 categories (327 regex + 28 AST-based)
 - **Update cadence**: Frequent updates with latest features and enhancements
 - **Best for**: Power users, CI/CD integration, comprehensive security scanning
 
@@ -56,7 +56,8 @@
 <summary><b>📊 Enhanced Features vs Official Release</b></summary>
 
 ### **What's Enhanced in This Testing Build?**
-- **327+ patterns** across 23 categories - comprehensive coverage
+- **355+ patterns** across 24 categories - comprehensive coverage
+- **28 AST-based Go security patterns** for deep code analysis
 - **2-3x faster** with streaming API and performance optimizations
 - **10x less memory** usage with chunked file scanning
 - **MCP integration** with state persistence and category filtering
@@ -156,6 +157,12 @@ atheon ./my-project
 
 # Scan with specific categories
 atheon --categories=secrets,pii ./my-project
+
+# Enable AST-based Go security scanning
+atheon ./my-go-project --ast
+
+# AST-only scanning (skip regex patterns)
+atheon ./my-go-project --ast-only
 
 # Use configuration profile
 atheon --profile config/profiles/pipeline.json ./my-project
@@ -427,9 +434,21 @@ atheon --profile config/profiles/pipeline.json ./my-project
 - ✅ **Parallel Processing**: 2-3x faster directory scanning
 - ✅ **Performance Benchmarks**: Track improvements over time
 
+### **AST-Based Security Analysis**
+- ✅ **28 Go-specific AST patterns** for deep security analysis
+- ✅ **Command Injection Detection**: Detects `exec.Command` with string concatenation
+- ✅ **SQL Injection Detection**: String concat in SQL queries
+- ✅ **Path Traversal Detection**: User-controlled paths in file operations
+- ✅ **SSRF Detection**: HTTP requests with user-controlled URLs
+- ✅ **Template Injection**: Template execution with user input
+- ✅ **ReDoS Detection**: Regex with nested quantifiers
+- ✅ **Weak Crypto Detection**: MD5, SHA1, math/rand, weak ciphers
+- ✅ **TLS Issues**: InsecureSkipVerify, weak TLS configurations
+- ✅ **And more**: LDAP injection, XXE, YAML unsafe, trust boundary violations
+
 ### **Expanded Pattern Library**
-- ✅ **274 patterns** across 19 categories
-- ✅ **New categories**: Accessibility, Performance, Web Development, API Integration, Security Hardening, Cloud-Native, PWA, Data Visualization
+- ✅ **355+ patterns** across 24 categories (327 regex + 28 AST-based)
+- ✅ **New categories**: Accessibility, Performance, Web Development, API Integration, Security Hardening, Cloud-Native, PWA, Data Visualization, AST-Security
 - ✅ **Enhanced coverage**: Modern web development, security best practices, performance optimization
 - ✅ **AI Detection Patterns**: AI-generated code identification, template detection, safety bypasses
 - ✅ **DevOps Patterns**: CI/CD configurations, Docker, Kubernetes, GitHub workflows
@@ -438,29 +457,37 @@ atheon --profile config/profiles/pipeline.json ./my-project
 - ✅ **Performance Patterns**: N+1 queries, memory leaks, caching strategies, blocking operations
 - ✅ **Accessibility Patterns**: WCAG compliance, keyboard navigation, ARIA labels, semantic HTML
 - ✅ **API Patterns**: REST/GraphQL best practices, rate limiting, error handling, versioning
+- ✅ **AST Security Patterns**: 28 Go-specific security patterns via AST analysis (command injection, SQL injection, SSRF, path traversal, template injection, ReDoS, weak crypto, TLS issues, and more)
 
 ### **Pattern Distribution**
 | Category | Patterns |
 |----------|----------|
-| secrets | 32 |
-| code-quality | 25 |
+| secrets | 66 |
+| code-quality | 53 |
 | accessibility | 19 |
-| security-hardening | 14 |
+| ai-detection | 21 |
+| security-hardening | 21 |
+| devops | 22 |
 | performance | 12 |
 | web-development | 12 |
-| web-security | 12 |
+| web-security | 15 |
 | api-integration | 9 |
 | healthcare | 7 |
-| ai-detection | 6 |
-| cloud-native | 6 |
-| devops | 6 |
-| data-visualization | 5 |
+| cloud-native | 14 |
+| kubernetes | 6 |
 | pwa | 5 |
-| finance | 3 |
-| pii | 3 |
-| django | 1 |
-| nodejs | 1 |
-| react | 1 |
+| data-visualization | 5 |
+| finance | 6 |
+| pii | 15 |
+| git-hygiene | 4 |
+| git-ops | 3 |
+| metadata | 4 |
+| compliance | 4 |
+| frameworks | 8 |
+| terraform | 4 |
+| **ast-security** | **28*** |
+
+*Note: ast-security patterns are built-in Go AST patterns enabled with `--ast` flag
 
 ### **Advanced Functionality**
 - ✅ **Pattern Persistence**: Remember enabled/disabled patterns across sessions
@@ -468,6 +495,7 @@ atheon --profile config/profiles/pipeline.json ./my-project
 - ✅ **Enhanced MCP Server**: Streaming results, category filtering, state persistence
 - ✅ **Self-Scanning**: Atheon scans itself for security issues
 - ✅ **Comprehensive Testing**: Multi-version Go testing, integration tests
+- ✅ **AST Pattern Scanning**: 28 Go-specific security patterns via AST analysis
 
 </details>
 
@@ -480,8 +508,8 @@ atheon --profile config/profiles/pipeline.json ./my-project
 
 | Feature | Official HoraDomu/Atheon | Enhanced aliasfoxkde/Atheon |
 |---------|----------------------|---------------------------|
-| Pattern Count | 57 | 274 |
-| Categories | 5 | 19 |
+| Pattern Count | 57 | 355+ (327 regex + 28 AST) |
+| Categories | 5 | 24 |
 | Memory Usage | Full file loading | Chunked streaming (10x reduction) |
 | Performance | Baseline | 2-3x faster |
 | MCP Integration | ✅ Advanced features | ✅ Advanced features + state persistence |
@@ -491,6 +519,7 @@ atheon --profile config/profiles/pipeline.json ./my-project
 | AI Detection | ❌ | ✅ 6 patterns |
 | Self-Scanning | ❌ | ✅ |
 | Streaming API | ❌ | ✅ |
+| AST Pattern Analysis | ❌ | ✅ (28 patterns) |
 | DevOps Patterns | ❌ | ✅ 6 patterns |
 | Context Cancellation | ❌ | ✅ |
 | Sentinel Errors | ❌ | ✅ |
@@ -518,6 +547,7 @@ atheon --profile config/profiles/pipeline.json ./my-project
 - ✅ Multi-version Go testing (1.21, 1.22, 1.23, 1.24)
 - ✅ Static analysis (golangci-lint v1.64.8 with 18 linters)
 - ✅ Security scanning (Atheon self-scan)
+- ✅ AST pattern testing (28 patterns with comprehensive tests)
 - ✅ Performance benchmarking ([BENCHMARKS.md](docs/BENCHMARKS.md))
 - ✅ Integration tests for all features
 - ✅ Context-cancellation tests for every scanner entry point
@@ -526,8 +556,8 @@ atheon --profile config/profiles/pipeline.json ./my-project
 ### **Quality Metrics**
 - **Test Coverage**: 97%+ across core, cmd/atheon, and bundler packages
 - **CI/CD Pass Rate**: >95%
-- **Pattern Validation**: All 274 patterns tested and functional
-- **Pattern Coverage**: 19 categories with modern development support
+- **Pattern Validation**: All 355+ patterns tested and functional (327 regex + 28 AST)
+- **Pattern Coverage**: 24 categories with modern development support
 - **Lint Warnings**: 0 (golangci-lint clean)
 
 **📖 Detailed Documentation**: See [docs/architecture/PATTERN_CATEGORIES.md](docs/architecture/PATTERN_CATEGORIES.md) for comprehensive pattern documentation
@@ -701,7 +731,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - ✅ MCP integration with advanced features
 
 ### **Use Enhanced aliasfoxkde/Atheon (Atheon-Enhanced) when you want**:
-- ✅ 274 patterns across 19 categories (comprehensive coverage)
+- ✅ 355+ patterns across 24 categories (comprehensive coverage)
+- ✅ 28 Go AST-based security patterns for deep code analysis
 - ✅ 2-3x performance improvements
 - ✅ 10x memory reduction for large files
 - ✅ MCP integration with advanced features

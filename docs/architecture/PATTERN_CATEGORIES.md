@@ -2,7 +2,7 @@
 
 ## Overview
 
-Atheon Enhanced now supports **274 patterns** across **19 categories**, providing comprehensive coverage of modern development challenges. This documentation describes each category, its patterns, and use cases.
+Atheon Enhanced now supports **355+ patterns** across **24 categories** (327 regex patterns + 28 AST-based Go security patterns), providing comprehensive coverage of modern development challenges. This documentation describes each category, its patterns, and use cases.
 
 ## Pattern Categories
 

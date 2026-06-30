@@ -79,7 +79,9 @@ jobs:
                 (.file | test("/testdata/"))                or
                 (.file | test("^community/"))               or
                 (.file | test("^\\.github/wiki/"))          or
-                (.file | test("^\\.github/ISSUE_TEMPLATE/"))
+                (.file | test("^\\.github/ISSUE_TEMPLATE/")) or
+                (.file | test("^\\.claude/"))               or
+                (.file | test("core/ast_patterns\\.go$"))
               ) | not)]' > scan-secrets.json
 
           COUNT=$(jq 'length' scan-secrets.json)

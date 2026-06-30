@@ -3,6 +3,6 @@ category: supply-chain
 severity: medium
 cwe: "CWE-1395"
 description: "Detects npm package with install scripts that may execute arbitrary code"
-match: "install"\\s*:\\s*"[^"]*(?:node|bash|python|npm|sh)
+match: '"install"\s*:\s*"(?:node|bash|python|npm|sh)'
 remediation: "Review package install scripts carefully."
 enabled: true

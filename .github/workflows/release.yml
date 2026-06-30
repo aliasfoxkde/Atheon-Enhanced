@@ -116,6 +116,7 @@ jobs:
           echo "  ✓ gofmt passed"
 
           # Lint: golangci-lint (comprehensive)
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@v2.5.0
           golangci-lint run . || exit 1
           echo "  ✓ golangci-lint passed"
 

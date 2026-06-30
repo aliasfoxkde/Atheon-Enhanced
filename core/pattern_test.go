@@ -48,7 +48,7 @@ func TestPatternInterfaceCategory(t *testing.T) {
 		"metadata":           true,
 		"terraform":          true,
 		"supply-chain":       true,
-		"container":         true,
+		"container":          true,
 		"graphql":            true,
 		"cloudformation":     true,
 		"arm":                true,

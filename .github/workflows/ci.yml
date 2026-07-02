@@ -22,70 +22,21 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # ─────────────────────────────────────────────────────────────────────
-  # Tests — multi-version Go, with coverage
-  # ─────────────────────────────────────────────────────────────────────
-  test:
-    name: Test (Go ${{ matrix.go-version }})
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        go-version: ['1.22', '1.23', '1.24', '1.25']
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-
-      - name: Set up Go ${{ matrix.go-version }}
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
-        with:
-          go-version: ${{ matrix.go-version }}
-          cache: true
-          # Pin the cache key derivation to go.sum so adding a new file
-          # outside the module path doesn't bust the cache, and bumping
-          # the Go version invalidates only when actually needed.
-          cache-dependency-path: go.sum
-
-      - name: Install dependencies
-        run: go mod download
-
-      - name: Run tests
-        # The -p 1 flag is MANDATORY: core has package-level state in init() that
-        # is not safe under parallel package execution.
-        # -race is enabled at the CI floor so race regressions are caught at
-        # PR time rather than after release; Wave 8 PR #93 promotion.
-        # -timeout 20m accommodates the -race overhead (roughly 5-10x slower
-        # than non-race on contention-free code, more on heavy contention).
-        run: |
-          go test ./... -p 1 -race -timeout 20m -coverprofile=coverage.out
-
-      - name: Check coverage threshold
-        env:
-          # Coderabbit MAJ-1 (PR #55): parameterize the threshold so an owner
-          # raising vars.COVERAGE_THRESHOLD doesn't leave the gate stuck at 70.
-          # `vars.X` is read-only at the repo level for forks, so the default
-          # keeps the gate meaningful without external setup.
-          COVERAGE_THRESHOLD: ${{ vars.COVERAGE_THRESHOLD || '70' }}
-        run: |
-          # Float arithmetic — the previous `cut -d. -f1` truncation meant
-          # 79.9% silently passed an 80% gate. Use awk's float comparison
-          # so 79.9 < 80 correctly fails.
-          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
-          echo "Coverage: ${COVERAGE}%"
-          if awk -v c="$COVERAGE" -v t="$COVERAGE_THRESHOLD" 'BEGIN{exit !(c+0 < t+0)}'; then
-            echo "❌ Coverage ${COVERAGE}% is below ${COVERAGE_THRESHOLD}% threshold"
-            exit 1
-          fi
-          echo "✅ Coverage ${COVERAGE}% meets ${COVERAGE_THRESHOLD}% threshold"
+  # ══════════════════════════════════════════════════════════════════════════════
+  # PHASE 1: FAST CHECKS (run first, gate expensive jobs)
+  # Based on tokio's job dependency gating pattern
+  # ══════════════════════════════════════════════════════════════════════════════
 
   # ─────────────────────────────────────────────────────────────────────
   # Static analysis — go vet, golangci-lint, staticcheck, gofmt
+  # All other jobs depend on these passing
   # ─────────────────────────────────────────────────────────────────────
   lint:
     name: Lint
     runs-on: ubuntu-latest
-
+    # Gating: other jobs will wait for this
+    outputs:
+      passed: ${{ steps.lint-checks.outputs.passed }}
     steps:
       - name: Checkout code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -93,9 +44,6 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
-          # NOTE: staticcheck@v0.6.1 only supports Go 1.23–1.24. Use 1.23 here
-          # so staticcheck doesn't emit internal import errors. The matrix jobs
-          # use vars.GO_VERSION and cover all supported Go versions.
           go-version: '1.23'
           cache: true
           cache-dependency-path: go.sum
@@ -106,18 +54,10 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@82606bf257cbaff209d206a39f5134f0cfbfd2ee # v9.2.1
         with:
-          # golangci-lint-action >= v7 requires golangci-lint v2. The action
-          # default (latest v2 release) requires Go ≥ 1.24, so we pin to v2.5.0
-          # which still supports Go 1.23–1.25 — matching the lint job's tested range.
-          # TODO: When Go version matrix is updated to 1.26 or later, check whether
-          # v2.5.0 still supports the new Go version; if not, bump to the minimum
-          # v2.x release that does, run `golangci-lint --version` to confirm, and
-          # remove this comment.  Track in: https://github.com/aliasfoxkde/Atheon-Enhanced/issues
           version: v2.5.0
           args: --timeout=5m
 
       - name: Format check
-        # Standard idiom: fail if gofmt -l produces output (unformatted files).
         run: |
           if [ -n "$(gofmt -l .)" ]; then
             echo "❌ Go code is not formatted:"
@@ -127,12 +67,6 @@ jobs:
           echo "✅ Code is properly formatted"
 
       - name: goimports check
-        # goimports groups stdlib/third-party/local imports. gofmt handles
-        # whitespace only, so goimports catches missing/extra imports that
-        # gofmt won't.
-        # Pin to v0.30.0 — setup-go v6 sets GOTOOLCHAIN=local, which forces
-        # the runner's Go 1.23 toolchain; the latest x/tools (v0.46+) requires
-        # Go ≥ 1.25 and would fail to install. v0.30.0 supports Go 1.23.
         run: |
           if ! command -v goimports >/dev/null 2>&1; then
             echo "::group::Installing goimports"
@@ -148,8 +82,6 @@ jobs:
           echo "✅ goimports clean"
 
       - name: Code quality grep
-        # Restored from the removed comprehensive-ci.yml code-quality job:
-        # catches TODO comments and debug statements that escape code review.
         run: |
           # TODO in production (non-test) core/*.go
           TODOS=$(grep -rn "TODO" core/*.go 2>/dev/null | grep -v "_test.go" || true)
@@ -160,13 +92,6 @@ jobs:
           fi
           echo "✅ No TODO comments in production code"
 
-          # fmt.Debug / log.Debug in production (non-test) core/*.go.
-          # Note the explicit word boundary after 'log' — without it the
-          # grep matches slog.Debug calls (which use the stdlib log/slog
-          # package; slog is intentional structured-logging output, not
-          # a forgotten debug print). Wave 8 PR #93 added slog.Debug
-          # observability calls and the false-positive this caused is
-          # what motivated the word-boundary fix.
           DEBUGS=$(grep -rnE "fmt\.Debug|\blog\.Debug\b" core/*.go 2>/dev/null | grep -v "_test.go" || true)
           if [ -n "$DEBUGS" ]; then
             echo "❌ Debug statements in production code:"
@@ -175,9 +100,6 @@ jobs:
           fi
           echo "✅ No debug statements in production code"
 
-          # fmt.Print / fmt.Sprint in core/ (library) — bypasses structured logging.
-          # cmd/atheon/main.go is CLI output (help text) and is excluded.
-          # Allowed: Printf, Sprintf, Println, Sprintln, Fprint (explicit writer).
           FMT_PRINTS=$(grep -rnE "fmt\.Print[^lnf]|fmt\.Sprint[^lnf]" core/*.go 2>/dev/null | grep -v "_test.go" || true)
           if [ -n "$FMT_PRINTS" ]; then
             echo "❌ fmt.Print/Sprint in core/ library code:"
@@ -186,13 +108,57 @@ jobs:
           fi
           echo "✅ No fmt.Print/Sprint in core/ library code"
 
+      # Mark lint as complete (used by gating)
+      - name: Mark lint passed
+        id: lint-checks
+        run: echo "passed=true" >> $GITHUB_OUTPUT
+
   # ─────────────────────────────────────────────────────────────────────
-  # PR size check — warns on large PRs; informational only, not blocking
+  # Documentation check (fast, runs in parallel with lint)
+  # ─────────────────────────────────────────────────────────────────────
+  docs:
+    name: Documentation Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Verify branch strategy doc
+        run: |
+          if [ ! -f docs/BRANCH_STRATEGY.md ]; then
+            echo "❌ docs/BRANCH_STRATEGY.md is missing"
+            exit 1
+          fi
+          for branch in 'stable/clean' 'main' 'dev/full-feature'; do
+            if ! grep -qF "$branch" docs/BRANCH_STRATEGY.md; then
+              echo "❌ Branch $branch not documented in BRANCH_STRATEGY.md"
+              exit 1
+            fi
+          done
+          echo "✅ All branches documented"
+
+      - name: Verify profile documentation
+        run: |
+          if [ -d config/profiles ] && [ -n "$(ls config/profiles/*.json 2>/dev/null)" ]; then
+            for profile in config/profiles/*.json; do
+              name=$(basename "$profile" .json)
+              if ! grep -qF "$name" docs/BRANCH_STRATEGY.md; then
+                echo "❌ Profile $name not documented in BRANCH_STRATEGY.md"
+                exit 1
+              fi
+            done
+            echo "✅ All profiles documented"
+          else
+            echo "No config profiles found, skipping profile documentation check"
+          fi
+
+  # ─────────────────────────────────────────────────────────────────────
+  # PR size check — informational only
   # ─────────────────────────────────────────────────────────────────────
   pr-size:
     name: PR Size Check
     runs-on: ubuntu-latest
-    # Only run on PR events; skip for push to main
     if: github.event_name == 'pull_request'
 
     steps:
@@ -210,11 +176,100 @@ jobs:
             echo "::warning::Very large PR: $FILE_COUNT files changed. Strongly consider splitting."
           fi
 
+  # ══════════════════════════════════════════════════════════════════════════════
+  # PHASE 2: TESTS (gated on lint passing)
+  # fail-fast: false for full results (per tarpaulin/ripgrep patterns)
+  # ══════════════════════════════════════════════════════════════════════════════
+
   # ─────────────────────────────────────────────────────────────────────
-  # Build — cross-platform binaries (runs in parallel with tests)
+  # Tests — multi-version Go, with coverage
+  # ─────────────────────────────────────────────────────────────────────
+  test:
+    name: Test (Go ${{ matrix.go-version }})
+    needs: lint
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        go-version: ['1.22', '1.23', '1.24', '1.25']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Set up Go ${{ matrix.go-version }}
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version: ${{ matrix.go-version }}
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Install dependencies
+        run: go mod download
+
+      - name: Run tests
+        run: |
+          go test ./... -p 1 -race -timeout 20m -coverprofile=coverage.out
+
+      - name: Check coverage threshold
+        env:
+          COVERAGE_THRESHOLD: ${{ vars.COVERAGE_THRESHOLD || '70' }}
+        run: |
+          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
+          echo "Coverage: ${COVERAGE}%"
+          if awk -v c="$COVERAGE" -v t="$COVERAGE_THRESHOLD" 'BEGIN{exit !(c+0 < t+0)}'; then
+            echo "❌ Coverage ${COVERAGE}% is below ${COVERAGE_THRESHOLD}% threshold"
+            exit 1
+          fi
+          echo "✅ Coverage ${COVERAGE}% meets ${COVERAGE_THRESHOLD}% threshold"
+
+  # ─────────────────────────────────────────────────────────────────────
+  # ARM64 build test (cross-compilation verification)
+  # ─────────────────────────────────────────────────────────────────────
+  test-arm64:
+    name: Build (arm64)
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version: '1.23'
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Install QEMU and cross-compilation support
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-arm-linux-gnueabihf
+
+      - name: Build for ARM64
+        env:
+          GOOS: linux
+          GOARCH: arm64
+          CC: arm-linux-gnueabihf-gcc
+        run: |
+          go mod download
+          CGO_ENABLED=1 GOOS=linux GOARCH=arm64 go build -v -o atheon-arm64 ./cmd/atheon
+
+      - name: Verify ARM64 binary
+        run: |
+          file atheon-arm64
+          ./atheon-arm64 --version
+
+  # ══════════════════════════════════════════════════════════════════════════════
+  # PHASE 3: BUILD (gated on lint passing, runs in parallel with tests)
+  # ══════════════════════════════════════════════════════════════════════════════
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Build — cross-platform binaries
   # ─────────────────────────────────────────────────────────────────────
   build:
     name: Build (${{ matrix.os }})
+    needs: lint
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -263,11 +318,16 @@ jobs:
             atheon-mcp
             atheon-mcp.exe
 
+  # ══════════════════════════════════════════════════════════════════════════════
+  # PHASE 4: INTEGRATION & VERIFICATION (gated on tests passing)
+  # ══════════════════════════════════════════════════════════════════════════════
+
   # ─────────────────────────────────────────────────────────────────────
   # Integration tests — pattern bundle, profiles, MCP server
   # ─────────────────────────────────────────────────────────────────────
   integration:
     name: Integration Tests
+    needs: [test, build]
     runs-on: ubuntu-latest
 
     steps:
@@ -282,13 +342,6 @@ jobs:
           cache-dependency-path: go.sum
 
       - name: Set up Python
-        # The pattern validator (scripts/validate-patterns.py) only needs
-        # PyYAML, which is preinstalled on the runner image, but we pin
-        # explicitly so the dependency is documented and the install is
-        # idempotent on minimal runners. No `cache: pip` — that requires
-        # either requirements.txt or pyproject.toml, which this repo
-        # doesn't have, and the validator's deps are too small to be
-        # worth caching anyway.
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v5.6.0
         with:
           python-version: "3.12"
@@ -297,21 +350,9 @@ jobs:
         run: pip install --quiet pyyaml
 
       - name: Validate pattern YAMLs
-        # Pre-bundle structural check: required fields, duplicate names,
-        # severity values, declared-category-vs-dir consistency. The Go
-        # bundler does an authoritative RE2 compile in the next step, so
-        # this catches the common typos early without duplicating that
-        # work.
         run: python3 scripts/validate-patterns.py community/
 
       - name: Rebuild patterns.bundle from source
-        # Authoritative RE2 compile of every community/**/*.yaml. Without
-        # this step, a pattern whose regex is RE2-incompatible (e.g.
-        # uses PCRE lookahead) can pass the structural validator and
-        # the bundle freshness check, then break at runtime when
-        # scanLines hits the uncompilable regex. Bundling here means CI
-        # catches the breakage immediately, and the produced bundle
-        # becomes the source of truth for the count check below.
         run: go run ./bundler
 
       - name: Build binaries
@@ -320,8 +361,6 @@ jobs:
           go build -o atheon-mcp ./cmd/mcp
 
       - name: Validate pattern bundle
-        # The bundle must contain at least 250 patterns. The exact count is
-        # tracked separately by scripts/pattern-count.sh.
         run: |
           COUNT=$(./atheon list | tail -1 | grep -oE '[0-9]+' | head -1)
           echo "Pattern bundle: ${COUNT} patterns"
@@ -331,10 +370,6 @@ jobs:
           fi
 
       - name: Check bundle freshness vs source
-        # Catches drift between community/**/*.yaml (source of truth) and the
-        # embedded patterns.bundle. If you added a YAML file but forgot to
-        # regenerate the bundle, this step fails and tells you to run the
-        # bundler.
         run: |
           SOURCE_COUNT=$(./scripts/pattern-count.sh --total)
           BUNDLE_COUNT=$(./atheon list | tail -1 | grep -oE '[0-9]+' | head -1)
@@ -342,7 +377,6 @@ jobs:
           echo "Bundle:      ${BUNDLE_COUNT} patterns"
           if [ "${SOURCE_COUNT}" -ne "${BUNDLE_COUNT}" ]; then
             echo "❌ Drift: bundle has ${BUNDLE_COUNT} patterns but source has ${SOURCE_COUNT}."
-            echo "   Regenerate the bundle (see scripts/build.sh or 'go generate') and recommit."
             exit 1
           fi
           echo "✅ Bundle matches source"
@@ -359,35 +393,24 @@ jobs:
 
       - name: Test MCP server JSON-RPC roundtrip
         run: |
-          # MCP server reads newline-delimited JSON-RPC from stdin and
-          # writes one response per request to stdout. Send two requests
-          # (initialize + tools/list) and assert on the response shape so
-          # regressions in argument parsing, framing, or tool discovery
-          # are caught — the previous smoke test only verified that the
-          # binary exited cleanly when stdin was empty.
           set -e
           REQ=$'{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}\n{"jsonrpc":"2.0","id":2,"method":"tools/list"}\n'
           OUT=$(printf '%s' "$REQ" | timeout 5s ./atheon-mcp)
           echo "$OUT"
-          # Two responses expected, in order: initialize (id=1), tools/list (id=2).
-          # Use sed -n to pick the line for each assertion rather than jq -s.
-          # initialize → protocolVersion must be the spec string we advertise.
           echo "$OUT" | sed -n '1p' | jq -e '.result.protocolVersion == "2024-11-05"' >/dev/null
-          # initialize → capabilities must be a non-null object.
           echo "$OUT" | sed -n '1p' | jq -e '.result.capabilities | type == "object"' >/dev/null
-          # tools/list → must expose the seven tools advertised by toolList().
           echo "$OUT" | sed -n '2p' | jq -e '.result.tools | length >= 7' >/dev/null
-          # tools/list → must include scan_string, scan_file, scan_dir.
           echo "$OUT" | sed -n '2p' | jq -e '.result.tools | map(.name) | index("scan_string") != null' >/dev/null
           echo "$OUT" | sed -n '2p' | jq -e '.result.tools | map(.name) | index("scan_file") != null' >/dev/null
           echo "$OUT" | sed -n '2p' | jq -e '.result.tools | map(.name) | index("scan_dir") != null' >/dev/null
           echo "✅ MCP server JSON-RPC roundtrip OK"
 
   # ─────────────────────────────────────────────────────────────────────
-  # Performance benchmarks — restore lost comprehensive-ci job
+  # Performance benchmarks
   # ─────────────────────────────────────────────────────────────────────
   benchmarks:
     name: Performance Benchmarks
+    needs: [test, build]
     runs-on: ubuntu-latest
 
     steps:
@@ -402,11 +425,8 @@ jobs:
           cache-dependency-path: go.sum
 
       - name: Run benchmarks
-        # 3s benchtime was the original comprehensive-ci setting. Output
-        # is always uploaded for trend tracking, even on failure.
         run: |
           go test -bench=. -benchmem -benchtime=3s ./core/ 2>&1 | tee benchmark-results.txt
-          # github.CodeSearchLanguage tells the action to highlight this as a result.
 
       - name: Upload benchmark results
         if: always()
@@ -417,60 +437,14 @@ jobs:
           retention-days: 30
 
   # ─────────────────────────────────────────────────────────────────────
-  # Documentation completeness — restore lost comprehensive-ci job
-  # ─────────────────────────────────────────────────────────────────────
-  docs:
-    name: Documentation Check
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-
-      - name: Verify branch strategy doc
-        run: |
-          if [ ! -f docs/BRANCH_STRATEGY.md ]; then
-            echo "❌ docs/BRANCH_STRATEGY.md is missing"
-            exit 1
-          fi
-          for branch in 'stable/clean' 'main' 'dev/full-feature'; do
-            if ! grep -qF "$branch" docs/BRANCH_STRATEGY.md; then
-              echo "❌ Branch $branch not documented in BRANCH_STRATEGY.md"
-              exit 1
-            fi
-          done
-          echo "✅ All branches documented"
-
-      - name: Verify profile documentation
-        run: |
-          if [ -d config/profiles ] && [ -n "$(ls config/profiles/*.json 2>/dev/null)" ]; then
-            for profile in config/profiles/*.json; do
-              name=$(basename "$profile" .json)
-              if ! grep -qF "$name" docs/BRANCH_STRATEGY.md; then
-                echo "❌ Profile $name not documented in BRANCH_STRATEGY.md"
-                exit 1
-              fi
-            done
-            echo "✅ All profiles documented"
-          else
-            echo "No config profiles found, skipping profile documentation check"
-          fi
-
-  # ─────────────────────────────────────────────────────────────────────
   # Test result reporting — JUnit XML + Codecov
   # ─────────────────────────────────────────────────────────────────────
   report:
     name: Test Results & Coverage
     needs: test
     runs-on: ubuntu-latest
-    # Only run if test job actually produced artifacts (not skipped/cancelled)
     if: needs.test.result != 'skipped'
     permissions:
-      # EnricoMi/publish-unit-test-result-action creates check runs via
-      # the workflow's GITHUB_TOKEN; without checks:write it returns 403.
-      # It also posts an issue comment on the PR (comment_mode: always is the
-      # action's default), which requires pull-requests:write — without it the comment
-      # POST returns 403 from /repos/.../issues/.../comments.
       contents: read
       checks: write
       pull-requests: write

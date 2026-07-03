@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -382,18 +383,30 @@ func TestUpdateCommand(t *testing.T) {
 }
 
 func TestHelpText(t *testing.T) {
-	// Test that help text is available
-	// We can't easily test the actual help output without calling main()
-	// but we can verify the functions exist
+	if testing.Short() {
+		t.Skip("Skipping binary test in short mode")
+	}
 
-	// Just verify the core package has the expected functions
-	findings := core.ScanString(context.Background(), "test", "test")
-	// ScanString should return a slice (may be nil or empty)
-	// The important thing is it doesn't panic
-	if len(findings) > 0 {
-		t.Log("ScanString found patterns in test content")
-	} else {
-		t.Log("ScanString correctly handles content with no patterns")
+	bin, cleanup := buildTestBinary(t)
+	defer cleanup()
+
+	cmd := exec.Command(bin, "--help")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("--help flag failed: %v", err)
+	}
+
+	out := string(output)
+	if out == "" {
+		t.Fatal("--help produced no output")
+	}
+
+	// Verify help contains expected sections
+	expected := []string{"scan", "list", "enable", "disable", "update"}
+	for _, keyword := range expected {
+		if !strings.Contains(out, keyword) {
+			t.Errorf("--help output missing expected keyword %q", keyword)
+		}
 	}
 }
 

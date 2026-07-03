@@ -77,10 +77,9 @@ def parent_category(path: Path, root: Path) -> str:
 
 
 def validate_one(path: Path, root: Path, seen_names: dict[str, Path]) -> list[str]:
-    y = yaml()
     errs: list[str] = []
     try:
-        data = y.safe_load(path.read_text(encoding="utf-8"))
+        data = yaml.safe_load(path.read_text(encoding="utf-8"))
     except Exception as e:
         return [f"{path}: YAML parse error: {e}"]
 

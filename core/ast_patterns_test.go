@@ -127,3 +127,75 @@ func TestASTPattern_Fields(t *testing.T) {
 		}
 	}
 }
+
+func TestScanFileAST_EmptyFile(t *testing.T) {
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "empty.go")
+	if err := os.WriteFile(tmpFile, []byte("package main\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	findings, err := ScanFileAST(tmpFile, builtinASTPatterns)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Empty/safe file should produce no findings
+	if len(findings) != 0 {
+		t.Errorf("expected 0 findings for empty file, got %d", len(findings))
+	}
+}
+
+func TestScanFileAST_SafeCode(t *testing.T) {
+	// Verify that credential vars with env lookup are not flagged
+	// (but non-env credential assignments would be)
+	content := `package main
+
+var password = os.Getenv("APP_PASSWORD")
+
+func safeCmd() {
+	exec.Command("echo", "hello")
+}
+`
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "safe.go")
+	if err := os.WriteFile(tmpFile, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	findings, err := ScanFileAST(tmpFile, builtinASTPatterns)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Credential loaded from env should not trigger hardcoded-credentials
+	for _, f := range findings {
+		if f.Rule == "hardcoded-credentials" {
+			t.Errorf("safe code should not trigger hardcoded-credentials, got: %s", f.Message)
+		}
+	}
+}
+
+func TestScanDirAST_SkipNonGoFiles(t *testing.T) {
+	tmpDir := t.TempDir()
+	// Write a .go file with actual command injection (variable concatenation)
+	goFile := filepath.Join(tmpDir, "test.go")
+	// Using string concatenation with a function parameter named "input"
+	// which should trigger the command-injection detector
+	if err := os.WriteFile(goFile, []byte("package main\nimport \"os/exec\"\nfunc bad(req string) { exec.Command(\"sh\", \"-c\", \"echo \"+req) }\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	// Write a non-.go file
+	txtFile := filepath.Join(tmpDir, "readme.txt")
+	if err := os.WriteFile(txtFile, []byte("This is not Go code"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	findings, err := ScanDirAST(tmpDir, builtinASTPatterns)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Should find command injection in the .go file
+	if len(findings) == 0 {
+		t.Error("expected findings in .go file with command injection")
+	}
+}

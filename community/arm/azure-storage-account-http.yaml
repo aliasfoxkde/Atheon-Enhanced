@@ -1,0 +1,8 @@
+name: arm-azure-storage-enable-https
+category: arm
+severity: high
+cwe: "CWE-345"
+description: "Detects Azure ARM template with storage account not enforcing HTTPS"
+match: enableHttpsTrafficOnly\s*[:=]\s*(?:false|0|no)
+remediation: "Set enableHttpsTrafficOnly to true to enforce HTTPS-only traffic"
+enabled: true

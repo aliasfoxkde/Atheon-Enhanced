@@ -3,6 +3,14 @@ match: document\.write.*user|location\.hash.*innerHTML|document\.location.*=.*in
 severity: critical
 language: javascript
 category: web-security
+cwe: "CWE-79"
 description: 'Detected potential XSS vulnerability: ''dom based xss''. User input
   should be escaped before rendering in HTML. This is a critical security issue that
   could lead to data breaches or system compromise.'
+remediation: "Use textContent instead of innerHTML, or sanitize user input with DOMPurify before rendering. Example: element.textContent = userInput instead of element.innerHTML = userInput"
+tags:
+  - xss
+  - injection
+  - owasp-a7
+standards:
+  - owasp-top-10

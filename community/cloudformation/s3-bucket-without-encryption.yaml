@@ -1,0 +1,8 @@
+name: cloudformation-s3-no-encryption
+category: cloudformation
+severity: high
+cwe: "CWE-345"
+description: "Detects CloudFormation S3 bucket without server-side encryption"
+match: ServerSideEncryptionByDefault\s*:\s*(?:NOT\s*DEFINED|false|null)
+remediation: "Enable server-side encryption: ServerSideEncryptionByDefault: Enabled: true"
+enabled: true

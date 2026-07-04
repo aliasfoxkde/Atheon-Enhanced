@@ -1,0 +1,8 @@
+name: typosquat-common-package-names
+category: supply-chain
+severity: high
+cwe: "CWE-1395"
+description: "Detects package names that are common typosquatting targets"
+match: (react|reate|reacct|reacy|vue\.js|vuejs|vuue|anguar|angualr|angulr|lodahs|lodh|lodash|jguary|jquer|jqeury|expres|expressjs|flask|falsk)
+remediation: "Verify package name is spelled correctly."
+enabled: true

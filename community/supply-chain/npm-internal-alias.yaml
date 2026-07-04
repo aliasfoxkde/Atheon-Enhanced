@@ -1,0 +1,8 @@
+name: npm-internal-package-mismatch
+category: supply-chain
+severity: high
+cwe: "CWE-1395"
+description: "Detects npm package referencing internal or private registry"
+match: (from|registry)\s*[:=]\s*["\x27]https?://[a-zA-Z0-9-]+(?:[.][a-zA-Z0-9-]+)*\.npm\.registry
+remediation: "Use explicit @scope/package notation for internal packages."
+enabled: true

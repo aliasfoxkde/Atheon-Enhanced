@@ -1,0 +1,8 @@
+name: dockerfile-cap-add-all
+category: container
+severity: high
+cwe: "CWE-250"
+description: "Detects Docker run or Dockerfile with --cap-add=ALL"
+match: (--cap-add\\s*=\\s*ALL|cap_add:\\s*-\\s*ALL)
+remediation: "Avoid adding all capabilities. Add only specific capabilities needed."
+enabled: true

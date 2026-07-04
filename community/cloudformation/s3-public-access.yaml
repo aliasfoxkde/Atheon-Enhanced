@@ -1,0 +1,8 @@
+name: cloudformation-s3-public-access
+category: cloudformation
+severity: critical
+cwe: "CWE-284"
+description: "Detects CloudFormation S3 bucket with public access enabled"
+match: (PublicAccessBlockConfiguration|BucketPublicAccessBlock)\s*:\s*(?:false|~\s*-\s*true)
+remediation: "Set PublicAccessBlockConfiguration to true for all blocks"
+enabled: true

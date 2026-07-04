@@ -1,0 +1,8 @@
+name: graphql-field-cost-undefined
+category: graphql
+severity: medium
+cwe: "CWE-400"
+description: "Detects GraphQL without field cost analysis"
+match: (?:complexity|fieldCost|costAnalysis)\s*[:=]\s*(?:false|disabled|none)
+remediation: "Enable field cost analysis to prevent expensive queries"
+enabled: true

@@ -1,0 +1,8 @@
+name: pip-extra-index-url
+category: supply-chain
+severity: medium
+cwe: "CWE-1395"
+description: "Detects pip install with extra-index-url pointing to untrusted source"
+match: pip install.*--extra-index-url
+remediation: "Use --index-url instead of --extra-index-url for private packages."
+enabled: true

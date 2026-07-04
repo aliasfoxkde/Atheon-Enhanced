@@ -1,0 +1,8 @@
+name: graphql-debug-mode
+category: graphql
+severity: high
+cwe: "CWE-200"
+description: "Detects GraphQL with debug mode enabled"
+match: (?:debug|DEBUG|debugMode)\s*[:=]\s*(?:true|True|TRUE)
+remediation: "Disable debug mode in production"
+enabled: true

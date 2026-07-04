@@ -1,0 +1,8 @@
+name: cloudformation-iam-lambda-assume-role
+category: cloudformation
+severity: medium
+cwe: "CWE-250"
+description: "Detects Lambda function with overly permissive IAM assume role"
+match: (Principal\s*:\s*\*|AWS\s*:\s*["\x27]*\*["\x27]*)
+remediation: "Restrict Lambda execution role to specific services or ARNs"
+enabled: true

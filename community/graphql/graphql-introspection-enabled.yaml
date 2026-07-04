@@ -1,0 +1,8 @@
+name: graphql-introspection-enabled
+category: graphql
+severity: medium
+cwe: "CWE-200"
+description: "Detects GraphQL introspection enabled in production"
+match: introspection\s*[:=]\s*(?:true|True|TRUE)
+remediation: "Disable introspection in production: introspection: false"
+enabled: true

@@ -80,6 +80,12 @@ var detectionFixtures = []struct {
 	{"rails", "rails-secret-key-hardcoded", "secret_key_base='0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'"},
 	{"spring", "spring-deserialization-readObject", "readObject()"},
 	{"vue", "vue-v-html-xss", "v-html=\"{{userInput}}\""},
+	// New categories (Wave 15)
+	{"supply-chain", "typosquat-common-package-names", "var reacy = require('reacy')"},
+	{"container", "dockerfile-privileged-mode", "docker run --privileged"},
+	{"graphql", "graphql-introspection-enabled", "introspection: true"},
+	{"cloudformation", "cloudformation-s3-public-access", "PublicAccessBlockConfiguration: false"},
+	{"arm", "arm-azure-storage-enable-https", "enableHttpsTrafficOnly: false"},
 }
 
 // TestPatternDetection is the headline test: for every fixture, the

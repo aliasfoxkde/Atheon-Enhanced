@@ -47,6 +47,11 @@ func TestPatternInterfaceCategory(t *testing.T) {
 		"kubernetes":         true,
 		"metadata":           true,
 		"terraform":          true,
+		"supply-chain":       true,
+		"container":          true,
+		"graphql":            true,
+		"cloudformation":     true,
+		"arm":                true,
 	}
 
 	for _, p := range patterns {

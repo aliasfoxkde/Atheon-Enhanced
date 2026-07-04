@@ -1,0 +1,8 @@
+name: arm-azure-sql-no-firewall
+category: arm
+severity: high
+cwe: "CWE-284"
+description: "Detects Azure ARM template SQL server without proper firewall rules"
+match: startIpAddress\s*[:=]\s*["\x27]0\.0\.0\.0["\x27]
+remediation: "Restrict SQL server firewall to specific IP ranges"
+enabled: true

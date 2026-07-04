@@ -1,0 +1,8 @@
+name: dockerfile-privileged-mode
+category: container
+severity: critical
+cwe: "CWE-250"
+description: "Detects Dockerfile or docker-compose with privileged mode enabled"
+match: (--privileged|privileged:\\s*true)
+remediation: "Remove --privileged flag. Use specific capabilities (--cap-add) instead."
+enabled: true

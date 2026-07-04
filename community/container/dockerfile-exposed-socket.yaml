@@ -1,0 +1,8 @@
+name: dockerfile-exposed-socket
+category: container
+severity: critical
+cwe: "CWE-284"
+description: "Detects Docker socket mount into container"
+match: (-v|--mount)(?:=|\\s+)(?:/var/run/docker\\.sock|var/run/docker\\.sock)
+remediation: "Do not mount Docker socket into containers."
+enabled: true

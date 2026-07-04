@@ -1,0 +1,8 @@
+name: pypi-internal-package-mismatch
+category: supply-chain
+severity: high
+cwe: "CWE-1395"
+description: "Detects pip requirements referencing internal PyPI server"
+match: (index-url|extra-index-url)\s*[:=]\s*["\x27]https?://[a-zA-Z0-9-.]+/simple
+remediation: "Use --index-url with explicit internal PyPI server."
+enabled: true

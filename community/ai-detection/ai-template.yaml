@@ -1,5 +1,6 @@
 name: ai-template
 match: (?i)(your.*code|your.*logic|your.*implementation|placeholder.*code|template.*code)
 severity: medium
+enabled: false
 description: 'Pattern: ''ai template''. Pattern in category ''''. This is a medium-severity
   issue representing a moderate risk to security, privacy, or code quality.'

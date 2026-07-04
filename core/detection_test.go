@@ -49,7 +49,7 @@ var detectionFixtures = []struct {
 
 	// One representative per remaining category (Wave 8 fixture expansion).
 	{"accessibility", "aria-labels", "<button>Click to continue"},
-	{"ai-detection", "ai-buzzwords", "This revolutionary approach will disrupt the entire industry."},
+	{"ai-detection", "ai-safety-bypass", "// TODO: fix this later with proper error handling"},
 	{"api-integration", "api-versioning", "Accept: application/vnd.example.v2+json"},
 	{"cloud-native", "aws-arn", "arn:aws:ec2:us-east-1:123456789012:instance/i-12345"},
 	{"code-quality", "auto-confirm", "apt-get install --yes nginx"},

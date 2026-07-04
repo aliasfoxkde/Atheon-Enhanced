@@ -1,5 +1,6 @@
 name: ai-overuse
 match: (?i)(multiple|various|numerous|several|many|different).*\b(times|instances|cases|ways)
 severity: medium
+enabled: false
 description: 'Pattern: ''ai overuse''. Pattern in category ''''. This is a medium-severity
   issue representing a moderate risk to security, privacy, or code quality.'

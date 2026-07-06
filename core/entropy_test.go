@@ -6,8 +6,8 @@ import (
 
 func TestShannonEntropy(t *testing.T) {
 	tests := []struct {
-		name     string
-		input    string
+		name       string
+		input      string
 		minEntropy float64
 		maxEntropy float64
 	}{

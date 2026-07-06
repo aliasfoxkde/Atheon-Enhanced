@@ -73,8 +73,8 @@ type bundlePattern struct {
 	// is the single point of synchronization.
 	enabled    bool
 	severity   string
-	confidence string   // high, medium, or low
-	minEntropy float64  // Minimum entropy threshold (0 = no filtering)
+	confidence string  // high, medium, or low
+	minEntropy float64 // Minimum entropy threshold (0 = no filtering)
 	re         *regexp.Regexp
 }
 

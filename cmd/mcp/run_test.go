@@ -129,3 +129,67 @@ func TestRunMultipleRequests(t *testing.T) {
 		t.Errorf("expected 4 responses, got %d\n%s", count, out.String())
 	}
 }
+
+// TestRunListPatterns exercises the list_patterns tool handler.
+func TestRunListPatterns(t *testing.T) {
+	in := strings.NewReader(`{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}` + "\n" +
+		`{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"list_patterns","arguments":{}}}` + "\n")
+	out := &strings.Builder{}
+
+	code := run(context.Background(), in, out)
+	if code != 0 {
+		t.Errorf("expected exit 0, got %d", code)
+	}
+	if !strings.Contains(out.String(), `"result"`) {
+		t.Errorf("expected result in output, got: %s", out.String())
+	}
+}
+
+// TestRunListPatternsWithCategory exercises list_patterns with a category filter.
+func TestRunListPatternsWithCategory(t *testing.T) {
+	in := strings.NewReader(`{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}` + "\n" +
+		`{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"list_patterns","arguments":{"category":"secrets"}}}` + "\n")
+	out := &strings.Builder{}
+
+	code := run(context.Background(), in, out)
+	if code != 0 {
+		t.Errorf("expected exit 0, got %d", code)
+	}
+	if !strings.Contains(out.String(), `"result"`) {
+		t.Errorf("expected result in output, got: %s", out.String())
+	}
+}
+
+// TestRunListCategories exercises the list_categories tool handler.
+func TestRunListCategories(t *testing.T) {
+	in := strings.NewReader(`{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}` + "\n" +
+		`{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"list_categories","arguments":{}}}` + "\n")
+	out := &strings.Builder{}
+
+	code := run(context.Background(), in, out)
+	if code != 0 {
+		t.Errorf("expected exit 0, got %d", code)
+	}
+	if !strings.Contains(out.String(), `"result"`) {
+		t.Errorf("expected result in output, got: %s", out.String())
+	}
+}
+
+// TestRunUpdateBundle exercises the update_bundle tool handler.
+// Note: This test uses a non-existent URL so it will fail, but it exercises
+// the error path of the handler.
+func TestRunUpdateBundle(t *testing.T) {
+	in := strings.NewReader(`{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}` + "\n" +
+		`{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"update_bundle","arguments":{"force":false}}}` + "\n")
+	out := &strings.Builder{}
+
+	code := run(context.Background(), in, out)
+	// Exit code 0 even on error (handler returns error as JSON-RPC error)
+	if code != 0 {
+		t.Errorf("expected exit 0, got %d", code)
+	}
+	// Should contain either result or error
+	if !strings.Contains(out.String(), `"result"`) && !strings.Contains(out.String(), `"error"`) {
+		t.Errorf("expected result or error in output, got: %s", out.String())
+	}
+}

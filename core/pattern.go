@@ -58,6 +58,9 @@ type Pattern interface {
 	// Severity returns the pattern's severity: one of "low", "medium", "high",
 	// "critical". Implementations that don't track severity return "medium".
 	Severity() string
+	// Confidence returns the pattern's confidence: "high", "medium", or "low".
+	// Implementations that don't track confidence return "medium".
+	Confidence() string
 	// Matches reports whether the pattern's regex matches the given line.
 	Matches(line string) bool
 	// Description returns the pattern's free-text description. Empty string

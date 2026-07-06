@@ -463,6 +463,12 @@ func scanLines(ctx context.Context, content, file string) []Finding {
 				if !p.Matches(line) {
 					continue
 				}
+				// Apply entropy filtering if pattern has minEntropy set
+				if bp, ok := p.(*bundlePattern); ok && bp.MinEntropy() > 0 {
+					if shannonEntropy(line) < bp.MinEntropy() {
+						continue
+					}
+				}
 				lineNum := i + 1
 				if lineNum == 0 {
 					lineNum = 1
@@ -493,6 +499,7 @@ func scanLines(ctx context.Context, content, file string) []Finding {
 					Reference:   p.Reference(),
 					Tags:        p.Tags(),
 					Fingerprint: fmt.Sprintf("%s|%s|%d|%d", p.Name(), file, lineNum, col),
+					Confidence:  p.Confidence(),
 				})
 			}
 		}

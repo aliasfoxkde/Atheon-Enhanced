@@ -1,6 +1,5 @@
 name: fixme-comment
 match: (?i)\b(FIXME|XXX|HACK)\b
 severity: low
-description: 'Detected TODO/FIXME comment: ''fixme comment''. Pending tasks should
-  be tracked in an issue tracker rather than left in code. This is a low-severity
-  issue representing a minor risk or code quality concern.'
+description: 'Detects standalone FIXME/XXX/HACK markers (lenient pattern)'
+enabled: false

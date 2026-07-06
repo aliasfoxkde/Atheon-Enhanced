@@ -1,5 +1,5 @@
 name: cruft
 match: (?i)(XXX|HACK|FIXME|BUG|TODO.*remove|deprecated.*delete)
 severity: low
-description: 'Pattern: ''cruft''. Pattern in category ''''. This is a low-severity
-  issue representing a minor risk or code quality concern.'
+description: 'Detects code cleanup markers (superseded by todo-fixme)'
+enabled: false

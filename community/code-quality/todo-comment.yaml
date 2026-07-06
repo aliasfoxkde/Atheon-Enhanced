@@ -1,6 +1,5 @@
 name: todo-comment
-match: (?i)\bTODO\b
+match: (?i)\b(TODO|FIXME|XXX|HACK)\b
 severity: low
-description: 'Detected TODO/FIXME comment: ''todo comment''. Pending tasks should
-  be tracked in an issue tracker rather than left in code. This is a low-severity
-  issue representing a minor risk or code quality concern.'
+description: 'Detects TODO/FIXME/XXX/HACK markers (lenient pattern - matches standalone keywords)'
+enabled: false

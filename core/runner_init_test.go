@@ -28,43 +28,43 @@ func TestInitEnvVars(t *testing.T) {
 		name          string
 		skipDirs      string
 		binaryExts    string
-		wantSkipDir    string
+		wantSkipDir   string
 		wantBinaryExt string
 	}{
 		{
 			name:          "custom skip dir",
 			skipDirs:      "custom_dir,another_dir",
 			binaryExts:    "",
-			wantSkipDir:    "custom_dir",
+			wantSkipDir:   "custom_dir",
 			wantBinaryExt: ".png", // default
 		},
 		{
 			name:          "custom binary ext with dot",
 			skipDirs:      "",
 			binaryExts:    ".custom,.other",
-			wantSkipDir:    ".git", // default
+			wantSkipDir:   ".git", // default
 			wantBinaryExt: ".custom",
 		},
 		{
 			name:          "custom binary ext without dot",
 			skipDirs:      "",
 			binaryExts:    "custom,other",
-			wantSkipDir:    ".git", // default
+			wantSkipDir:   ".git", // default
 			wantBinaryExt: ".custom",
 		},
 		{
 			name:          "whitespace trimming",
 			skipDirs:      "  dir1  ,  dir2  ",
 			binaryExts:    "  .ext1  ,  .ext2  ",
-			wantSkipDir:    "dir1",
+			wantSkipDir:   "dir1",
 			wantBinaryExt: ".ext1",
 		},
 		{
 			name:          "empty values ignored",
 			skipDirs:      ",,,",
 			binaryExts:    ",,,",
-			wantSkipDir:    ".git", // default unchanged
-			wantBinaryExt: ".png",   // default unchanged
+			wantSkipDir:   ".git", // default unchanged
+			wantBinaryExt: ".png", // default unchanged
 		},
 	}
 

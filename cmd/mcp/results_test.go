@@ -82,10 +82,10 @@ type fakePatternForTest struct {
 
 func (f *fakePatternForTest) Name() string             { return f.name }
 func (f *fakePatternForTest) Category() string         { return f.category }
-func (f *fakePatternForTest) Enabled() bool           { return f.enabled }
-func (f *fakePatternForTest) Severity() string        { return f.severity }
-func (f *fakePatternForTest) Confidence() string      { return "medium" }
+func (f *fakePatternForTest) Enabled() bool            { return f.enabled }
+func (f *fakePatternForTest) Severity() string         { return f.severity }
+func (f *fakePatternForTest) Confidence() string       { return "medium" }
 func (f *fakePatternForTest) Matches(line string) bool { return false }
-func (f *fakePatternForTest) Description() string     { return "" }
-func (f *fakePatternForTest) Reference() string       { return "" }
-func (f *fakePatternForTest) Tags() []string         { return nil }
+func (f *fakePatternForTest) Description() string      { return "" }
+func (f *fakePatternForTest) Reference() string        { return "" }
+func (f *fakePatternForTest) Tags() []string           { return nil }

@@ -21,9 +21,9 @@ This plan synthesizes findings from:
 | backend-fixed | `atheon.rs` is STUB (line 144-145) | Doesn't call real Atheon engine |
 | backend-fixed | CI has no Atheon scanning | Security gap |
 | backend-fixed | Uses detect-secrets, not Atheon | Integration opportunity |
-| IMPROVEMENT_PLAN.md | Section 1.1 (CI consolidation) pending | Maintenance burden |
-| IMPROVEMENT_PLAN.md | Section 3 (Patterns) mostly DONE | Pattern gap CLOSED |
-| TASKS.md | Unicode, taint, YARA, risk scoring pending | Feature gap |
+| IMPROVEMENT_PLAN.md | Section 1.1 (CI consolidation) ALREADY DONE | 9 workflows consolidated |
+| IMPROVEMENT_PLAN.md | Section 3 (Patterns) ALL DONE | 384 patterns, 28 categories |
+| TASKS.md | Unicode, taint, YARA, risk scoring | DEFERRED - needs design |
 
 ---
 

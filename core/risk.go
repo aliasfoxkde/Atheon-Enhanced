@@ -41,25 +41,25 @@ type RiskScore struct {
 
 // CategoryRisk represents risk breakdown for a single category.
 type CategoryRisk struct {
-	Score        int      `json:"score"`
-	Count        int      `json:"count"`
-	Findings     []string `json:"findings"`
-	Severities   []string `json:"severities"`
+	Score      int      `json:"score"`
+	Count      int      `json:"count"`
+	Findings   []string `json:"findings"`
+	Severities []string `json:"severities"`
 }
 
 // NewRiskScore creates a new risk score from a list of findings.
 func NewRiskScore(findings []Finding) *RiskScore {
 	if len(findings) == 0 {
 		return &RiskScore{
-			Score:    0,
-			Level:    RiskLevelNone,
+			Score:      0,
+			Level:      RiskLevelNone,
 			ByCategory: make(map[string]CategoryRisk),
 		}
 	}
 
 	rs := &RiskScore{
-		ByCategory:     make(map[string]CategoryRisk),
-		FindingCount:   len(findings),
+		ByCategory:      make(map[string]CategoryRisk),
+		FindingCount:    len(findings),
 		HighestSeverity: "low",
 	}
 
@@ -142,7 +142,7 @@ func ClassifyRisk(score int) RiskLevel {
 // TopRisks returns the categories sorted by risk score descending.
 func (rs *RiskScore) TopRisks(limit int) []struct {
 	Category string
-	Risk    CategoryRisk
+	Risk     CategoryRisk
 } {
 	type kv struct {
 		category string

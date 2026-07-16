@@ -11,10 +11,10 @@ import (
 type YARARule struct {
 	Name        string   `json:"name"`
 	Description string   `json:"description"`
-	Tags       []string `json:"tags"`
-	Patterns   []string `json:"patterns"`
-	Severity   string   `json:"severity"`
-	Category   string   `json:"category"`
+	Tags        []string `json:"tags"`
+	Patterns    []string `json:"patterns"`
+	Severity    string   `json:"severity"`
+	Category    string   `json:"category"`
 }
 
 // YARAScanner provides YARA-like pattern matching capabilities.
@@ -35,12 +35,12 @@ func NewYARAScanner(rulesDir string) *YARAScanner {
 
 // YARAFinding represents a finding from YARA-like pattern matching.
 type YARAFinding struct {
-	Rule       string `json:"rule"`
-	File       string `json:"file"`
-	Line       int    `json:"line"`
-	Matched    string `json:"matched"`
-	Severity   string `json:"severity"`
-	Category   string `json:"category"`
+	Rule        string `json:"rule"`
+	File        string `json:"file"`
+	Line        int    `json:"line"`
+	Matched     string `json:"matched"`
+	Severity    string `json:"severity"`
+	Category    string `json:"category"`
 	Description string `json:"description"`
 }
 
@@ -50,66 +50,66 @@ func DefaultYARARules() []*YARARule {
 		{
 			Name:        "malware_indicator",
 			Description: "Detects potential malware indicators",
-			Tags:       []string{"malware", "threat"},
-			Patterns:   []string{"eval(base64_decode(", "exec(base64_decode(", "__import__(\"os\")", "os.system("},
-			Severity:   "critical",
-			Category:   "security",
+			Tags:        []string{"malware", "threat"},
+			Patterns:    []string{"eval(base64_decode(", "exec(base64_decode(", "__import__(\"os\")", "os.system("},
+			Severity:    "critical",
+			Category:    "security",
 		},
 		{
 			Name:        "crypto_miner",
 			Description: "Detects cryptocurrency mining patterns",
-			Tags:       []string{"crypto", "miner", "malware"},
-			Patterns:   []string{"stratum+tcp://", ".wallet.", "cryptonight", "mining_pool"},
-			Severity:   "critical",
-			Category:   "security",
+			Tags:        []string{"crypto", "miner", "malware"},
+			Patterns:    []string{"stratum+tcp://", ".wallet.", "cryptonight", "mining_pool"},
+			Severity:    "critical",
+			Category:    "security",
 		},
 		{
 			Name:        "suspicious_script",
 			Description: "Detects suspicious script patterns",
-			Tags:       []string{"script", "suspicious"},
-			Patterns:   []string{"curl.*|.*bash", "wget.*|.*sh", "rm -rf /"},
-			Severity:   "high",
-			Category:   "security",
+			Tags:        []string{"script", "suspicious"},
+			Patterns:    []string{"curl.*|.*bash", "wget.*|.*sh", "rm -rf /"},
+			Severity:    "high",
+			Category:    "security",
 		},
 		{
 			Name:        "credential_theft",
 			Description: "Detects patterns associated with credential theft",
-			Tags:       []string{"credentials", "theft"},
-			Patterns:   []string{"keylogger", "password.*clipboard", "\\.get\\(\"password\"\\)", "keystroke"},
-			Severity:   "critical",
-			Category:   "secrets",
+			Tags:        []string{"credentials", "theft"},
+			Patterns:    []string{"keylogger", "password.*clipboard", "\\.get\\(\"password\"\\)", "keystroke"},
+			Severity:    "critical",
+			Category:    "secrets",
 		},
 		{
 			Name:        "network_recon",
 			Description: "Detects network reconnaissance patterns",
-			Tags:       []string{"network", "recon"},
-			Patterns:   []string{"nmap", "netstat", "ping sweep", "port scan"},
-			Severity:   "medium",
-			Category:   "security",
+			Tags:        []string{"network", "recon"},
+			Patterns:    []string{"nmap", "netstat", "ping sweep", "port scan"},
+			Severity:    "medium",
+			Category:    "security",
 		},
 		{
 			Name:        "persistence_indicator",
 			Description: "Detects system persistence mechanisms",
-			Tags:       []string{"persistence", "registry"},
-			Patterns:   []string{"HKLM\\\\Software", "HKCU\\\\Software", "~/.bashrc", "crontab"},
-			Severity:   "high",
-			Category:   "security",
+			Tags:        []string{"persistence", "registry"},
+			Patterns:    []string{"HKLM\\\\Software", "HKCU\\\\Software", "~/.bashrc", "crontab"},
+			Severity:    "high",
+			Category:    "security",
 		},
 		{
 			Name:        "data_exfiltration",
 			Description: "Detects potential data exfiltration patterns",
-			Tags:       []string{"exfil", "data"},
-			Patterns:   []string{"Authorization: Bearer", "password=", "api_key=", ".send_keys("},
-			Severity:   "high",
-			Category:   "security",
+			Tags:        []string{"exfil", "data"},
+			Patterns:    []string{"Authorization: Bearer", "password=", "api_key=", ".send_keys("},
+			Severity:    "high",
+			Category:    "security",
 		},
 		{
 			Name:        "reverse_shell",
 			Description: "Detects reverse shell patterns",
-			Tags:       []string{"shell", "backdoor"},
-			Patterns:   []string{"/bin/bash -i", "/dev/tcp/", "nc -e ", "bash -i >& /dev/tcp/"},
-			Severity:   "critical",
-			Category:   "security",
+			Tags:        []string{"shell", "backdoor"},
+			Patterns:    []string{"/bin/bash -i", "/dev/tcp/", "nc -e ", "bash -i >& /dev/tcp/"},
+			Severity:    "critical",
+			Category:    "security",
 		},
 	}
 }
@@ -199,12 +199,12 @@ func (ys *YARAScanner) AddRule(rule *YARARule) {
 // ConvertToFinding converts a YARA finding to a core Finding.
 func ConvertToFinding(yf YARAFinding) Finding {
 	return Finding{
-		Pattern:  "yara_" + yf.Rule,
-		File:     yf.File,
-		Line:     yf.Line,
-		Content:  yf.Matched,
-		Severity: yf.Severity,
-		Category: yf.Category,
+		Pattern:     "yara_" + yf.Rule,
+		File:        yf.File,
+		Line:        yf.Line,
+		Content:     yf.Matched,
+		Severity:    yf.Severity,
+		Category:    yf.Category,
 		Fingerprint: fmt.Sprintf("%s|%s|%d", yf.Rule, yf.File, yf.Line),
 	}
 }

@@ -18,16 +18,16 @@ type Baseline struct {
 // BaselineFinding represents a single suppressed finding.
 type BaselineFinding struct {
 	PatternID string `yaml:"pattern_id"`
-	File     string `yaml:"file"`
-	Line     int    `yaml:"line"`
-	Hash     string `yaml:"hash,omitempty"`
+	File      string `yaml:"file"`
+	Line      int    `yaml:"line"`
+	Hash      string `yaml:"hash,omitempty"`
 }
 
 // BaselineMatcher tracks suppressed findings and filters them out.
 type BaselineMatcher struct {
-	baseline  *Baseline
-	findings  map[string]bool
-	totalCount int
+	baseline        *Baseline
+	findings        map[string]bool
+	totalCount      int
 	suppressedCount int
 }
 
@@ -106,9 +106,9 @@ func (bm *BaselineMatcher) FilterFindings(findings []Finding) []Finding {
 // Stats returns suppression statistics.
 func (bm *BaselineMatcher) Stats() BaselineStats {
 	return BaselineStats{
-		Total:     bm.totalCount,
+		Total:      bm.totalCount,
 		Suppressed: bm.suppressedCount,
-		Active:    bm.totalCount - bm.suppressedCount,
+		Active:     bm.totalCount - bm.suppressedCount,
 	}
 }
 
@@ -151,9 +151,9 @@ func CreateBaselineFile(findings []Finding, path string) error {
 	for _, f := range findings {
 		baseline.Findigs = append(baseline.Findigs, BaselineFinding{
 			PatternID: f.Pattern,
-			File:     f.File,
-			Line:     f.Line,
-			Hash:     f.Fingerprint,
+			File:      f.File,
+			Line:      f.Line,
+			Hash:      f.Fingerprint,
 		})
 	}
 

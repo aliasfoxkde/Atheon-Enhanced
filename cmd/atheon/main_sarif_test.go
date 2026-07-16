@@ -386,7 +386,7 @@ func TestPrintSARIFFindingsStructure(t *testing.T) {
 		{Pattern: "aws-key", File: "creds.txt", Line: 1, Content: "AKIAIOSFODNN7EXAMPLE"},
 	}
 	out := captureStdout(t, func() {
-		printSARIFFindings(findings)
+		printSARIFFindings(findings, nil)
 	})
 
 	var sarif map[string]any
@@ -547,7 +547,7 @@ func TestSARIFResultColumnsAndRedaction(t *testing.T) {
 // tooling that caches the schema by URL.
 func TestSARIFSchemaURLFrozen(t *testing.T) {
 	out := captureStdout(t, func() {
-		printSARIFFindings(nil) //nolint:errcheck
+		printSARIFFindings(nil, nil) //nolint:errcheck
 	})
 	const want = "csd03/Schemata/sarif-schema-2.1.0.json"
 	if !strings.Contains(out, want) {

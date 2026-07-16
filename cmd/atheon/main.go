@@ -255,12 +255,13 @@ func scanOpts(rest []string) core.ScanOpts {
 }
 
 func printFindings(findings []core.Finding, stats *core.Stats, jsonOutput, sarifOutput bool) {
+	riskScore := core.NewRiskScore(findings)
 	if jsonOutput {
-		printJSONFindings(findings)
+		printJSONFindings(findings, riskScore)
 		return
 	}
 	if sarifOutput {
-		printSARIFFindings(findings)
+		printSARIFFindings(findings, riskScore)
 		return
 	}
 	if len(findings) == 0 {
@@ -302,7 +303,7 @@ func scanErrorsPresent(stats *core.Stats) bool {
 	return stats != nil && len(stats.Errors) > 0
 }
 
-func printJSONFindings(findings []core.Finding) {
+func printJSONFindings(findings []core.Finding, riskScore *core.RiskScore) {
 	items := make([]map[string]any, 0, len(findings))
 	for _, f := range findings {
 		items = append(items, map[string]any{
@@ -319,8 +320,25 @@ func printJSONFindings(findings []core.Finding) {
 			"fingerprint": f.Fingerprint,
 		})
 	}
-	if err := json.NewEncoder(os.Stdout).Encode(items); err != nil {
+	output := map[string]any{
+		"findings":   items,
+		"risk_score": riskScore,
+	}
+	if err := json.NewEncoder(os.Stdout).Encode(output); err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
+	}
+}
+
+// riskScoreToMap converts a RiskScore to a map for JSON output.
+func riskScoreToMap(rs *core.RiskScore) map[string]any {
+	if rs == nil {
+		return nil
+	}
+	return map[string]any{
+		"score":             rs.Score,
+		"level":             rs.Level,
+		"finding_count":     rs.FindingCount,
+		"highest_severity":  rs.HighestSeverity,
 	}
 }
 
@@ -329,7 +347,7 @@ func printJSONFindings(findings []core.Finding) {
 // `csd03` tag (not `master`) so consumers can pin against a stable
 // revision; `master` shifts as the spec evolves and breaks tooling that
 // caches the schema.
-func printSARIFFindings(findings []core.Finding) {
+func printSARIFFindings(findings []core.Finding, riskScore *core.RiskScore) {
 	sarif := map[string]any{
 		"$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/csd03/Schemata/sarif-schema-2.1.0.json",
 		"version": "2.1.0",
@@ -358,6 +376,10 @@ func printSARIFFindings(findings []core.Finding) {
 					},
 				},
 				"results": buildSARIFResults(findings),
+				// Custom properties - risk assessment
+				"properties": map[string]any{
+					"risk_score": riskScoreToMap(riskScore),
+				},
 			},
 		},
 	}

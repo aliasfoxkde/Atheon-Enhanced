@@ -11,7 +11,7 @@ import (
 
 // Baseline represents a suppression baseline file.
 type Baseline struct {
-	Version string            `yaml:"version"`
+	Version  string            `yaml:"version"`
 	Findings []BaselineFinding `yaml:"findings"`
 }
 

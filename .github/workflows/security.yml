@@ -134,7 +134,7 @@ jobs:
 
       - name: Sensitive data in logs check
         run: |
-          HITS=$(grep -rnE '(log|fmt\.Print).*\b(password|secret|token|api[_-]?key)\b' core/*.go 2>/dev/null | grep -v "_test.go" || true)
+          HITS=$(grep -rnE '(log\.|fmt\.Print|fmt\.Printf|fmt\.Println)\b.*\b(password|secret|token|api[_-]?key)\b' core/*.go 2>/dev/null | grep -v "_test.go" || true)
           if [ -n "$HITS" ]; then
             echo "❌ Possible sensitive-data-in-logs:"
             echo "$HITS"

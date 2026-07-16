@@ -33,3 +33,4 @@ CLAUDE.md
 # Python cache
 .pytest_cache/
 .ruff_cache/
+bin/

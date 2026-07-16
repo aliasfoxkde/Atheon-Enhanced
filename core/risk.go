@@ -17,6 +17,7 @@ const (
 // RiskLevel represents the overall risk assessment.
 type RiskLevel string
 
+// Risk level classification constants.
 const (
 	RiskLevelCritical RiskLevel = "critical"
 	RiskLevelHigh     RiskLevel = "high"

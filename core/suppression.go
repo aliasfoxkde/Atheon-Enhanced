@@ -37,7 +37,7 @@ func NewBaselineMatcher(path string) (*BaselineMatcher, error) {
 		findings: make(map[string]bool),
 	}
 
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) //nolint:gosec // Security scanner intentionally reads user-specified paths
 	if err != nil {
 		if os.IsNotExist(err) {
 			// No baseline file - nothing to suppress
@@ -162,7 +162,7 @@ func CreateBaselineFile(findings []Finding, path string) error {
 		return err
 	}
 
-	return os.WriteFile(path, data, 0o644)
+	return os.WriteFile(path, data, 0o644) //nolint:gosec // Baseline files need to be readable by owner; 0o644 is standard for user config files
 }
 
 // normalizePath normalizes a file path for comparison.

@@ -116,7 +116,7 @@ func DefaultYARARules() []*YARARule {
 
 // ScanFile scans a file using YARA-like rules.
 func (ys *YARAScanner) ScanFile(filename string) ([]YARAFinding, error) {
-	data, err := os.ReadFile(filename)
+	data, err := os.ReadFile(filename) //nolint:gosec // Security scanner intentionally reads user-specified paths
 	if err != nil {
 		return nil, err
 	}
@@ -181,7 +181,7 @@ func (ys *YARAScanner) ScanDir(dir string) ([]YARAFinding, error) {
 
 		findings, err := ys.ScanFile(path)
 		if err != nil {
-			return nil // Skip files we can't read
+			return err // Skip files we can't read
 		}
 
 		allFindings = append(allFindings, findings...)

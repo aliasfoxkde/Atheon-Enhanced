@@ -12,7 +12,7 @@ import (
 // Baseline represents a suppression baseline file.
 type Baseline struct {
 	Version string            `yaml:"version"`
-	Findigs []BaselineFinding `yaml:"findings"`
+	Findings []BaselineFinding `yaml:"findings"`
 }
 
 // BaselineFinding represents a single suppressed finding.
@@ -54,7 +54,7 @@ func NewBaselineMatcher(path string) (*BaselineMatcher, error) {
 	bm.baseline = &baseline
 
 	// Index findings by key for fast lookup
-	for _, f := range baseline.Findigs {
+	for _, f := range baseline.Findings {
 		key := baselineKey(f.PatternID, f.File, f.Line)
 		bm.findings[key] = true
 	}
@@ -149,7 +149,7 @@ func CreateBaselineFile(findings []Finding, path string) error {
 	}
 
 	for _, f := range findings {
-		baseline.Findigs = append(baseline.Findigs, BaselineFinding{
+		baseline.Findings = append(baseline.Findings, BaselineFinding{
 			PatternID: f.Pattern,
 			File:      f.File,
 			Line:      f.Line,

@@ -6,7 +6,6 @@ Current and upcoming development tasks.
 
 - Research and implement SkillSpector-inspired enhancements
 - Unicode deception detection patterns
-- Taint tracking analysis
 
 ## Completed
 
@@ -46,11 +45,15 @@ Current and upcoming development tasks.
 ## Backlog
 
 - Unicode deception detection (RTL overrides, homoglyphs, zero-width chars)
-- Taint tracking analysis (source → sink flow)
-- Risk scoring system (0-100)
-- Baseline suppression for re-scans
 - YARA rule integration
 - OSV.dev CVE lookups
+
+### Recently Completed (Wave 15 - 2026-07-16)
+- [x] Taint tracking analysis (source → sink flow) - core/taint.go
+- [x] Risk scoring system (0-100) - core/risk.go
+- [x] Baseline suppression for re-scans - core/suppression.go
+- [x] YARA scanner (simplified) - core/yara_scanner.go
+- [x] Test coverage: 66.2% → 74.4%
 
 ## See Also
 

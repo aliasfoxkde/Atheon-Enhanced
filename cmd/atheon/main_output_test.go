@@ -85,7 +85,7 @@ func TestPrintJSONFindingsFull(t *testing.T) {
 	}
 
 	// Just verify the function doesn't panic
-	printJSONFindings(findings)
+	printJSONFindings(findings, nil)
 }
 
 // TestCmdListFull tests cmdList with various arguments

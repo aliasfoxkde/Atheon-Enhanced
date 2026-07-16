@@ -1,0 +1,10 @@
+name: taint-command-injection
+match: os\.getenv.*exec\(|os\.getenv.*system\(|request\..*exec\(|request\..*system\(
+severity: critical
+description: 'Detected potential command injection: user input from environment or request
+  is passed to a dangerous function (exec/system). This is a critical severity issue
+  that could lead to arbitrary command execution.'
+tags:
+  - security
+  - taint
+  - command-injection

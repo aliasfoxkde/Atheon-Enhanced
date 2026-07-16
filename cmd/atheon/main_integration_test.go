@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -138,8 +139,16 @@ func TestMainJSONOutput(t *testing.T) {
 		t.Error("Expected JSON output")
 	}
 
-	if !bytes.HasPrefix(output, []byte("[")) {
-		t.Error("Expected JSON array output")
+	// Verify it's valid JSON with findings array and risk_score
+	var result map[string]any
+	if err := json.Unmarshal(output, &result); err != nil {
+		t.Errorf("Expected valid JSON output: %v", err)
+	}
+	if _, ok := result["findings"]; !ok {
+		t.Error("Expected 'findings' key in JSON output")
+	}
+	if _, ok := result["risk_score"]; !ok {
+		t.Error("Expected 'risk_score' key in JSON output")
 	}
 }
 

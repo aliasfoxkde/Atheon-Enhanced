@@ -237,7 +237,7 @@ func TestPrintJSONFindings(t *testing.T) {
 		}
 	}()
 
-	printJSONFindings(findings)
+	printJSONFindings(findings, nil)
 }
 
 func TestPrintSARIFFindings(t *testing.T) {
@@ -269,7 +269,7 @@ func TestPrintSARIFFindings(t *testing.T) {
 		}
 	}()
 
-	printSARIFFindings(findings)
+	printSARIFFindings(findings, nil)
 }
 
 func TestPrintFindingsWithNilStats(t *testing.T) {
@@ -420,7 +420,7 @@ func TestMainIntegration(t *testing.T) {
 		}()
 		// Test with empty findings
 		findings := []core.Finding{}
-		printJSONFindings(findings)
+		printJSONFindings(findings, nil)
 	})
 
 	// Test 6: Redaction functionality
@@ -651,7 +651,7 @@ func TestPrintJSONFindingsEncodeError(t *testing.T) {
 	w.Close() // close write end so Encode fails
 
 	findings := []core.Finding{{Pattern: "x", File: "y", Line: 1}}
-	printJSONFindings(findings)
+	printJSONFindings(findings, nil)
 	r.Close()
 }
 
@@ -666,7 +666,7 @@ func TestPrintSARIFFindingsEncodeError(t *testing.T) {
 	w.Close() // close write end so Encode fails
 
 	findings := []core.Finding{{Pattern: "x", File: "y", Line: 1}}
-	printSARIFFindings(findings)
+	printSARIFFindings(findings, nil)
 	r.Close()
 }
 

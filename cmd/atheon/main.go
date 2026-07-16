@@ -194,6 +194,7 @@ func run(ctx context.Context, args []string) int {
 		return 0
 
 	default:
+		baselinePath, args := parseBaseline(args)
 		path := args[0]
 		info, err := os.Stat(path)
 		if err != nil {
@@ -210,6 +211,15 @@ func run(ctx context.Context, args []string) int {
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "error:", errors.SafeError(err))
 			return 1
+		}
+		// Apply baseline suppression if specified
+		if baselinePath != "" {
+			bm, err := core.NewBaselineMatcher(baselinePath)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "error loading baseline: %s\n", err)
+				return 1
+			}
+			findings = bm.FilterFindings(findings)
 		}
 		printFindings(findings, stats, jsonOutput, sarifOutput)
 		if len(findings) > 0 || scanErrorsPresent(stats) {
@@ -232,6 +242,18 @@ func parseCategories(args []string) (cats, rest []string, enableAll bool) {
 		case a == "--all":
 			enableAll = true
 		default:
+			rest = append(rest, a)
+		}
+	}
+	return
+}
+
+// parseBaseline extracts --baseline=<path> from args.
+func parseBaseline(args []string) (baselinePath string, rest []string) {
+	for _, a := range args {
+		if strings.HasPrefix(a, "--baseline=") {
+			baselinePath = strings.TrimPrefix(a, "--baseline=")
+		} else {
 			rest = append(rest, a)
 		}
 	}

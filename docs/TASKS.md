@@ -45,15 +45,18 @@ Current and upcoming development tasks.
 ## Backlog
 
 - Unicode deception detection (RTL overrides, homoglyphs, zero-width chars)
-- YARA rule integration
 - OSV.dev CVE lookups
+- Full YARA library integration (currently simplified version in core/yara_scanner.go)
 
 ### Recently Completed (Wave 15 - 2026-07-16)
 - [x] Taint tracking analysis (source → sink flow) - core/taint.go
-- [x] Risk scoring system (0-100) - core/risk.go
-- [x] Baseline suppression for re-scans - core/suppression.go
+- [x] Taint command injection pattern - community/security-hardening/taint-command-injection.yaml
+- [x] Risk scoring system (0-100) - core/risk.go, integrated into JSON/SARIF output
+- [x] Baseline suppression for re-scans - core/suppression.go with --baseline flag
 - [x] YARA scanner (simplified) - core/yara_scanner.go
-- [x] Test coverage: 66.2% → 74.4%
+- [x] Test coverage: 66.2% → 77.0%
+- [x] Fix Findigs typo → Findings in suppression.go
+- [x] Add tests for atomic_file, ignore, yara_scanner modules
 
 ## See Also
 

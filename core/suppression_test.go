@@ -103,3 +103,40 @@ func TestBaselineStats(t *testing.T) {
 		t.Errorf("expected Active=7, got %d", stats.Active)
 	}
 }
+
+func TestLoadDefaultBaseline(t *testing.T) {
+	// When no baseline file exists, should return empty matcher
+	bm, err := LoadDefaultBaseline()
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if bm == nil {
+		t.Error("expected non-nil matcher")
+	}
+}
+
+func TestCreateBaselineFile(t *testing.T) {
+	findings := []Finding{
+		{Pattern: "test-pattern", File: "test.go", Line: 10, Fingerprint: "abc123"},
+	}
+	tmpfile, err := os.CreateTemp("", "baseline-*.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(tmpfile.Name())
+	tmpfile.Close()
+
+	err = CreateBaselineFile(findings, tmpfile.Name())
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+
+	// Verify file was created with content
+	data, err := os.ReadFile(tmpfile.Name())
+	if err != nil {
+		t.Errorf("unexpected error reading file: %v", err)
+	}
+	if len(data) == 0 {
+		t.Error("expected non-empty baseline file")
+	}
+}

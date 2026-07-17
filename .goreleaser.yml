@@ -52,12 +52,10 @@ builds:
       - -X main.version={{.Version}}
 
 archives:
-  - formats:
-      - tar.gz
-    format_overrides:
+  - format: tar.gz
+    format_override:
       - goos: windows
-        formats:
-          - zip
+        format: zip
     name_template: "atheon-{{ .Os }}-{{ .Arch }}"
 
 checksum:

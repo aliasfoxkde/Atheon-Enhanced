@@ -64,3 +64,34 @@ func TestRiskScore_TopRisks(t *testing.T) {
 		t.Errorf("expected secrets as top risk, got %s", top[0].Category)
 	}
 }
+
+func TestRiskScore_AddFinding(t *testing.T) {
+	findings := []Finding{
+		{Pattern: "p1", Category: "secrets", Severity: "critical"},
+	}
+	rs := NewRiskScore(findings)
+	if rs.FindingCount != 1 {
+		t.Errorf("expected 1 finding, got %d", rs.FindingCount)
+	}
+
+	// Add a new finding
+	rs.AddFinding(Finding{Pattern: "p2", Category: "security", Severity: "high"})
+	if rs.FindingCount != 2 {
+		t.Errorf("expected 2 findings after AddFinding, got %d", rs.FindingCount)
+	}
+	if rs.HighestSeverity != "critical" {
+		t.Errorf("expected highest severity to be critical, got %s", rs.HighestSeverity)
+	}
+}
+
+func TestRiskScore_Summary(t *testing.T) {
+	findings := []Finding{
+		{Pattern: "p1", Category: "secrets", Severity: "critical"},
+		{Pattern: "p2", Category: "secrets", Severity: "high"},
+	}
+	rs := NewRiskScore(findings)
+	summary := rs.Summary()
+	if summary == "" {
+		t.Error("expected non-empty summary")
+	}
+}

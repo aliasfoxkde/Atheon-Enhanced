@@ -74,3 +74,22 @@ func TestSandboxPathSymlinkUnderCwdAllowed(t *testing.T) {
 	}
 	_ = got
 }
+
+// TestSandboxPathSymlinkTraversalBlocked verifies a relative symlink inside cwd
+// that points outside cwd is blocked.
+func TestSandboxPathSymlinkTraversalBlocked(t *testing.T) {
+	cwd, _ := os.Getwd()
+	// Create a symlink in cwd that points to /etc/passwd (outside cwd).
+	// This is a relative symlink so it needs to be accessed via relative path.
+	link := filepath.Join(cwd, ".traversallink")
+	if err := os.Symlink("/etc/passwd", link); err != nil {
+		t.Fatalf("failed to create symlink: %v", err)
+	}
+	defer os.Remove(link)
+
+	// Access via relative path - the symlink points outside cwd so should be blocked
+	got, err := sandboxPath(".traversallink")
+	if err == nil {
+		t.Errorf("sandboxPath(%q) = %q, want error for symlink traversal", ".traversallink", got)
+	}
+}

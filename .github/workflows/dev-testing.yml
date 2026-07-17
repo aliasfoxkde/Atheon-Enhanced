@@ -36,8 +36,8 @@ jobs:
       - name: Coverage check (relaxed — 50% threshold)
         run: |
           if [ ! -f coverage.out ]; then
-            echo "⚠️  No coverage file — tests may have failed"
-            exit 0
+            echo "❌ No coverage file — tests may have failed or did not run"
+            exit 1
           fi
           # Float arithmetic — matches the main ci.yml coverage gate so a
           # 49.9% dev build correctly fails a 50% floor.

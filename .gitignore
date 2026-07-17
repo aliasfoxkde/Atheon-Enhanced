@@ -2,6 +2,7 @@
 /atheon
 /atheon.exe
 /atheon-*
+*.test
 
 # IDE
 .vs/

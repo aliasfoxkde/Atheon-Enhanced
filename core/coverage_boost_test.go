@@ -1,6 +1,8 @@
 package core
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"os"
@@ -42,15 +44,13 @@ func TestLoadBundleBadData(t *testing.T) {
 	}
 
 	// Gzip but not JSON
-	tmp, _ := os.CreateTemp("", "bad-bundle-*.gz")
-	defer os.Remove(tmp.Name())
-	tmp.WriteString("not json content")
-	tmp.Close()
-
-	data, _ := os.ReadFile(tmp.Name())
-	// We can't easily gzip-compress here, so test the format check
-	// by using a manually constructed gzip+invalid-json payload.
-	_ = data
+	var buf bytes.Buffer
+	zw := gzip.NewWriter(&buf)
+	zw.Write([]byte("not json content"))
+	zw.Close()
+	if err := loadBundle(buf.Bytes()); err == nil {
+		t.Error("expected error for gzip with invalid JSON")
+	}
 }
 
 // TestScanFileMissing exercises the error path of ScanFile.

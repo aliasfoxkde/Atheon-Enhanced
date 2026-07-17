@@ -164,6 +164,7 @@ func (p *testPattern) Category() string         { return p.category }
 func (p *testPattern) Matches(line string) bool { return false }
 func (p *testPattern) Enabled() bool            { return true }
 func (p *testPattern) Severity() string         { return "medium" }
+func (p *testPattern) Confidence() string       { return "medium" }
 func (p *testPattern) SetEnabled(bool)          {}
 func (p *testPattern) Description() string      { return "" }
 func (p *testPattern) Reference() string        { return "" }

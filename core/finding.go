@@ -28,6 +28,7 @@ type Finding struct {
 	Reference   string   // Pattern reference URL at match time
 	Tags        []string // Pattern tags at match time
 	Fingerprint string   // Stable deduplication key: "pattern|file|line|col"
+	Confidence  string   // Pattern confidence: "high", "medium", or "low"
 }
 
 // Stats summarizes the work performed by ScanFile or ScanDir. Files is the

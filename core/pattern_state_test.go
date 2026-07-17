@@ -64,43 +64,6 @@ func TestLoadPatternState_NoFile(t *testing.T) {
 	}
 }
 
-// TestLoadPatternState_WithFile verifies loading from an existing state file
-func TestLoadPatternState_WithFile(t *testing.T) {
-	// Note: This test won't work with the actual stateFile() function
-	// because it uses the real home directory. We'd need to refactor
-	// to accept a path parameter for proper testing.
-	t.Skip("Requires refactoring to support test home directory")
-
-	tmpDir := t.TempDir()
-	_ = filepath.Join(tmpDir, ".atheon", "pattern_state.json")
-
-	// Would create state file with test data here
-	_ = `{
-  "patterns": {
-    "pattern1": true,
-    "pattern2": false,
-    "pattern3": true
-  }
-}`
-}
-
-// TestSavePatternState verifies saving pattern state
-func TestSavePatternState(t *testing.T) {
-	// Note: This test won't work with the actual savePatternState() function
-	// because it uses the real home directory. We'd need to refactor
-	// to accept a path parameter for proper testing.
-	t.Skip("Requires refactoring to support test home directory")
-
-	_ = t.TempDir()
-	_ = &PatternState{
-		Patterns: map[string]bool{
-			"pattern1": true,
-			"pattern2": false,
-			"pattern3": true,
-		},
-	}
-}
-
 // TestApplyPatternState verifies applying state to patterns
 func TestApplyPatternState(t *testing.T) {
 	// Save current pattern states
@@ -135,20 +98,6 @@ func TestApplyPatternState(t *testing.T) {
 			p.enabled = originalState
 		}
 	}
-}
-
-// TestSyncPatternState verifies syncing current state to disk
-func TestSyncPatternState(t *testing.T) {
-	// Note: This test writes to the real home directory
-	// We'd need to refactor to support testing without side effects
-	t.Skip("Requires refactoring to support test home directory")
-}
-
-// TestInitializePatternState verifies initialization
-func TestInitializePatternState(t *testing.T) {
-	// This test calls InitializePatternState which reads from real home directory
-	// We'd need to refactor to support proper testing
-	t.Skip("Requires refactoring to support test home directory")
 }
 
 // TestPatternStateJSON verifies JSON marshaling/unmarshaling

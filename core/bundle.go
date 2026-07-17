@@ -43,6 +43,8 @@ type PatternDef struct {
 	Description string   `json:"description,omitempty"`
 	Reference   string   `json:"reference,omitempty"`
 	Tags        []string `json:"tags,omitempty"`
+	MinEntropy  float64  `json:"minEntropy,omitempty"`
+	Confidence  string   `json:"confidence,omitempty"`
 }
 
 // DefaultSeverity is the severity assigned to patterns that don't declare one.
@@ -69,9 +71,11 @@ type bundlePattern struct {
 	// locked helpers (Enable/Disable/SetPatternEnabled) under patternMu
 	// when they mutate it, and only read it for assertions. The mutex
 	// is the single point of synchronization.
-	enabled  bool
-	severity string
-	re       *regexp.Regexp
+	enabled    bool
+	severity   string
+	confidence string  // high, medium, or low
+	minEntropy float64 // Minimum entropy threshold (0 = no filtering)
+	re         *regexp.Regexp
 }
 
 func (p *bundlePattern) Name() string             { return p.name }
@@ -102,6 +106,29 @@ func (p *bundlePattern) SetEnabled(enabled bool) { p.enabled = enabled }
 // Severity returns the pattern's severity — one of ValidSeverities, never empty.
 // Patterns loaded without a severity field read back as DefaultSeverity.
 func (p *bundlePattern) Severity() string { return p.severity }
+
+// MinEntropy returns the minimum entropy threshold for this pattern.
+// A value of 0 means no entropy filtering is applied.
+func (p *bundlePattern) MinEntropy() float64 { return p.minEntropy }
+
+// Confidence returns the pattern's confidence level: "high", "medium", or "low".
+// Default is "medium" if not specified.
+func (p *bundlePattern) Confidence() string { return p.confidence }
+
+// ValidConfidenceLevels for validation
+var ValidConfidenceLevels = []string{"high", "medium", "low"}
+
+// normalizeConfidence maps any string to one of ValidConfidenceLevels, falling back
+// to "medium" for empty or unrecognized values.
+func normalizeConfidence(s string) string {
+	s = strings.ToLower(strings.TrimSpace(s))
+	for _, v := range ValidConfidenceLevels {
+		if s == v {
+			return v
+		}
+	}
+	return "medium"
+}
 
 // normalizeSeverity maps any string to one of ValidSeverities, falling back
 // to DefaultSeverity for empty or unrecognised values. Comparison is
@@ -305,6 +332,8 @@ func loadBundleFrom(decompressed []byte) error {
 			tags:        def.Tags,
 			enabled:     def.Enabled,
 			severity:    normalizeSeverity(def.Severity),
+			confidence:  normalizeConfidence(def.Confidence),
+			minEntropy:  def.MinEntropy,
 			re:          re,
 		}
 		allPatterns = append(allPatterns, bp)

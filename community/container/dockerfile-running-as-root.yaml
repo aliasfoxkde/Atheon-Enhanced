@@ -3,6 +3,6 @@ category: container
 severity: high
 cwe: "CWE-250"
 description: "Detects Dockerfile with USER not set or running as root"
-match: ^(?:USER|user)\\s*[:=]\\s*(?:root|0)$
+match: (?i)^(?:USER|user)\s*(?::\s*|=|\s+)(?:root|0)$
 remediation: "Create a non-root user: RUN adduser -D appuser && USER appuser"
 enabled: true

@@ -732,3 +732,57 @@ func TestBuildSARIFResultsMultiple(t *testing.T) {
 		t.Errorf("expected level error, got %v", r1["level"])
 	}
 }
+
+func TestPatternCWE_UnknownPattern(t *testing.T) {
+	// Test unknown pattern returns empty string
+	result := patternCWE("unknown-pattern-xyz", "some-category")
+	if result != "" {
+		t.Errorf("expected empty string for unknown pattern, got %q", result)
+	}
+}
+
+func TestPatternCWE_KnownPattern(t *testing.T) {
+	// Test known pattern returns CWE
+	result := patternCWE("aws-access-key", "secrets")
+	if result == "" {
+		t.Error("expected non-empty CWE for known pattern")
+	}
+}
+
+func TestScanOpts_EmptyArgs(t *testing.T) {
+	// Test scanOpts with empty args
+	opts := scanOpts([]string{})
+	if opts.NoFollowSymlinks {
+		t.Error("expected NoFollowSymlinks to be false for empty args")
+	}
+}
+
+func TestScanOpts_WithFlag(t *testing.T) {
+	// Test scanOpts with --no-follow-symlinks
+	opts := scanOpts([]string{"--no-follow-symlinks"})
+	if !opts.NoFollowSymlinks {
+		t.Error("expected NoFollowSymlinks to be true with flag")
+	}
+}
+
+func TestParseBaseline_EmptyArgs(t *testing.T) {
+	// Test parseBaseline with empty args
+	baseline, rest := parseBaseline([]string{})
+	if baseline != "" {
+		t.Errorf("expected empty baseline, got %q", baseline)
+	}
+	if len(rest) != 0 {
+		t.Errorf("expected 0 remaining args, got %d", len(rest))
+	}
+}
+
+func TestParseBaseline_WithBaseline(t *testing.T) {
+	// Test parseBaseline with baseline arg
+	baseline, rest := parseBaseline([]string{"--baseline=/path/to/baseline.yaml", "scan"})
+	if baseline != "/path/to/baseline.yaml" {
+		t.Errorf("expected baseline /path/to/baseline.yaml, got %q", baseline)
+	}
+	if len(rest) != 1 {
+		t.Errorf("expected 1 remaining arg, got %d", len(rest))
+	}
+}

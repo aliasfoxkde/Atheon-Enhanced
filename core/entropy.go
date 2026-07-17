@@ -8,7 +8,7 @@ import (
 // Higher entropy values indicate more randomness (typical of real secrets).
 // Low entropy values suggest false positives (common words, patterns).
 func shannonEntropy(s string) float64 {
-	if len(s) == 0 {
+	if s == "" {
 		return 0
 	}
 

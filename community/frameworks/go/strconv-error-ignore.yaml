@@ -1,0 +1,6 @@
+name: go-strconv-error-ignore
+category: go
+match: strconv\.(ParseInt|ParseUint|ParseFloat|ParseBool)\([^)]+\)[^\s]
+severity: medium
+enabled: true
+description: strconv function result used without error check. Invalid input will return zero value without warning.

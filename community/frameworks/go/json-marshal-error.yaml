@@ -1,0 +1,6 @@
+name: go-json-marshal-error-ignore
+category: go
+match: json\.(Marshal|Unmarshal)\([^,)]+,\s*[^)]+\)\s*$
+severity: medium
+enabled: true
+description: json.Marshal/Unmarshal result checked without error handling. Errors are silently ignored.

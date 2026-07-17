@@ -173,13 +173,13 @@ func TestWriteFile_LargeData(t *testing.T) {
 func TestWriteFile_ValidPerms(t *testing.T) {
 	tmp := t.TempDir()
 	tests := []struct {
-		perm     os.FileMode
+		perm    os.FileMode
 		wantRwx bool
 	}{
-		{0o600, true},  // rw-
-		{0o400, true},  // r--
-		{0o644, true},  // rw-r--r--
-		{0o755, true},  // rwxr-xr-x
+		{0o600, true}, // rw-
+		{0o400, true}, // r--
+		{0o644, true}, // rw-r--r--
+		{0o755, true}, // rwxr-xr-x
 	}
 
 	for _, tt := range tests {

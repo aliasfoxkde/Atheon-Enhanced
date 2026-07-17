@@ -1,0 +1,6 @@
+name: container-no-tag
+category: cloud-native
+match: (image|Image).*:latest|[^:\s]+:[^:\s]*$
+severity: medium
+enabled: true
+description: Container image without explicit tag detected. Using latest or no tag can lead to unpredictable deployments.

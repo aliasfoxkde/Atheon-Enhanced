@@ -1,0 +1,6 @@
+name: s3-public-bucket
+category: cloud-native
+match: (S3|s3).*public.*(bucket|access)|Acl.*PUBLIC|AllUsers.*READ
+severity: critical
+enabled: true
+description: S3 bucket configured with public access. This can lead to data exposure.

@@ -1,0 +1,6 @@
+name: k8s-empty-dir-memory-backed
+category: kubernetes
+match: emptyDir:\s*\n\s*medium:\s*Memory
+severity: medium
+enabled: true
+description: emptyDir volume with medium=Memory uses RAM. This can cause node instability if the volume grows large.

@@ -1,0 +1,6 @@
+name: k8s-allow-privilege-escalation
+category: kubernetes
+match: allowPrivilegeEscalation:\s*(true|null)
+severity: high
+enabled: true
+description: Container allows privilege escalation. Set allowPrivilegeEscalation to false to prevent gaining additional privileges.

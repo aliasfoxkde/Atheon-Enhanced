@@ -1,0 +1,6 @@
+name: tf-s3-unencrypted
+category: terraform
+match: aws_s3_bucket[^{]*\{[^}]*server_side_encryption_configuration\s*=\s*null
+severity: high
+enabled: true
+description: S3 bucket missing server-side encryption. Enable server_side_encryption_configuration to protect data at rest.

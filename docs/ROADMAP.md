@@ -4,17 +4,39 @@ Atheon-Enhanced's trajectory: a larger, more authoritative pattern library acros
 
 ---
 
-## Current state (June 2026)
+## Current state (July 2026)
 
-- **335 patterns** across 23 categories
-- **AI detection** with 21 patterns (anti-cheating, harness integrity)
+- **400+ patterns** across 36 categories
+- **AI detection** with patterns for prompt injection, MCP security, AI-generated content
 - CLI with category filtering, enable/disable with persistent state, JSON/SARIF output, stdin piping
 - Streaming API for memory-efficient large file scanning
-- MCP server (`atheon-mcp`) for Claude, Cursor, and Windsurf integration
+- MCP server (`atheon-mcp`) for Claude Code, Cursor, and Windsurf integration
 - Git hook support (pre-commit, pre-push)
 - CI/CD integration with native binaries for Windows, macOS, and Linux
 - Self-scanning validation in CI
 - Pattern state persistence across sessions
+- Entropy caching for 100x speedup on repeated calculations
+- Risk scoring (0-100 scale) and baseline comparison
+- **81%+ test coverage**
+
+---
+
+## Completed (2026)
+
+- ✅ Entropy caching implementation
+- ✅ Risk scoring system
+- ✅ Baseline comparison feature
+- ✅ Self-scanning validation in CI
+- ✅ Rust security patterns (7 patterns)
+- ✅ Go security patterns (3 patterns)
+- ✅ Kubernetes security patterns (expanded to 8 patterns)
+- ✅ Cloud-native security patterns (AWS, EKS, ECS, Lambda)
+- ✅ Terraform patterns (AWS, Azure, GCP)
+- ✅ Supply chain patterns (typosquatting, malicious packages)
+- ✅ Container security patterns (Dockerfile, Docker Compose)
+- ✅ GraphQL security patterns
+- ✅ CloudFormation security patterns
+- ✅ ARM templates security patterns
 
 ---
 
@@ -22,9 +44,9 @@ Atheon-Enhanced's trajectory: a larger, more authoritative pattern library acros
 
 **Pattern expansion**
 
-- Expand `frameworks` category (Django, React, Vue, Angular patterns)
-- Expand `kubernetes` and `terraform` categories
+- Expand `frameworks` category (more Go patterns)
 - More `compliance` patterns (SOC2, ISO 27001)
+- Context-aware matching — anchor patterns to specific file types
 
 **Tooling improvements**
 
@@ -39,9 +61,9 @@ Atheon-Enhanced's trajectory: a larger, more authoritative pattern library acros
 
 **Pattern quality**
 
-- Context-aware matching — anchor patterns to specific file types
 - Pattern deprecation workflow
 - False positive rate tracking
+- Pattern confidence scoring
 
 **Enhanced integrations**
 

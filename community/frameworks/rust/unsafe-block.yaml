@@ -1,0 +1,6 @@
+name: rust-unsafe-block
+category: rust
+match: unsafe\s*\{[^}]*\}
+severity: high
+enabled: true
+description: Rust unsafe block detected. Unsafe code bypasses Rust's memory safety guarantees and should be reviewed for potential vulnerabilities.

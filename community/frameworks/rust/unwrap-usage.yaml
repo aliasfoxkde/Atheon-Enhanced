@@ -1,0 +1,6 @@
+name: rust-unwrap-usage
+category: rust
+match: \.unwrap\(\)
+severity: medium
+enabled: true
+description: Rust .unwrap() call detected. This can panic if the value is None/Err and should be replaced with proper error handling.

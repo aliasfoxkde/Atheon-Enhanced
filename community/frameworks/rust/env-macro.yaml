@@ -1,0 +1,6 @@
+name: rust-env-macro
+category: rust
+match: env!\s*\(
+severity: medium
+enabled: true
+description: Rust env! macro detected. This will panic at runtime if the environment variable is not set. Consider using std::env::var() with proper error handling instead.

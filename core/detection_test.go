@@ -80,6 +80,7 @@ var detectionFixtures = []struct {
 	{"rails", "rails-secret-key-hardcoded", "secret_key_base='0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'"},
 	{"spring", "spring-deserialization-readObject", "readObject()"},
 	{"vue", "vue-v-html-xss", "v-html=\"{{userInput}}\""},
+	{"rust", "rust-unwrap-usage", "result.unwrap()"},
 	// New categories (Wave 15)
 	{"supply-chain", "typosquat-common-package-names", "var reacy = require('reacy')"},
 	{"container", "dockerfile-privileged-mode", "docker run --privileged"},

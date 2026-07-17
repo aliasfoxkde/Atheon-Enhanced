@@ -1,0 +1,6 @@
+name: rust-expect-usage
+category: rust
+match: \.expect\(
+severity: medium
+enabled: true
+description: Rust .expect() call detected. Similar to unwrap(), this can panic and should be replaced with proper error handling.

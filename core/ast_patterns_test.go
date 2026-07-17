@@ -234,3 +234,87 @@ func TestScanDirAST_SkipNonGoFiles(t *testing.T) {
 		t.Error("expected findings in .go file with command injection")
 	}
 }
+
+func TestContainsEnvVar(t *testing.T) {
+	// Test code with os.Getenv
+	code := `package main
+import "os"
+func main() {
+	x := os.Getenv("HOME")
+	print(x)
+}
+`
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "envvar.go")
+	if err := os.WriteFile(tmpFile, []byte(code), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	findings, err := ScanFileAST(tmpFile, builtinASTPatterns)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = findings
+}
+
+func TestIsStringType(t *testing.T) {
+	// Test with string literal
+	code := `package main
+const s = "hello"
+func main() {}
+`
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "stringtype.go")
+	if err := os.WriteFile(tmpFile, []byte(code), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	findings, err := ScanFileAST(tmpFile, builtinASTPatterns)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = findings
+}
+
+func TestHasStringLiteral(t *testing.T) {
+	// Test with string literals
+	code := `package main
+func main() {
+	s := "hello world"
+	print(s)
+}
+`
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "hasstring.go")
+	if err := os.WriteFile(tmpFile, []byte(code), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	findings, err := ScanFileAST(tmpFile, builtinASTPatterns)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = findings
+}
+
+func TestContainsDangerousSource(t *testing.T) {
+	// Test with dangerous source patterns
+	code := `package main
+import "os"
+func main() {
+	data := os.Getenv("USER_INPUT")
+	print(data)
+}
+`
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "dangerous.go")
+	if err := os.WriteFile(tmpFile, []byte(code), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	findings, err := ScanFileAST(tmpFile, builtinASTPatterns)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = findings
+}

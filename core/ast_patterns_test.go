@@ -108,6 +108,41 @@ func badCmd(input string) {
 	}
 }
 
+func TestScanFileAST_HardcodedCredentials_Detailed(t *testing.T) {
+	// More comprehensive test for hardcoded-credentials pattern
+	content := `package main
+
+var staticPassword = "changeme"
+var apiKey = "sk_live_xxxxxxxxxxxxxxxx"
+
+func loadConfig() {
+	databasePassword := "admin123"
+	secretToken := "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+}
+`
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "test.go")
+	if err := os.WriteFile(tmpFile, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	findings, err := ScanFileAST(tmpFile, builtinASTPatterns)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var credFindings []ASTFinding
+	for _, f := range findings {
+		if f.Rule == "hardcoded-credentials" {
+			credFindings = append(credFindings, f)
+		}
+	}
+
+	if len(credFindings) < 2 {
+		t.Errorf("expected at least 2 hardcoded-credentials findings, got %d", len(credFindings))
+	}
+}
+
 func TestBuiltinPatternsCount(t *testing.T) {
 	if len(builtinASTPatterns) < 6 {
 		t.Errorf("expected at least 6 builtin AST patterns, got %d", len(builtinASTPatterns))

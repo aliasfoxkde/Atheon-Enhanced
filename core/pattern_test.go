@@ -52,6 +52,7 @@ func TestPatternInterfaceCategory(t *testing.T) {
 		"graphql":            true,
 		"cloudformation":     true,
 		"arm":                true,
+		"rust":               true,
 	}
 
 	for _, p := range patterns {

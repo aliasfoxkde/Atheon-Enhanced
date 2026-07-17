@@ -1,0 +1,6 @@
+name: rust-println-debug
+category: rust
+match: println!\s*\(\s*"[^"]*\{:?:[^}]*\}[^"]*"\s*,
+severity: low
+enabled: true
+description: Rust debug println! with formatting detected. Debug print statements should be removed before production deployment.

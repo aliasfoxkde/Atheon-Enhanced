@@ -1,0 +1,6 @@
+name: rust-unsafe-extern
+category: rust
+match: extern\s*"[^"]*"\s*\{
+severity: high
+enabled: true
+description: Rust unsafe extern block detected. FFI calls to external libraries should be carefully reviewed for security implications.

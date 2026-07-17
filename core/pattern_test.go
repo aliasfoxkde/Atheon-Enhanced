@@ -53,6 +53,7 @@ func TestPatternInterfaceCategory(t *testing.T) {
 		"cloudformation":     true,
 		"arm":                true,
 		"rust":               true,
+		"go":                 true,
 	}
 
 	for _, p := range patterns {

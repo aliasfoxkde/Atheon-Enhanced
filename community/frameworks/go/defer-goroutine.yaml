@@ -1,0 +1,6 @@
+name: go-defer-goroutine-leak
+category: go
+match: defer\s+go\s+
+severity: high
+enabled: true
+description: defer with goroutine may cause goroutine leak. Deferred functions run at end of surrounding function but goroutine may keep running.

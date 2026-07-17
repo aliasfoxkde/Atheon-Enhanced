@@ -81,6 +81,7 @@ var detectionFixtures = []struct {
 	{"spring", "spring-deserialization-readObject", "readObject()"},
 	{"vue", "vue-v-html-xss", "v-html=\"{{userInput}}\""},
 	{"rust", "rust-unwrap-usage", "result.unwrap()"},
+	{"go", "go-strconv-error-ignore", `strconv.ParseInt(s, 10, 64)x`},
 	// New categories (Wave 15)
 	{"supply-chain", "typosquat-common-package-names", "var reacy = require('reacy')"},
 	{"container", "dockerfile-privileged-mode", "docker run --privileged"},

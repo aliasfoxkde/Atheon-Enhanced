@@ -1,0 +1,6 @@
+name: k8s-run-as-non-root
+category: kubernetes
+match: (runAsNonRoot|runAsRoot):\s*(true|false)
+severity: high
+enabled: true
+description: Container security context runAsNonRoot not set or set to false. Running as root may allow container escape.

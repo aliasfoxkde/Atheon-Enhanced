@@ -1,0 +1,6 @@
+name: k8s-no-network-policy
+category: kubernetes
+match: (NetworkPolicy|networkPolicy).*:\s*\|?\s*-\s*\{
+severity: medium
+enabled: true
+description: Kubernetes NetworkPolicy not defined. Without network policies, pods can communicate freely which may expose services.

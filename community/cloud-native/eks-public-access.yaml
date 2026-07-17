@@ -1,0 +1,6 @@
+name: eks-public-access
+category: cloud-native
+match: (EKS|kubernetes).*public.*(endpoint|access)|publicAccessEndpoint.*true
+severity: high
+enabled: true
+description: EKS cluster public access endpoint detected. This may expose the cluster to unauthorized access from the internet.

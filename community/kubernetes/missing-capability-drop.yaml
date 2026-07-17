@@ -1,0 +1,6 @@
+name: k8s-missing-capability-drop
+category: kubernetes
+match: securityContext:\s*\n(?!.*dropCapabilities).*
+severity: medium
+enabled: true
+description: Container does not drop default capabilities. Add securityContext.capabilities.drop to remove unnecessary capabilities.

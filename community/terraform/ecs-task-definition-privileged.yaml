@@ -1,0 +1,6 @@
+name: tf-ecs-privileged
+category: terraform
+match:aws_ecs_task_definition[^{]*\{[^}]*privileged\s*=\s*true
+severity: critical
+enabled: true
+description: ECS task definition runs in privileged mode with full host access. Disable privileged mode unless explicitly required.

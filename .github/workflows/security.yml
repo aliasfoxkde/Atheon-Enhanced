@@ -74,20 +74,20 @@ jobs:
           # Filter: only production source. Tests, testdata, community YAML, and
           # GitHub-managed paths are excluded.
           ./atheon --json --categories=secrets,pii . \
-            | jq '[.[] | select((
+            | jq '{findings: [.findings[] | select((
                 (.file | test("_test\\.go$"))              or
                 (.file | test("/testdata/"))                or
                 (.file | test("^community/"))               or
                 (.file | test("^\\.github/wiki/"))          or
                 (.file | test("^\\.github/ISSUE_TEMPLATE/"))
-              ) | not)]' > scan-secrets.json
+              ) | not)]}' > scan-secrets.json
 
-          COUNT=$(jq 'length' scan-secrets.json)
+          COUNT=$(jq '.findings | length' scan-secrets.json)
           echo "Findings in production source: ${COUNT}"
 
           if [ "${COUNT}" -gt 0 ]; then
             echo "❌ Found ${COUNT} secrets/PII finding(s) in production source:"
-            jq -r '.[] | "  [\(.pattern)] \(.file):\(.line)"' scan-secrets.json
+            jq -r '.findings[] | "  [\(.pattern)] \(.file):\(.line)"' scan-secrets.json
             exit 1
           fi
           echo "✅ No secrets or PII in production source"
@@ -179,20 +179,20 @@ jobs:
       - name: Scan production source
         run: |
           ./atheon --json --categories=code-quality,devops,ai-detection . \
-            | jq '[.[] | select((
+            | jq '{findings: [.findings[] | select((
                 (.file | test("_test\\.go$"))              or
                 (.file | test("/testdata/"))                or
                 (.file | test("^community/"))               or
                 (.file | test("^\\.github/wiki/"))          or
                 (.file | test("^\\.github/ISSUE_TEMPLATE/"))
-              ) | not)]' > scan-quality.json
+              ) | not)]}' > scan-quality.json
 
-          COUNT=$(jq 'length' scan-quality.json)
+          COUNT=$(jq '.findings | length' scan-quality.json)
           echo "Code-quality findings in production source: ${COUNT}"
 
           if [ "${COUNT}" -gt 0 ]; then
             echo "ℹ️ ${COUNT} code-quality finding(s) (informational):"
-            jq -r '.[] | "  [\(.pattern)] \(.file):\(.line)"' scan-quality.json | head -20
+            jq -r '.findings[] | "  [\(.pattern)] \(.file):\(.line)"' scan-quality.json | head -20
           else
             echo "✅ No code-quality findings"
           fi

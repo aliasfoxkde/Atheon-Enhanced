@@ -52,11 +52,12 @@ builds:
       - -X main.version={{.Version}}
 
 archives:
-  - formats: ["tar.gz"]
+  - id: atheon-archive
+    format: tar.gz
+    name_template: "atheon-{{ .Os }}-{{ .Arch }}"
     format_overrides:
       - goos: windows
-        formats: ["zip"]
-    name_template: "atheon-{{ .Os }}-{{ .Arch }}"
+        format: zip
 
 checksum:
   name_template: "checksums.txt"

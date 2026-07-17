@@ -1,6 +1,9 @@
 package core
 
 import (
+	"go/ast"
+	"go/token"
+	"os"
 	"testing"
 )
 
@@ -93,5 +96,97 @@ func TestScanForTaintPatterns(t *testing.T) {
 	findings := ScanForTaintPatterns(content)
 	if len(findings) == 0 {
 		t.Error("expected at least one finding for command injection")
+	}
+}
+
+func TestScanFileAST(t *testing.T) {
+	// Create a temp Go file with taintable code
+	tmpfile, err := os.CreateTemp("", "taint_test*.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(tmpfile.Name())
+
+	// Write test code
+	code := `package main
+import "os"
+func main() {
+	user := os.Getenv("USER")
+	print(user)
+}`
+	if _, err := tmpfile.WriteString(code); err != nil {
+		t.Fatal(err)
+	}
+	tmpfile.Close()
+
+	tt := NewTaintTracker()
+	findings, err := tt.ScanFileAST(tmpfile.Name())
+	if err != nil {
+		t.Fatalf("ScanFileAST failed: %v", err)
+	}
+	_ = findings // findings may be empty depending on analysis
+}
+
+func TestTaintTracker_getFuncName(t *testing.T) {
+	tt := NewTaintTracker()
+
+	// Test with identifier
+	expr := &ast.Ident{Name: "testFunc"}
+	fnName := tt.getFuncName(expr)
+	if fnName != "testFunc" {
+		t.Errorf("expected testFunc, got %s", fnName)
+	}
+
+	// Test with selector expression
+	sel := &ast.SelectorExpr{
+		X:   &ast.Ident{Name: "os"},
+		Sel: &ast.Ident{Name: "Getenv"},
+	}
+	fnName = tt.getFuncName(sel)
+	if fnName != "os.Getenv" {
+		t.Errorf("expected os.Getenv, got %s", fnName)
+	}
+
+	// Test with other type
+	fnName = tt.getFuncName(&ast.StarExpr{})
+	if fnName != "" {
+		t.Errorf("expected empty string for StarExpr, got %s", fnName)
+	}
+}
+
+func TestTaintTracker_getExprText(t *testing.T) {
+	tt := NewTaintTracker()
+
+	// Test identifier
+	ident := &ast.Ident{Name: "myVar"}
+	text := tt.getExprText(ident)
+	if text != "myVar" {
+		t.Errorf("expected myVar, got %s", text)
+	}
+
+	// Test basic literal
+	lit := &ast.BasicLit{Kind: 9, Value: `"hello"`}
+	text = tt.getExprText(lit)
+	if text != `"hello"` {
+		t.Errorf("expected \"hello\", got %s", text)
+	}
+}
+
+func TestTaintTracker_analyzeAssignment(t *testing.T) {
+	tt := NewTaintTracker()
+	tt.TrackSource("source")
+
+	// Create assignment: dest = source
+	assign := &ast.AssignStmt{
+		Lhs: []ast.Expr{&ast.Ident{Name: "dest"}},
+		Rhs: []ast.Expr{&ast.Ident{Name: "source"}},
+	}
+
+	fset := token.NewFileSet()
+	tt.analyzeAssignment(assign, fset)
+
+	// dest should now be tainted
+	if !tt.IsTainted("dest") {
+		t.Error("dest should be tainted after assignment from tainted source")
 	}
 }

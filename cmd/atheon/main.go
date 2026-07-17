@@ -357,10 +357,10 @@ func riskScoreToMap(rs *core.RiskScore) map[string]any {
 		return nil
 	}
 	return map[string]any{
-		"score":             rs.Score,
-		"level":             rs.Level,
-		"finding_count":     rs.FindingCount,
-		"highest_severity":  rs.HighestSeverity,
+		"score":            rs.Score,
+		"level":            rs.Level,
+		"finding_count":    rs.FindingCount,
+		"highest_severity": rs.HighestSeverity,
 	}
 }
 

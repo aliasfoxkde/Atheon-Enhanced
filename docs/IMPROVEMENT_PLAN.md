@@ -2,7 +2,7 @@
 
 ## Current State
 - **Coverage:** 81.1% overall
-- **Patterns:** 395 enabled patterns across 36 categories
+- **Patterns:** 406 enabled patterns across 36 categories
 - **Tests:** All passing
 - **Release:** v1.3.18-enhanced live with 7 artifacts
 
@@ -22,9 +22,9 @@
 | Category | Current | Potential |
 |----------|---------|-----------|
 | Rust | 7 patterns | Add more Rust-specific patterns ( lifetimes, borrowing issues) |
-| Go | 0 patterns | Add Go-specific security patterns |
-| Kubernetes | 6 patterns | Expand to include more K8s security scenarios |
-| Supply Chain | 5 patterns | Add more package manager patterns |
+| Go | 3 patterns | Add Go-specific security patterns |
+| Kubernetes | 11 patterns | Expand to include more K8s security scenarios |
+| Terraform | 8 patterns | Expand AWS/Azure/GCP security configurations |
 
 **Action:** Rust patterns are new and comprehensive. Consider Go-specific patterns.
 
@@ -64,13 +64,13 @@
 ## Recommended Next Steps (Priority Order)
 
 ### High Priority
-1. **Update docs/ARCHITECTURE.md** - Reflect recent entropy, risk scoring, baseline features
-2. **Update docs/ROADMAP.md** - Mark completed items
-3. **Add Go security patterns** - Add Go-specific patterns (e.g., strconv without error check, append reuse)
+1. ~~**Update docs/ARCHITECTURE.md**~~ - ✅ Done
+2. ~~**Update docs/ROADMAP.md**~~ - ✅ Done
+3. ~~**Add Go security patterns**~~ - ✅ Done (3 patterns added)
 
 ### Medium Priority
-4. **Add Kubernetes patterns** - Expand to 10+ patterns for K8s security
-5. **Add Terraform patterns** - Expand AWS/Azure/GCP security configurations
+4. ~~**Add Kubernetes patterns**~~ - ✅ Done (11 patterns now)
+5. ~~**Add Terraform patterns**~~ - ✅ Done (8 patterns now)
 6. **Performance: Bundle caching** - Cache compiled patterns between invocations
 
 ### Low Priority

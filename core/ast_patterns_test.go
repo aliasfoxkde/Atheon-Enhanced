@@ -630,4 +630,3 @@ func TestNewPatternsRegistered(t *testing.T) {
 		}
 	}
 }
-

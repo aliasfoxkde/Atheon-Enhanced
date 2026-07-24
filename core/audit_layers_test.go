@@ -393,7 +393,7 @@ func TestPrintAuditReport(t *testing.T) {
 			Line:      10,
 			Rule:      "empty-interface",
 			Message:   "Found empty interface",
-			Severity: "medium",
+			Severity:  "medium",
 		},
 	}
 
@@ -466,4 +466,3 @@ func main() {
 	// Basic file should have no type checking issues
 	_ = findings
 }
-

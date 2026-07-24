@@ -36,8 +36,8 @@ func TestIsReservedOrPrivateHost_Private(t *testing.T) {
 		{"10.0.0.1", true},
 		{"172.16.0.1", true},
 		{"192.168.1.1", true},
-		{"8.8.8.8", false},  // Public
-		{"1.1.1.1", false},  // Public
+		{"8.8.8.8", false}, // Public
+		{"1.1.1.1", false}, // Public
 	}
 	for _, tt := range tests {
 		t.Run(tt.host, func(t *testing.T) {

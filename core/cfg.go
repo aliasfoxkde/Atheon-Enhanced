@@ -8,39 +8,39 @@ import (
 
 // CFG represents a control flow graph for a function.
 type CFG struct {
-	FuncName    string
-	Blocks      []*CFGBlock
-	EntryBlock  *CFGBlock
-	ExitBlock   *CFGBlock
-	Acquired    []*ResourceAcquisition // Resources acquired in this function
-	Transactions []*Transaction       // Transactions started in this function
+	FuncName     string
+	Blocks       []*CFGBlock
+	EntryBlock   *CFGBlock
+	ExitBlock    *CFGBlock
+	Acquired     []*ResourceAcquisition // Resources acquired in this function
+	Transactions []*Transaction         // Transactions started in this function
 }
 
 // CFGBlock represents a basic block in the CFG.
 type CFGBlock struct {
-	ID      int
-	Stmts   []ast.Stmt
-	Succs   []*CFGBlock // Successor blocks
-	Preds   []*CFGBlock // Predecessor blocks
-	Terminates bool     // Block ends with return/panic
+	ID         int
+	Stmts      []ast.Stmt
+	Succs      []*CFGBlock // Successor blocks
+	Preds      []*CFGBlock // Predecessor blocks
+	Terminates bool        // Block ends with return/panic
 }
 
 // ResourceAcquisition represents a resource that needs release.
 type ResourceAcquisition struct {
-	AcquiredAt token.Pos
-	AcquiredBy string  // Function name that acquired (e.g., "Lock", "Open")
-	Variable   string  // Variable name holding the resource
+	AcquiredAt  token.Pos
+	AcquiredBy  string // Function name that acquired (e.g., "Lock", "Open")
+	Variable    string // Variable name holding the resource
 	MustRelease string // Function name that releases (e.g., "Unlock", "Close")
-	Line       int
+	Line        int
 }
 
 // Transaction represents a transaction that needs commit/rollback.
 type Transaction struct {
-	BeginAt    token.Pos
-	BeginBy    string  // Function name that began (e.g., "Begin")
-	Variable   string  // Variable name holding the transaction
-	MustEnd    string  // How it must end ("Commit", "Rollback")
-	Line       int
+	BeginAt  token.Pos
+	BeginBy  string // Function name that began (e.g., "Begin")
+	Variable string // Variable name holding the transaction
+	MustEnd  string // How it must end ("Commit", "Rollback")
+	Line     int
 }
 
 // ProofObligation represents an obligation that must be satisfied.

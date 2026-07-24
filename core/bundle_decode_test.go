@@ -180,10 +180,10 @@ func TestNormalizeConfidence(t *testing.T) {
 		{"high", "high"},
 		{"medium", "medium"},
 		{"low", "low"},
-		{"HIGH", "high"},   // case insensitive
+		{"HIGH", "high"}, // case insensitive
 		{"Medium", "medium"},
-		{"invalid", "medium"},  // defaults to medium
-		{"", "medium"},         // defaults to medium
+		{"invalid", "medium"}, // defaults to medium
+		{"", "medium"},        // defaults to medium
 	}
 	for _, tt := range tests {
 		got := normalizeConfidence(tt.input)
@@ -192,4 +192,3 @@ func TestNormalizeConfidence(t *testing.T) {
 		}
 	}
 }
-

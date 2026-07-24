@@ -349,7 +349,7 @@ func TestCloneDetector_BuildTokenSet(t *testing.T) {
 	detector := NewCloneDetector(DefaultCloneDetectionConfig())
 	tokens := []string{"a", "b", "a", "c", "b", "a"}
 	tokenSet := detector.buildTokenSet(tokens)
-	
+
 	if tokenSet["a"] != 3 {
 		t.Errorf("expected count 3 for 'a', got %d", tokenSet["a"])
 	}
@@ -388,10 +388,10 @@ func TestCloneDetector_CompareFunctions(t *testing.T) {
 
 func TestCloneDetector_TokenSimilarity(t *testing.T) {
 	detector := NewCloneDetector(DefaultCloneDetectionConfig())
-	
+
 	set1 := map[string]int{"a": 2, "b": 1}
 	set2 := map[string]int{"a": 2, "b": 1}
-	
+
 	sim := detector.tokenSimilarity(set1, set2)
 	if sim != 1.0 {
 		t.Errorf("expected similarity 1.0, got %f", sim)
@@ -400,10 +400,10 @@ func TestCloneDetector_TokenSimilarity(t *testing.T) {
 
 func TestCloneDetector_CountMatchedTokens(t *testing.T) {
 	detector := NewCloneDetector(DefaultCloneDetectionConfig())
-	
+
 	tokens1 := []string{"a", "b", "c"}
 	tokens2 := []string{"a", "b", "d"}
-	
+
 	count := detector.countMatchedTokens(tokens1, tokens2)
 	if count != 2 {
 		t.Errorf("expected matched count 2, got %d", count)
@@ -414,8 +414,8 @@ func TestCloneDetector_DetermineCloneType(t *testing.T) {
 	detector := NewCloneDetector(DefaultCloneDetectionConfig())
 
 	tests := []struct {
-		sim   float64
-		want  CloneType
+		sim  float64
+		want CloneType
 	}{
 		{1.0, CloneType1},
 		{0.95, CloneType1},

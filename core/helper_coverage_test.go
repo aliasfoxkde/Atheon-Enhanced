@@ -694,7 +694,6 @@ func main() {}
 	_ = findings
 }
 
-
 func TestCallExprToString_Direct(t *testing.T) {
 	// Test call expression to string conversion
 	code := `package main

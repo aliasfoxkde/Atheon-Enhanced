@@ -249,7 +249,7 @@ func simpleFunc(x int) int {
 
 func TestGetReleaseFunc(t *testing.T) {
 	tests := []struct {
-		acquire string
+		acquire  string
 		expected string
 	}{
 		{"Lock", "Unlock"},

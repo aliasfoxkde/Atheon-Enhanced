@@ -518,6 +518,45 @@ func TestClonePatterns_WithGoStmt(t *testing.T) {
 	_ = findings
 }
 
+func TestDetectClones_ViaScanFileAST(t *testing.T) {
+	// Create duplicate functions to trigger clone detection through ScanFileAST
+	code := `package main
+
+func processDataA(items []int) []int {
+	result := []int{}
+	for _, item := range items {
+		if item > 0 {
+			result = append(result, item*2)
+		}
+	}
+	return result
+}
+
+func processDataB(items []int) []int {
+	result := []int{}
+	for _, item := range items {
+		if item > 0 {
+			result = append(result, item*2)
+		}
+	}
+	return result
+}
+
+func main() {}
+`
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "clone_detect.go")
+	if err := os.WriteFile(tmpFile, []byte(code), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	findings, err := ScanFileAST(tmpFile, builtinASTPatterns)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = findings
+}
+
 func TestNewCloneDetector_WithCustomConfig(t *testing.T) {
 	// Test NewCloneDetector with custom configuration
 	config := &CloneDetectionConfig{

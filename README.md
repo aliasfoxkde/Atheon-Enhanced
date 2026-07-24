@@ -6,8 +6,8 @@
 
 ![Go](https://img.shields.io/badge/Go-1.21%2B-00ADD8)
 ![License](https://img.shields.io/badge/license-MIT-green)
-![Patterns](https://img.shields.io/badge/patterns-274-blueviolet)
-![Categories](https://img.shields.io/badge/categories-19-orange)
+![Patterns](https://img.shields.io/badge/patterns-406-blueviolet)
+![Categories](https://img.shields.io/badge/categories-29-orange)
 ![CI](https://github.com/aliasfoxkde/Atheon-Enhanced/actions/workflows/ci.yml/badge.svg)
 [![codecov](https://codecov.io/gh/aliasfoxkde/Atheon-Enhanced/graph/badge.svg)](https://codecov.io/gh/aliasfoxkde/Atheon-Enhanced)
 ![Stars](https://img.shields.io/github/stars/aliasfoxkde/Atheon-Enhanced?style=social)
@@ -480,8 +480,8 @@ atheon --profile config/profiles/pipeline.json ./my-project
 
 | Feature | Official HoraDomu/Atheon | Enhanced aliasfoxkde/Atheon |
 |---------|----------------------|---------------------------|
-| Pattern Count | 57 | 274 |
-| Categories | 5 | 19 |
+| Pattern Count | 57 | 406 |
+| Categories | 5 | 29 |
 | Memory Usage | Full file loading | Chunked streaming (10x reduction) |
 | Performance | Baseline | 2-3x faster |
 | MCP Integration | ✅ Advanced features | ✅ Advanced features + state persistence |
@@ -502,6 +502,11 @@ atheon --profile config/profiles/pipeline.json ./my-project
 | Stability | Production-ready | Testing/Experimental |
 | Update Frequency | Scheduled releases | Frequent updates |
 | Feature Parity | N/A (upstream) | Maintained via PRs |
+| **Clone Detection** | ❌ | ✅ AST-based code clone detection |
+| **Complexity Metrics** | ❌ | ✅ Cyclomatic, Cognitive, Halstead |
+| **Layered Audits** | ❌ | ✅ 9-layer progressive audit system |
+| **Architecture Audits** | ❌ | ✅ Engineering policy enforcement |
+| **Consistency Audits** | ❌ | ✅ Boolean naming, style consistency |
 
 > **📖 See detailed comparison**: [docs/reports/FEATURE_COMPARISON.md](docs/reports/FEATURE_COMPARISON.md)
 
@@ -526,9 +531,12 @@ atheon --profile config/profiles/pipeline.json ./my-project
 ### **Quality Metrics**
 - **Test Coverage**: 97%+ across core, cmd/atheon, and bundler packages
 - **CI/CD Pass Rate**: >95%
-- **Pattern Validation**: All 274 patterns tested and functional
-- **Pattern Coverage**: 19 categories with modern development support
+- **Pattern Validation**: All 406 patterns tested and functional
+- **Pattern Coverage**: 29 categories with modern development support
 - **Lint Warnings**: 0 (golangci-lint clean)
+- **Clone Detection**: AST-based duplicate code detection (PMD CPD-inspired)
+- **Complexity Metrics**: Cyclomatic, Cognitive, Halstead complexity analysis
+- **Layered Audits**: 9-layer progressive audit system
 
 **📖 Detailed Documentation**: See [docs/architecture/PATTERN_CATEGORIES.md](docs/architecture/PATTERN_CATEGORIES.md) for comprehensive pattern documentation
 

@@ -32,23 +32,23 @@ const (
 
 // Clone represents a detected code clone pair.
 type Clone struct {
-	FileA       string
-	LineA       int
-	FuncA       string
-	FileB       string
-	LineB       int
-	FuncB       string
-	Similarity  float64
-	CloneType   CloneType
-	TokenCount  int
+	FileA         string
+	LineA         int
+	FuncA         string
+	FileB         string
+	LineB         int
+	FuncB         string
+	Similarity    float64
+	CloneType     CloneType
+	TokenCount    int
 	MatchedTokens int
 }
 
 // CloneDetectionConfig holds configuration for clone detection.
 type CloneDetectionConfig struct {
 	MinSimilarity float64 // Minimum similarity ratio (0.0-1.0), default 0.75
-	MinTokens     int      // Minimum token count to consider for detection
-	MaxDepth      int      // Maximum directory depth to scan
+	MinTokens     int     // Minimum token count to consider for detection
+	MaxDepth      int     // Maximum directory depth to scan
 }
 
 // DefaultCloneDetectionConfig returns the default configuration.
@@ -75,13 +75,13 @@ func NewCloneDetector(config *CloneDetectionConfig) *CloneDetector {
 
 // FunctionInfo holds information about a extracted function.
 type FunctionInfo struct {
-	Name      string
-	File      string
-	Line      int
-	EndLine   int
-	ASTNode   *ast.FuncDecl
-	Tokens    []string // Normalized token sequence
-	TokenSet  map[string]int // Token frequency map for comparison
+	Name     string
+	File     string
+	Line     int
+	EndLine  int
+	ASTNode  *ast.FuncDecl
+	Tokens   []string       // Normalized token sequence
+	TokenSet map[string]int // Token frequency map for comparison
 }
 
 // ExtractFunctions extracts all function declarations from a Go source file.
@@ -439,15 +439,15 @@ func (d *CloneDetector) comparePair(a, b FunctionInfo) *Clone {
 	cloneType := d.determineCloneType(similarity)
 
 	return &Clone{
-		FileA:        a.File,
-		LineA:        a.Line,
-		FuncA:        a.Name,
-		FileB:        b.File,
-		LineB:        b.Line,
-		FuncB:        b.Name,
-		Similarity:   similarity,
-		CloneType:    cloneType,
-		TokenCount:   len(a.Tokens),
+		FileA:         a.File,
+		LineA:         a.Line,
+		FuncA:         a.Name,
+		FileB:         b.File,
+		LineB:         b.Line,
+		FuncB:         b.Name,
+		Similarity:    similarity,
+		CloneType:     cloneType,
+		TokenCount:    len(a.Tokens),
 		MatchedTokens: matchedTokens,
 	}
 }

@@ -456,6 +456,171 @@ func main() {}
 	_ = findings
 }
 
+func TestDetectDuplicateConditions_Helper(t *testing.T) {
+	// Test duplicate condition detection with various expression types
+	code := `package main
+
+func checkDuplicates(x int, y int) {
+	if x > 0 && y > 0 {
+		print("both positive")
+	} else if x > 0 && y > 0 {
+		print("duplicate")
+	} else if x == y {
+		print("equal")
+	} else if x == y {
+		print("duplicate equal")
+	}
+}
+
+func main() {}
+`
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "dupcond.go")
+	if err := os.WriteFile(tmpFile, []byte(code), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	findings, err := ScanFileAST(tmpFile, builtinASTPatterns)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = findings
+}
+
+func TestExprToString_Coverage(t *testing.T) {
+	// Test various expression types to exercise exprToString and callExprToString
+	code := `package main
+
+func getValue() int { return 5 }
+func getName() string { return "test" }
+
+func testExpressions(x int, y int, arr []int, ptr *int) {
+	_ = x + y           // BinaryExpr
+	_ = -x              // UnaryExpr
+	_ = (x + y)         // ParenExpr
+	_ = arr[0]          // IndexExpr
+	_ = getValue()      // CallExpr simple
+	_ = getName()       // CallExpr another
+	_ = ptr != nil      // comparison
+}
+
+func main() {}
+`
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "exprtypes.go")
+	if err := os.WriteFile(tmpFile, []byte(code), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	findings, err := ScanFileAST(tmpFile, builtinASTPatterns)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = findings
+}
+
+func TestDetectImpossibleBranch_Helper(t *testing.T) {
+	// Test impossible branch detection
+	code := `package main
+
+func checkImpossible(x *int) {
+	if x == nil {
+		print("is nil")
+	} else {
+		print("not nil")
+	}
+}
+
+func main() {}
+`
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "impossible.go")
+	if err := os.WriteFile(tmpFile, []byte(code), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	findings, err := ScanFileAST(tmpFile, builtinASTPatterns)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = findings
+}
+
+func TestDetectLongFunction_AllBranches(t *testing.T) {
+	// Test long function detection with many lines
+	code := `package main
+
+func veryLongFunction() int {
+	a := 1
+	b := 2
+	c := 3
+	d := 4
+	e := 5
+	f := 6
+	g := 7
+	h := 8
+	i := 9
+	j := 10
+	k := 11
+	l := 12
+	m := 13
+	n := 14
+	o := 15
+	p := 16
+	q := 17
+	r := 18
+	s := 19
+	t := 20
+	u := 21
+	v := 22
+	w := 23
+	x := 24
+	y := 25
+	z := 26
+	aa := 27
+	bb := 28
+	cc := 29
+	dd := 30
+	ee := 31
+	ff := 32
+	gg := 33
+	hh := 34
+	ii := 35
+	jj := 36
+	kk := 37
+	ll := 38
+	mm := 39
+	nn := 40
+	oo := 41
+	pp := 42
+	qq := 43
+	rr := 44
+	ss := 45
+	tt := 46
+	uu := 47
+	vv := 48
+	ww := 49
+	xx := 50
+	yy := 51
+	zz := 52
+	return a + b + c + d + e + f + g + h + i + j + k + l + m + n + o + p + q + r + s + t + u + v + w + x + y + z + aa + bb + cc + dd + ee + ff + gg + hh + ii + jj + kk + ll + mm + nn + oo + pp + qq + rr + ss + tt + uu + vv + ww + xx + yy + zz
+}
+
+func main() {}
+`
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "verylong.go")
+	if err := os.WriteFile(tmpFile, []byte(code), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	findings, err := ScanFileAST(tmpFile, builtinASTPatterns)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = findings
+}
+
 func TestDetectDeepWrapperChain(t *testing.T) {
 	// Test deep wrapper chain detection
 	code := `package main

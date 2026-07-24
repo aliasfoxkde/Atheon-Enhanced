@@ -1,7 +1,7 @@
 name: hardcoded-localhost
 match: (?i)(?:http://)?localhost(?::\d{2,5})?(?:/[^\s"']*)?
 severity: low
-enabled: false
+enabled: true
 description: 'Detected hardcoded value: ''hardcoded localhost''. Hardcoded values
   reduce flexibility and may expose sensitive information. This is a low-severity
   issue representing a minor risk or code quality concern.'

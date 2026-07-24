@@ -1,7 +1,7 @@
 name: uk-national-insurance-number
 match: \b[A-CEGHJ-PR-TW-Z]{2}\d{6}[A-D]\b
 severity: high
-enabled: false
+enabled: true
 description: 'Pattern: ''uk national insurance number''. Pattern in category ''''.
   This is a high-severity issue that could lead to security vulnerabilities or significant
   quality problems.'

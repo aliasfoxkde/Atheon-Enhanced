@@ -2,4 +2,4 @@ name: fixme-comment
 match: (?i)\b(FIXME|XXX|HACK)\b
 severity: low
 description: 'Detects standalone FIXME/XXX/HACK markers (lenient pattern)'
-enabled: false
+enabled: true

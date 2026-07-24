@@ -1,6 +1,6 @@
 name: mac-address
 match: \b(?:[0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}\b
 severity: high
-enabled: false
+enabled: true
 description: 'Pattern: ''mac address''. Pattern in category ''''. This is a high-severity
   issue that could lead to security vulnerabilities or significant quality problems.'

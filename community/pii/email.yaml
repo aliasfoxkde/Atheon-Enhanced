@@ -1,6 +1,6 @@
 name: email-address
 match: \b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b
 severity: high
-enabled: false
+enabled: true
 description: 'Pattern: ''email address''. Pattern in category ''''. This is a high-severity
   issue that could lead to security vulnerabilities or significant quality problems.'

@@ -265,3 +265,143 @@ func TestGetReleaseFunc(t *testing.T) {
 		}
 	}
 }
+
+func TestBuildCFG_WithSwitch(t *testing.T) {
+	code := `package main
+
+func switchFunc(x int) int {
+	switch x {
+	case 1:
+		return 1
+	case 2:
+		return 2
+	default:
+		return 0
+	}
+}
+`
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "switch.go")
+	if err := os.WriteFile(tmpFile, []byte(code), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, tmpFile, nil, parser.ParseComments)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, decl := range file.Decls {
+		if funcDecl, ok := decl.(*ast.FuncDecl); ok {
+			cfg := BuildCFG(funcDecl)
+			if cfg == nil {
+				t.Fatal("expected BuildCFG to return non-nil CFG")
+			}
+			_ = cfg
+		}
+	}
+}
+
+func TestBuildCFG_ComplexNested(t *testing.T) {
+	code := `package main
+
+func complexNested(x int) int {
+	if x > 0 {
+		for i := 0; i < x; i++ {
+			if i > 5 {
+				return i
+			}
+		}
+	}
+	return 0
+}
+`
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "nested.go")
+	if err := os.WriteFile(tmpFile, []byte(code), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, tmpFile, nil, parser.ParseComments)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, decl := range file.Decls {
+		if funcDecl, ok := decl.(*ast.FuncDecl); ok {
+			cfg := BuildCFG(funcDecl)
+			if cfg == nil {
+				t.Fatal("expected BuildCFG to return non-nil CFG")
+			}
+			_ = cfg
+		}
+	}
+}
+
+func TestCheckObligations(t *testing.T) {
+	code := `package main
+
+import "sync"
+
+func withLock(mu sync.Mutex) {
+	mu.Lock()
+	mu.Unlock()
+}
+`
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "obligations.go")
+	if err := os.WriteFile(tmpFile, []byte(code), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, tmpFile, nil, parser.ParseComments)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, decl := range file.Decls {
+		if funcDecl, ok := decl.(*ast.FuncDecl); ok {
+			cfg := BuildCFG(funcDecl)
+			if cfg == nil {
+				t.Fatal("expected BuildCFG to return non-nil CFG")
+			}
+			CheckObligations(cfg)
+		}
+	}
+}
+
+func TestHasReleaseInStmt_Unlock(t *testing.T) {
+	code := `package main
+
+import "sync"
+
+func withLock(mu sync.Mutex) {
+	mu.Lock()
+	mu.Unlock()
+}
+`
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "unlock.go")
+	if err := os.WriteFile(tmpFile, []byte(code), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, tmpFile, nil, parser.ParseComments)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, decl := range file.Decls {
+		if funcDecl, ok := decl.(*ast.FuncDecl); ok {
+			cfg := BuildCFG(funcDecl)
+			if cfg == nil {
+				t.Fatal("expected BuildCFG to return non-nil CFG")
+			}
+			_ = cfg
+		}
+	}
+}

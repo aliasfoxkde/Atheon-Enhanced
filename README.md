@@ -7,7 +7,7 @@
 ![Go](https://img.shields.io/badge/Go-1.21%2B-00ADD8)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Patterns](https://img.shields.io/badge/patterns-406-blueviolet)
-![Categories](https://img.shields.io/badge/categories-29-orange)
+![Categories](https://img.shields.io/badge/categories-39-orange)
 ![CI](https://github.com/aliasfoxkde/Atheon-Enhanced/actions/workflows/ci.yml/badge.svg)
 [![codecov](https://codecov.io/gh/aliasfoxkde/Atheon-Enhanced/graph/badge.svg)](https://codecov.io/gh/aliasfoxkde/Atheon-Enhanced)
 ![Stars](https://img.shields.io/github/stars/aliasfoxkde/Atheon-Enhanced?style=social)
@@ -33,7 +33,7 @@
 ### **Enhanced aliasfoxkde/Atheon (Atheon-Enhanced)** - Feature-Rich Testing Build
 - **Purpose**: Experimental "nightly build" testing the limits of pattern matching
 - **Focus**: Performance optimizations, advanced features, comprehensive pattern coverage
-- **Patterns**: 327+ patterns across 23 categories (community-driven, comprehensive coverage)
+- **Patterns**: 406 patterns across 39 categories (community-driven, comprehensive coverage)
 - **Update cadence**: Frequent updates with latest features and enhancements
 - **Best for**: Power users, CI/CD integration, comprehensive security scanning
 
@@ -56,7 +56,7 @@
 <summary><b>📊 Enhanced Features vs Official Release</b></summary>
 
 ### **What's Enhanced in This Testing Build?**
-- **327+ patterns** across 23 categories - comprehensive coverage
+- **406 patterns** across 29 categories - comprehensive coverage
 - **2-3x faster** with streaming API and performance optimizations
 - **10x less memory** usage with chunked file scanning
 - **MCP integration** with state persistence and category filtering
@@ -709,7 +709,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - ✅ MCP integration with advanced features
 
 ### **Use Enhanced aliasfoxkde/Atheon (Atheon-Enhanced) when you want**:
-- ✅ 274 patterns across 19 categories (comprehensive coverage)
+- ✅ 406 patterns across 39 categories (comprehensive coverage)
 - ✅ 2-3x performance improvements
 - ✅ 10x memory reduction for large files
 - ✅ MCP integration with advanced features

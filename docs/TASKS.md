@@ -16,6 +16,12 @@ Current and upcoming development tasks.
 - [x] Add tests for detectPoorlyNamedIdentifier, modifiesVariable
 - [x] PR #177 merged
 
+### Wave 19 (2026-07-24) — Coverage Phase 3 & 4
+- [x] Add phase 3 coverage tests (PR #179 merged)
+- [x] Add phase 4 coverage tests
+- [x] Core coverage: 85.3% → 86.5%
+- [ ] PR blocked by GitHub API errors - branch p4cov ready
+
 ## Backlog
 
 ## Completed

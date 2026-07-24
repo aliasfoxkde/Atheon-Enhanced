@@ -49,7 +49,7 @@ func BuildImportGraph(dir string) (*ImportGraph, error) {
 		node, err := parseFileImports(path)
 		if err != nil {
 			// Skip files that can't be parsed - this is intentional for import graph analysis
-			return nil //nolint:nilerr
+			return nil
 		}
 
 		graph.Nodes[path] = node

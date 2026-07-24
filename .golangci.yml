@@ -118,6 +118,9 @@ linters:
       - path: cmd/mcp/main\.go
         linters:
           - revive         # package-comments on main package is optional
+      - path: core/imports\.go
+        linters:
+          - nilerr        # parse errors are intentionally skipped in import graph analysis
     paths:
       - testdata
       - .tmp-cov

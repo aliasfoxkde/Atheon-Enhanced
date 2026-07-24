@@ -2372,15 +2372,6 @@ func findDeadAssignments(funcDecl *ast.FuncDecl, fset *token.FileSet, findings *
 	}
 }
 
-// isLHSOfAssign checks if an identifier is on the LHS of an assignment.
-func isLHSOfAssign(ident *ast.Ident) bool {
-	parent := ident
-	if parent.Obj != nil && parent.Obj.Kind == ast.Var {
-		return true
-	}
-	return false
-}
-
 // markIdentifiersUsed recursively marks all identifiers in an expression as used.
 func markIdentifiersUsed(expr ast.Expr, usedVars map[string]bool) {
 	ast.Inspect(expr, func(n ast.Node) bool {

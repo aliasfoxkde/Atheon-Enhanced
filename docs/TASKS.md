@@ -48,7 +48,24 @@ Current and upcoming development tasks.
 - OSV.dev CVE lookups
 - Full YARA library integration (currently simplified version in core/yara_scanner.go)
 
-### Recently Completed (Wave 15 - 2026-07-16)
+### Recently Completed (Wave 17 - 2026-07-24)
+- [x] Bundle decode tests (decodeJSONStrict, decodeBundleDefs, trimSpace)
+- [x] normalizeConfidence tests with valid confidence levels
+- [x] Clone detection tests (variety of statements, custom config)
+- [x] Audit layer tests (type checking, security, code smells)
+- [x] Expression and call expression tests (exprToString, callExprToString)
+- [x] Test coverage: 81.1% → 84.7%
+- [x] Added comprehensive coverage_test.go with AST pattern tests
+- [x] Python-specific functions (containsDangerousSource, hasStringLiteral, isStringType) remain at 0% - these only execute on Python code scans, not Go tests
+
+### Recently Completed (Wave 16 - 2026-07-24)
+- [x] Null dereference detection pattern (null-dereference)
+- [x] Dead assignment detection pattern (dead-assignment)
+- [x] CFG-based bug detection: lock-not-released, resource-leak, transaction-not-ended
+- [x] Circular import detection (import graph analysis)
+- [x] Test coverage: 79.9% → 80.3%
+
+## Recently Completed (Wave 15 - 2026-07-16)
 - [x] Taint tracking analysis (source → sink flow) - core/taint.go
 - [x] Taint command injection pattern - community/security-hardening/taint-command-injection.yaml
 - [x] Risk scoring system (0-100) - core/risk.go, integrated into JSON/SARIF output

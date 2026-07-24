@@ -190,3 +190,36 @@ func TestTaintTracker_analyzeAssignment(t *testing.T) {
 		t.Error("dest should be tainted after assignment from tainted source")
 	}
 }
+
+func TestIsExprTainted(t *testing.T) {
+	tt := NewTaintTracker()
+	tt.TrackSource("source")
+
+	// Test with tainted identifier
+	ident := &ast.Ident{Name: "source"}
+	if !tt.isExprTainted(ident) {
+		t.Error("expected source to be tainted")
+	}
+
+	// Test with untainted identifier
+	clean := &ast.Ident{Name: "clean"}
+	if tt.isExprTainted(clean) {
+		t.Error("expected clean to not be tainted")
+	}
+}
+
+func TestTaintTracker_ScanFileAST_Empty(t *testing.T) {
+	tt := NewTaintTracker()
+
+	// Create empty file
+	tmpDir := t.TempDir()
+	tmpFile := tmpDir + "/empty.go"
+	if err := os.WriteFile(tmpFile, []byte("package main\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := tt.ScanFileAST(tmpFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+}

@@ -162,6 +162,60 @@ var builtinASTPatterns = []ASTPattern{
 		Severity:    "low",
 		Func:        detectDuplicateConfiguration,
 	},
+	{
+		Name:        "missing-return",
+		Description: "Function may return without a value on some code paths (conditional return but no final return)",
+		Severity:    "high",
+		Func:        detectMissingReturn,
+	},
+	{
+		Name:        "duplicate-condition",
+		Description: "Detected duplicate condition in if/elif chain",
+		Severity:    "medium",
+		Func:        detectDuplicateCondition,
+	},
+	{
+		Name:        "impossible-branch",
+		Description: "Detected impossible branch - condition that can never be true given prior checks",
+		Severity:    "high",
+		Func:        detectImpossibleBranch,
+	},
+	{
+		Name:        "iterator-modification",
+		Description: "Iterator target modified during iteration - concurrent modification bug",
+		Severity:    "high",
+		Func:        detectIteratorModification,
+	},
+	{
+		Name:        "lock-not-released",
+		Description: "Lock acquired but not released on all code paths",
+		Severity:    "high",
+		Func:        detectLockNotReleased,
+	},
+	{
+		Name:        "resource-leak",
+		Description: "Resource opened but not closed on all code paths",
+		Severity:    "high",
+		Func:        detectResourceLeak,
+	},
+	{
+		Name:        "transaction-not-ended",
+		Description: "Transaction begun but not committed or rolled back on all code paths",
+		Severity:    "high",
+		Func:        detectTransactionBug,
+	},
+	{
+		Name:        "null-dereference",
+		Description: "Potential nil pointer dereference - object used after possible nil assignment",
+		Severity:    "high",
+		Func:        detectNullDereference,
+	},
+	{
+		Name:        "dead-assignment",
+		Description: "Variable assigned but never used - dead store",
+		Severity:    "low",
+		Func:        detectDeadAssignment,
+	},
 }
 
 // ScanFileAST performs AST-based pattern scanning on a single Go file.
@@ -1626,4 +1680,689 @@ func detectDuplicateConfiguration(fset *token.FileSet, file *ast.File) []ASTFind
 	}
 
 	return findings
+}
+
+// detectMissingReturn checks for functions that have conditional returns
+// but no final return. E.g., if x > 5: return x (no return after if).
+func detectMissingReturn(fset *token.FileSet, file *ast.File) []ASTFinding {
+	var findings []ASTFinding
+
+	for _, decl := range file.Decls {
+		funcDecl, ok := decl.(*ast.FuncDecl)
+		if !ok || funcDecl.Body == nil {
+			continue
+		}
+
+		// Skip if return type indicates no value needed (void)
+		if funcDecl.Type.Results == nil || len(funcDecl.Type.Results.List) == 0 {
+			continue
+		}
+
+		// Check if function body has conditional returns but no unconditional return at end
+		hasConditionalReturn := hasConditionalReturnPath(funcDecl.Body)
+		hasUnconditionalReturn := hasUnconditionalReturnAtEnd(funcDecl.Body)
+
+		if hasConditionalReturn && !hasUnconditionalReturn {
+			findings = append(findings, ASTFinding{
+				Line:     fset.Position(funcDecl.Pos()).Line,
+				Message:  fmt.Sprintf("Function %s may return without a value on some code paths", funcDecl.Name.Name),
+				Severity: "high",
+			})
+		}
+	}
+
+	return findings
+}
+
+// hasConditionalReturnPath checks if the function has a return inside a conditional (if/for/etc).
+func hasConditionalReturnPath(stmt ast.Stmt) bool {
+	hasReturn := false
+
+	ast.Inspect(stmt, func(n ast.Node) bool {
+		if hasReturn {
+			return false
+		}
+
+		switch s := n.(type) {
+		case *ast.IfStmt:
+			// Check if there's a return in the if body
+			if hasReturnInBody(s.Body) {
+				hasReturn = true
+				return false
+			}
+			// Check else body too
+			if s.Else != nil {
+				if retStmt, ok := s.Else.(*ast.ReturnStmt); ok && retStmt.Results != nil {
+					hasReturn = true
+					return false
+				}
+				if hasReturnInBody(s.Else) {
+					hasReturn = true
+					return false
+				}
+			}
+		case *ast.ForStmt:
+			if hasReturnInBody(s.Body) {
+				hasReturn = true
+				return false
+			}
+		case *ast.RangeStmt:
+			if hasReturnInBody(s.Body) {
+				hasReturn = true
+				return false
+			}
+		case *ast.SwitchStmt:
+			for _, clause := range s.Body.List {
+				if hasReturnInBody(clause) {
+					hasReturn = true
+					return false
+				}
+			}
+		}
+		return true
+	})
+
+	return hasReturn
+}
+
+// hasReturnInBody checks if a statement list contains a return statement.
+func hasReturnInBody(n ast.Node) bool {
+	hasReturn := false
+	ast.Inspect(n, func(node ast.Node) bool {
+		if hasReturn {
+			return false
+		}
+		if ret, ok := node.(*ast.ReturnStmt); ok && ret.Results != nil {
+			hasReturn = true
+			return false
+		}
+		return true
+	})
+	return hasReturn
+}
+
+// hasUnconditionalReturnAtEnd checks if the function's last statement is a return.
+func hasUnconditionalReturnAtEnd(stmt ast.Stmt) bool {
+	block, ok := stmt.(*ast.BlockStmt)
+	if !ok {
+		return false
+	}
+
+	if len(block.List) == 0 {
+		return false
+	}
+
+	last := block.List[len(block.List)-1]
+	_, isUnconditionalReturn := last.(*ast.ReturnStmt)
+	return isUnconditionalReturn
+}
+
+// detectDuplicateCondition checks for duplicate conditions in if/elif chains.
+func detectDuplicateCondition(fset *token.FileSet, file *ast.File) []ASTFinding {
+	var findings []ASTFinding
+
+	for _, decl := range file.Decls {
+		funcDecl, ok := decl.(*ast.FuncDecl)
+		if !ok || funcDecl.Body == nil {
+			continue
+		}
+
+		checkDuplicateConditionsInStmt(funcDecl.Body, fset, &findings)
+	}
+
+	return findings
+}
+
+// checkDuplicateConditionsInStmt walks a statement tree looking for if chains.
+func checkDuplicateConditionsInStmt(stmt ast.Stmt, fset *token.FileSet, findings *[]ASTFinding) {
+	ast.Inspect(stmt, func(n ast.Node) bool {
+		ifStmt, ok := n.(*ast.IfStmt)
+		if !ok {
+			return true
+		}
+
+		// Collect all conditions in the if-elif chain
+		conditions := []ast.Expr{ifStmt.Cond}
+		elseNode := ifStmt.Else
+
+		for elseNode != nil {
+			switch elseClause := elseNode.(type) {
+			case *ast.IfStmt:
+				conditions = append(conditions, elseClause.Cond)
+				elseNode = elseClause.Else
+			default:
+				elseNode = nil
+			}
+		}
+
+		// Check for duplicate conditions
+		seen := make(map[string]bool)
+		for i, cond := range conditions {
+			condStr := exprToString(cond)
+			if condStr == "" {
+				continue
+			}
+			if seen[condStr] {
+				line := fset.Position(cond.Pos()).Line
+				*findings = append(*findings, ASTFinding{
+					Line:     line,
+					Message:  "Duplicate condition in if/elif chain: condition appears more than once",
+					Severity: "medium",
+				})
+				break
+			}
+			seen[condStr] = true
+			_ = i // silence unused variable
+		}
+
+		return true
+	})
+}
+
+// exprToString converts an expression to a canonical string for comparison.
+func exprToString(expr ast.Expr) string {
+	if expr == nil {
+		return ""
+	}
+
+	switch e := expr.(type) {
+	case *ast.Ident:
+		return e.Name
+	case *ast.BasicLit:
+		return e.Value
+	case *ast.BinaryExpr:
+		return exprToString(e.X) + " " + e.Op.String() + " " + exprToString(e.Y)
+	case *ast.UnaryExpr:
+		return e.Op.String() + exprToString(e.X)
+	case *ast.ParenExpr:
+		return "(" + exprToString(e.X) + ")"
+	case *ast.SelectorExpr:
+		var xName string
+		if ident, ok := e.X.(*ast.Ident); ok {
+			xName = ident.Name
+		}
+		return xName + "." + e.Sel.Name
+	case *ast.IndexExpr:
+		var xName string
+		if ident, ok := e.X.(*ast.Ident); ok {
+			xName = ident.Name
+		}
+		return xName + "[" + exprToString(e.Index) + "]"
+	case *ast.CallExpr:
+		return callExprToString(e)
+	default:
+		return ""
+	}
+}
+
+// callExprToString converts a call expression to string.
+func callExprToString(call *ast.CallExpr) string {
+	var fnName string
+	switch fn := call.Fun.(type) {
+	case *ast.Ident:
+		fnName = fn.Name
+	case *ast.SelectorExpr:
+		if ident, ok := fn.X.(*ast.Ident); ok {
+			fnName = ident.Name + "." + fn.Sel.Name
+		} else {
+			fnName = fn.Sel.Name
+		}
+	}
+	var args []string
+	for _, arg := range call.Args {
+		args = append(args, exprToString(arg))
+	}
+	return fnName + "(" + strings.Join(args, ",") + ")"
+}
+
+// detectImpossibleBranch detects impossible branches like if x is None: ... elif x is None:.
+func detectImpossibleBranch(fset *token.FileSet, file *ast.File) []ASTFinding {
+	var findings []ASTFinding
+
+	for _, decl := range file.Decls {
+		funcDecl, ok := decl.(*ast.FuncDecl)
+		if !ok || funcDecl.Body == nil {
+			continue
+		}
+
+		checkImpossibleBranches(funcDecl.Body, fset, &findings)
+	}
+
+	return findings
+}
+
+// checkImpossibleBranches walks the AST looking for impossible branch patterns.
+func checkImpossibleBranches(stmt ast.Stmt, fset *token.FileSet, findings *[]ASTFinding) {
+	ast.Inspect(stmt, func(n ast.Node) bool {
+		ifStmt, ok := n.(*ast.IfStmt)
+		if !ok {
+			return true
+		}
+
+		// Track type constraints through if-elif chain
+		// After if x == nil, else means x is not nil
+		constraints := make(map[string]string) // var name -> constraint
+
+		// Process else if chain - check each elif for contradictions
+		elseNode := ifStmt.Else
+		for elseNode != nil {
+			switch elseClause := elseNode.(type) {
+			case *ast.IfStmt:
+				// Before checking, establish that parent if was false
+				// (we're in else, so parent condition was not true)
+				updateConstraintsFromFalseBranch(ifStmt.Cond, constraints)
+
+				// Now check if this elif contradicts what we know
+				if checkBranchContradiction(elseClause.Cond, constraints) {
+					line := fset.Position(elseClause.Cond.Pos()).Line
+					*findings = append(*findings, ASTFinding{
+						Line:     line,
+						Message:  "Impossible branch: condition contradicts earlier type check",
+						Severity: "high",
+					})
+					return false
+				}
+				// Now add this elif's condition for subsequent elif checks
+				extractConstraints(elseClause.Cond, constraints)
+				// Move to next elif
+				ifStmt = elseClause // For next iteration, this elif becomes the parent
+				elseNode = elseClause.Else
+			default:
+				elseNode = nil
+			}
+		}
+
+		return true
+	})
+}
+
+// updateConstraintsFromFalseBranch updates constraints when we know the parent condition was false.
+// If we had "if x == nil", and we're in else, then x is not nil.
+func updateConstraintsFromFalseBranch(cond ast.Expr, constraints map[string]string) {
+	if bin, ok := cond.(*ast.BinaryExpr); ok {
+		if bin.Op == token.EQL || bin.Op == token.NEQ {
+			if isNoneOrNil(bin.Y) {
+				if ident, ok := bin.X.(*ast.Ident); ok {
+					if bin.Op == token.EQL {
+						// After if x == nil was false, x is not nil
+						constraints[ident.Name] = "not_nil"
+					}
+				}
+			}
+		}
+	}
+}
+
+// extractConstraints extracts type constraints from a condition.
+func extractConstraints(cond ast.Expr, constraints map[string]string) {
+	// Handle "x is None" or "x == nil"
+	if bin, ok := cond.(*ast.BinaryExpr); ok {
+		if bin.Op == token.EQL || bin.Op == token.NEQ {
+			if isNoneOrNil(bin.Y) {
+				if ident, ok := bin.X.(*ast.Ident); ok {
+					if bin.Op == token.EQL {
+						constraints[ident.Name] = "nil"
+					} else {
+						delete(constraints, ident.Name)
+					}
+				}
+			}
+		}
+	}
+}
+
+// isNoneOrNil checks if an expression represents None/nil.
+func isNoneOrNil(expr ast.Expr) bool {
+	if ident, ok := expr.(*ast.Ident); ok {
+		return ident.Name == "nil" || ident.Name == "None"
+	}
+	return false
+}
+
+// checkBranchContradiction checks if a condition in else-if contradicts constraints.
+// When we reach else-if, we know prior if conditions were false, so constraints reflect that.
+func checkBranchContradiction(cond ast.Expr, constraints map[string]string) bool {
+	if bin, ok := cond.(*ast.BinaryExpr); ok {
+		if bin.Op == token.EQL {
+			if isNoneOrNil(bin.Y) {
+				if ident, ok := bin.X.(*ast.Ident); ok {
+					// If we already know x is not_nil, then "x == nil" is impossible
+					if existing, exists := constraints[ident.Name]; exists {
+						return existing == "not_nil"
+					}
+				}
+			}
+		}
+	}
+	return false
+}
+
+// detectIteratorModification detects modification of iterator target during iteration.
+func detectIteratorModification(fset *token.FileSet, file *ast.File) []ASTFinding {
+	var findings []ASTFinding
+
+	for _, decl := range file.Decls {
+		funcDecl, ok := decl.(*ast.FuncDecl)
+		if !ok || funcDecl.Body == nil {
+			continue
+		}
+
+		findIteratorModifications(funcDecl, fset, &findings)
+	}
+
+	return findings
+}
+
+// findIteratorModifications checks for concurrent modification of iterators.
+func findIteratorModifications(funcDecl *ast.FuncDecl, fset *token.FileSet, findings *[]ASTFinding) {
+	// For each for loop, collect the iterator variable and check for modifications
+	ast.Inspect(funcDecl.Body, func(n ast.Node) bool {
+		forStmt, ok := n.(*ast.RangeStmt)
+		if !ok {
+			return true
+		}
+
+		// Get the iterator variable
+		var iterVar string
+		if ident, ok := forStmt.X.(*ast.Ident); ok {
+			iterVar = ident.Name
+		}
+
+		if iterVar == "" {
+			return true
+		}
+
+		// Check if the iterator variable is modified inside the loop body
+		if modifiesVariable(forStmt.Body, iterVar) {
+			line := fset.Position(forStmt.Pos()).Line
+			*findings = append(*findings, ASTFinding{
+				Line:     line,
+				Message:  fmt.Sprintf("Iterator modification: variable %s is modified during iteration", iterVar),
+				Severity: "high",
+			})
+		}
+
+		return true
+	})
+}
+
+// modifiesVariable checks if any statement modifies the given variable.
+func modifiesVariable(stmt ast.Stmt, varName string) bool {
+	modified := false
+
+	ast.Inspect(stmt, func(n ast.Node) bool {
+		if modified {
+			return false
+		}
+
+		switch a := n.(type) {
+		case *ast.AssignStmt:
+			for _, lhs := range a.Lhs {
+				if ident, ok := lhs.(*ast.Ident); ok {
+					if ident.Name == varName {
+						modified = true
+						return false
+					}
+				}
+				// Check for index expressions like list[i]
+				if _, ok := lhs.(*ast.IndexExpr); ok {
+					// Could be modifying the variable if it's a range over the same thing
+					_ = ok // suppress unused variable warning
+				}
+			}
+		case *ast.IncDecStmt:
+			if ident, ok := a.X.(*ast.Ident); ok {
+				if ident.Name == varName {
+					modified = true
+					return false
+				}
+			}
+		case *ast.SendStmt:
+			if ident, ok := a.Chan.(*ast.Ident); ok {
+				if ident.Name == varName {
+					modified = true
+					return false
+				}
+			}
+		}
+
+		return true
+	})
+
+	return modified
+}
+
+// CFG-based pattern wrappers that convert CFGFinding to ASTFinding
+
+// detectLockNotReleased wraps DetectLockNotReleased for ASTPattern interface.
+func detectLockNotReleased(fset *token.FileSet, file *ast.File) []ASTFinding {
+	cfgFindings := DetectLockNotReleased(fset, file)
+	var findings []ASTFinding
+	for _, f := range cfgFindings {
+		findings = append(findings, ASTFinding(f))
+	}
+	return findings
+}
+
+// detectResourceLeak wraps DetectResourceLeak for ASTPattern interface.
+func detectResourceLeak(fset *token.FileSet, file *ast.File) []ASTFinding {
+	cfgFindings := DetectResourceLeak(fset, file)
+	var findings []ASTFinding
+	for _, f := range cfgFindings {
+		findings = append(findings, ASTFinding(f))
+	}
+	return findings
+}
+
+// detectTransactionBug wraps DetectTransactionBug for ASTPattern interface.
+func detectTransactionBug(fset *token.FileSet, file *ast.File) []ASTFinding {
+	cfgFindings := DetectTransactionBug(fset, file)
+	var findings []ASTFinding
+	for _, f := range cfgFindings {
+		findings = append(findings, ASTFinding(f))
+	}
+	return findings
+}
+
+// detectNullDereference detects potential nil pointer dereferences.
+// It tracks variables that may be assigned nil and checks for their subsequent use.
+func detectNullDereference(fset *token.FileSet, file *ast.File) []ASTFinding {
+	var findings []ASTFinding
+
+	for _, decl := range file.Decls {
+		funcDecl, ok := decl.(*ast.FuncDecl)
+		if !ok || funcDecl.Body == nil {
+			continue
+		}
+
+		findNullDereferences(funcDecl, fset, &findings)
+	}
+
+	return findings
+}
+
+// findNullDereferences checks a function for nil dereference patterns.
+func findNullDereferences(funcDecl *ast.FuncDecl, fset *token.FileSet, findings *[]ASTFinding) {
+	// Track variables that are potentially nil
+	nilVars := make(map[string]bool)
+	// Track where variables were last assigned nil
+	lastNilAssign := make(map[string]int)
+
+	ast.Inspect(funcDecl.Body, func(n ast.Node) bool {
+		switch stmt := n.(type) {
+		case *ast.AssignStmt:
+			// Check bounds before accessing RHS
+			if len(stmt.Rhs) >= len(stmt.Lhs) {
+				for i, lhs := range stmt.Lhs {
+					if ident, ok := lhs.(*ast.Ident); ok {
+						if isNilLit(stmt.Rhs[i]) {
+							nilVars[ident.Name] = true
+							lastNilAssign[ident.Name] = fset.Position(ident.Pos()).Line
+						} else if ident.Name != "_" {
+							// Variable is assigned something that might not be nil
+							delete(nilVars, ident.Name)
+							delete(lastNilAssign, ident.Name)
+						}
+					}
+				}
+			}
+
+		case *ast.ReturnStmt:
+			for _, res := range stmt.Results {
+				if ident, ok := res.(*ast.Ident); ok && ident.Name != "" {
+					delete(nilVars, ident.Name)
+				}
+			}
+		}
+
+		// Check for selector expressions that might dereference nil
+		if sel, ok := n.(*ast.SelectorExpr); ok {
+			if ident, ok := sel.X.(*ast.Ident); ok {
+				if nilVars[ident.Name] {
+					line := fset.Position(sel.Pos()).Line
+					if lastLine, exists := lastNilAssign[ident.Name]; exists && line > lastLine {
+						*findings = append(*findings, ASTFinding{
+							Line:     line,
+							Message:  fmt.Sprintf("Potential nil dereference: %s used after possible nil assignment", ident.Name),
+							Severity: "high",
+						})
+					}
+				}
+			}
+		}
+
+		// Check for index expressions on potentially nil slices
+		if idx, ok := n.(*ast.IndexExpr); ok {
+			if ident, ok := idx.X.(*ast.Ident); ok {
+				if nilVars[ident.Name] {
+					line := fset.Position(idx.Pos()).Line
+					if lastLine, exists := lastNilAssign[ident.Name]; exists && line > lastLine {
+						*findings = append(*findings, ASTFinding{
+							Line:     line,
+							Message:  fmt.Sprintf("Potential nil dereference: slice %s indexed after possible nil", ident.Name),
+							Severity: "high",
+						})
+					}
+				}
+			}
+		}
+
+		// Check for method calls on potentially nil pointers
+		if call, ok := n.(*ast.CallExpr); ok {
+			if sel, ok := call.Fun.(*ast.SelectorExpr); ok {
+				if ident, ok := sel.X.(*ast.Ident); ok {
+					if nilVars[ident.Name] {
+						line := fset.Position(call.Pos()).Line
+						if lastLine, exists := lastNilAssign[ident.Name]; exists && line > lastLine {
+							*findings = append(*findings, ASTFinding{
+								Line:     line,
+								Message:  fmt.Sprintf("Potential nil dereference: method call on %s after possible nil", ident.Name),
+								Severity: "high",
+							})
+						}
+					}
+				}
+			}
+		}
+
+		return true
+	})
+}
+
+// isNilLit checks if an expression is a nil literal.
+func isNilLit(expr ast.Expr) bool {
+	if ident, ok := expr.(*ast.Ident); ok {
+		return ident.Name == "nil"
+	}
+	return false
+}
+
+// detectDeadAssignment detects variables that are assigned but never used.
+func detectDeadAssignment(fset *token.FileSet, file *ast.File) []ASTFinding {
+	var findings []ASTFinding
+
+	for _, decl := range file.Decls {
+		funcDecl, ok := decl.(*ast.FuncDecl)
+		if !ok || funcDecl.Body == nil {
+			continue
+		}
+
+		findDeadAssignments(funcDecl, fset, &findings)
+	}
+
+	return findings
+}
+
+// findDeadAssignments checks a function for dead assignment patterns.
+func findDeadAssignments(funcDecl *ast.FuncDecl, fset *token.FileSet, findings *[]ASTFinding) {
+	// Collect all used variables in the function body
+	usedVars := make(map[string]bool)
+	assignedVars := make(map[string]int) // Line where last assigned
+
+	ast.Inspect(funcDecl.Body, func(n ast.Node) bool {
+		// Track variable declarations (:= or var)
+		if assign, ok := n.(*ast.AssignStmt); ok {
+			if assign.Tok == token.DEFINE {
+				for _, lhs := range assign.Lhs {
+					if ident, ok := lhs.(*ast.Ident); ok {
+						if ident.Name != "_" {
+							assignedVars[ident.Name] = fset.Position(ident.Pos()).Line
+						}
+					}
+				}
+				// Mark RHS identifiers as used
+				for _, rhs := range assign.Rhs {
+					markIdentifiersUsed(rhs, usedVars)
+				}
+			}
+		}
+
+		// Track function call arguments - marks variables as used
+		if call, ok := n.(*ast.CallExpr); ok {
+			for _, arg := range call.Args {
+				markIdentifiersUsed(arg, usedVars)
+			}
+		}
+
+		return true
+	})
+
+	// Find variables assigned but never used in a way that contributes to output
+	for varName, assignLine := range assignedVars {
+		if !usedVars[varName] {
+			// Check if it's not a function parameter
+			isParam := false
+			if funcDecl.Type.Params != nil {
+				for _, param := range funcDecl.Type.Params.List {
+					for _, name := range param.Names {
+						if name.Name == varName {
+							isParam = true
+							break
+						}
+					}
+				}
+			}
+
+			if !isParam {
+				*findings = append(*findings, ASTFinding{
+					Line:     assignLine,
+					Message:  fmt.Sprintf("Dead assignment: variable %s is assigned but never used", varName),
+					Severity: "low",
+				})
+			}
+		}
+	}
+}
+
+// markIdentifiersUsed recursively marks all identifiers in an expression as used.
+func markIdentifiersUsed(expr ast.Expr, usedVars map[string]bool) {
+	ast.Inspect(expr, func(n ast.Node) bool {
+		if ident, ok := n.(*ast.Ident); ok {
+			if ident.Name != "_" {
+				usedVars[ident.Name] = true
+			}
+			return false
+		}
+		return true
+	})
 }

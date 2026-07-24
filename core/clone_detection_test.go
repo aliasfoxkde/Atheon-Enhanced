@@ -518,6 +518,88 @@ func TestClonePatterns_WithGoStmt(t *testing.T) {
 	_ = findings
 }
 
+func TestNewCloneDetector_WithCustomConfig(t *testing.T) {
+	// Test NewCloneDetector with custom configuration
+	config := &CloneDetectionConfig{
+		MinSimilarity: 0.8,
+		MinTokens:     10,
+		MaxDepth:      5,
+	}
+	detector := NewCloneDetector(config)
+
+	if detector == nil {
+		t.Fatal("expected non-nil detector")
+	}
+
+	if detector.config.MinSimilarity != 0.8 {
+		t.Errorf("expected MinSimilarity 0.8, got %f", detector.config.MinSimilarity)
+	}
+
+	if detector.config.MinTokens != 10 {
+		t.Errorf("expected MinTokens 10, got %d", detector.config.MinTokens)
+	}
+}
+
+func TestClonePatterns_VarietyOfStatements(t *testing.T) {
+	// Test clone detection with wide variety of statement types to exercise stmtTokens
+	code := `package main
+
+func funcWithDefer() {
+	defer func() {}()
+}
+
+func funcWithGo() {
+	go func() {}()
+}
+
+func funcWithSend(ch chan int) {
+	ch <- 42
+}
+
+func funcWithSwitch(x int) int {
+	switch x {
+	case 1:
+		return 1
+	case 2:
+		return 2
+	default:
+		return 0
+	}
+}
+
+func funcWithRange(items []int) int {
+	sum := 0
+	for _, v := range items {
+		sum += v
+	}
+	return sum
+}
+
+func funcWithIfAndReturn(x int) int {
+	if x > 0 {
+		return x
+	} else if x < 0 {
+		return -x
+	} else {
+		return 0
+	}
+}
+
+func main() {}
+`
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "variety.go")
+	if err := os.WriteFile(tmpFile, []byte(code), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	findings, err := ScanFileAST(tmpFile, builtinASTPatterns)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = findings
+}
+
 func TestClonePatterns_WithDeferStmt(t *testing.T) {
 	// Test clone detection with defer statements
 	code := `package main

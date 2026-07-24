@@ -426,7 +426,7 @@ func auditRedundancy(fset *token.FileSet, file *ast.File) []AuditFinding {
 func auditSpecConformance(fset *token.FileSet, file *ast.File) []AuditFinding {
 	var findings []AuditFinding
 
-	// Note: TODO/FIXME/HACK detection is informational only
+	// Note: Fix marker detection is informational only
 	// CI quality gates check these separately
 
 	return findings

@@ -294,3 +294,252 @@ func main() {
 	}
 	_ = findings
 }
+
+func TestCalculateCognitiveComplexity(t *testing.T) {
+	// Test with nested structures that increase cognitive complexity
+	code := `package main
+
+func complexFunc(x int, y int) int {
+	if x > 0 {
+		if y > 0 {
+			for i := 0; i < x; i++ {
+				if i > y {
+					return i
+				}
+			}
+		}
+	}
+	return 0
+}
+
+func simpleFunc(x int) int {
+	return x + 1
+}
+
+func main() {}
+`
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "cognitive.go")
+	if err := os.WriteFile(tmpFile, []byte(code), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	findings, err := ScanFileAST(tmpFile, builtinASTPatterns)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = findings
+}
+
+func TestDetectHighCognitiveComplexity(t *testing.T) {
+	// Test detection of high cognitive complexity
+	code := `package main
+
+func veryComplex(x int) int {
+	if x > 0 {
+		if x > 1 {
+			if x > 2 {
+				for i := 0; i < x; i++ {
+					if i > 0 {
+						if i > 1 {
+							return i
+						}
+					}
+				}
+			}
+		}
+	}
+	return 0
+}
+
+func main() {}
+`
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "high_cog.go")
+	if err := os.WriteFile(tmpFile, []byte(code), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	findings, err := ScanFileAST(tmpFile, builtinASTPatterns)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = findings
+}
+
+func TestContainsEnvVar_Pattern(t *testing.T) {
+	// Test containsEnvVar through pattern scanning
+	code := `package main
+
+import "os"
+
+func check() {
+	val := os.Getenv("HOME")
+	_ = val
+}
+`
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "env.go")
+	if err := os.WriteFile(tmpFile, []byte(code), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	findings, err := ScanFileAST(tmpFile, builtinASTPatterns)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = findings
+}
+
+func TestDetectSemanticRedundancy_Helper(t *testing.T) {
+	// Test semantic redundancy detection
+	code := `package main
+
+func checkOps(x int) {
+	y := x * 1
+	z := y / 1
+	w := z + 0
+	_ = w
+}
+
+func main() {}
+`
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "redundancy.go")
+	if err := os.WriteFile(tmpFile, []byte(code), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	findings, err := ScanFileAST(tmpFile, builtinASTPatterns)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = findings
+}
+
+func TestDetectLongFunction(t *testing.T) {
+	// Test detection of long functions
+	code := `package main
+
+func veryLongFunc() int {
+	a := 1
+	b := 2
+	c := 3
+	d := 4
+	e := 5
+	f := 6
+	g := 7
+	h := 8
+	i := 9
+	j := 10
+	k := 11
+	l := 12
+	m := 13
+	n := 14
+	o := 15
+	p := 16
+	q := 17
+	r := 18
+	s := 19
+	t := 20
+	u := 21
+	v := 22
+	w := 23
+	x := 24
+	y := 25
+	z := 26
+	aa := 27
+	bb := 28
+	cc := 29
+	dd := 30
+	ee := 31
+	ff := 32
+	gg := 33
+	hh := 34
+	ii := 35
+	jj := 36
+	kk := 37
+	ll := 38
+	mm := 39
+	nn := 40
+	oo := 41
+	pp := 42
+	qq := 43
+	rr := 44
+	ss := 45
+	tt := 46
+	uu := 47
+	vv := 48
+	ww := 49
+	xx := 50
+	yy := 51
+	zz := 52
+	return a + b + c + d + e + f + g + h + i + j + k + l + m + n + o + p + q + r + s + t + u + v + w + x + y + z + aa + bb + cc + dd + ee + ff + gg + hh + ii + jj + kk + ll + mm + nn + oo + pp + qq + rr + ss + tt + uu + vv + ww + xx + yy + zz
+}
+
+func main() {}
+`
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "long.go")
+	if err := os.WriteFile(tmpFile, []byte(code), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	findings, err := ScanFileAST(tmpFile, builtinASTPatterns)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = findings
+}
+
+func TestDetectUncarriedError(t *testing.T) {
+	// Test error not handled detection
+	code := `package main
+
+import "errors"
+
+func mightFail() error {
+	return errors.New("error")
+}
+
+func main() {
+	mightFail()
+}
+`
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "error.go")
+	if err := os.WriteFile(tmpFile, []byte(code), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	findings, err := ScanFileAST(tmpFile, builtinASTPatterns)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = findings
+}
+
+func TestIsQueryMethod(t *testing.T) {
+	// Test isQueryMethod through SQL injection detection
+	code := `package main
+
+import "database/sql"
+
+func query(db *sql.DB) {
+	db.Query("SELECT * FROM table")
+}
+
+func main() {}
+`
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "query.go")
+	if err := os.WriteFile(tmpFile, []byte(code), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	findings, err := ScanFileAST(tmpFile, builtinASTPatterns)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = findings
+}

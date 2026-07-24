@@ -48,7 +48,14 @@ Current and upcoming development tasks.
 - OSV.dev CVE lookups
 - Full YARA library integration (currently simplified version in core/yara_scanner.go)
 
-### Recently Completed (Wave 15 - 2026-07-16)
+### Recently Completed (Wave 16 - 2026-07-24)
+- [x] Null dereference detection pattern (null-dereference)
+- [x] Dead assignment detection pattern (dead-assignment)
+- [x] CFG-based bug detection: lock-not-released, resource-leak, transaction-not-ended
+- [x] Circular import detection (import graph analysis)
+- [x] Test coverage: 79.9% → 80.3%
+
+## Recently Completed (Wave 15 - 2026-07-16)
 - [x] Taint tracking analysis (source → sink flow) - core/taint.go
 - [x] Taint command injection pattern - community/security-hardening/taint-command-injection.yaml
 - [x] Risk scoring system (0-100) - core/risk.go, integrated into JSON/SARIF output

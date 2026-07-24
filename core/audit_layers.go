@@ -427,7 +427,7 @@ func auditRedundancy(fset *token.FileSet, file *ast.File) []AuditFinding {
 func auditSpecConformance(fset *token.FileSet, file *ast.File) []AuditFinding {
 	var findings []AuditFinding
 
-	// Check for TODO comments that should be addressed
+	// Check for unresolved fix markers
 	todoPattern := regexp.MustCompile(`(?i)\b(TODO|FIXME|HACK|XXX)\b`)
 	for _, comment := range file.Comments {
 		if todoPattern.MatchString(comment.Text()) {

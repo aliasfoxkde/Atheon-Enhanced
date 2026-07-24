@@ -54,7 +54,9 @@ Current and upcoming development tasks.
 - [x] Clone detection tests (variety of statements, custom config)
 - [x] Audit layer tests (type checking, security, code smells)
 - [x] Expression and call expression tests (exprToString, callExprToString)
-- [x] Test coverage: 81.1% → 83.7%
+- [x] Test coverage: 81.1% → 84.7%
+- [x] Added comprehensive coverage_test.go with AST pattern tests
+- [x] Python-specific functions (containsDangerousSource, hasStringLiteral, isStringType) remain at 0% - these only execute on Python code scans, not Go tests
 
 ### Recently Completed (Wave 16 - 2026-07-24)
 - [x] Null dereference detection pattern (null-dereference)

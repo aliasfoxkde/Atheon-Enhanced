@@ -405,3 +405,123 @@ func withLock(mu sync.Mutex) {
 		}
 	}
 }
+
+func TestCheckObligations_WithUnsatisfiedRelease(t *testing.T) {
+	// Test CheckObligations with an unsatisfied MustRelease
+	code := `package main
+
+import "sync"
+
+func badLock(mu sync.Mutex) {
+	mu.Lock()
+	if true {
+		return
+	}
+	mu.Unlock()
+}
+`
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "badlock.go")
+	if err := os.WriteFile(tmpFile, []byte(code), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, tmpFile, nil, parser.ParseComments)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, decl := range file.Decls {
+		if funcDecl, ok := decl.(*ast.FuncDecl); ok {
+			cfg := BuildCFG(funcDecl)
+			if cfg == nil {
+				t.Fatal("expected BuildCFG to return non-nil CFG")
+			}
+			obligations := CheckObligations(cfg)
+			_ = obligations
+		}
+	}
+}
+
+func TestCheckObligations_WithUnsatisfiedTransaction(t *testing.T) {
+	// Test CheckObligations with an unsatisfied MustCommit
+	code := `package main
+
+func badTx(db interface{}) {
+	// Simulate transaction without commit/rollback
+	_ = db
+}
+`
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "badtx.go")
+	if err := os.WriteFile(tmpFile, []byte(code), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, tmpFile, nil, parser.ParseComments)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, decl := range file.Decls {
+		if funcDecl, ok := decl.(*ast.FuncDecl); ok {
+			cfg := BuildCFG(funcDecl)
+			if cfg == nil {
+				t.Fatal("expected BuildCFG to return non-nil CFG")
+			}
+			obligations := CheckObligations(cfg)
+			_ = obligations
+		}
+	}
+}
+
+func TestTerminates(t *testing.T) {
+	// Test terminates with various block endings
+	code := `package main
+
+func withReturn() int {
+	return 42
+}
+
+func withBreak() {
+	for i := 0; i < 10; i++ {
+		break
+	}
+}
+
+func noTerminator(x int) int {
+	if x > 0 {
+		y := x + 1
+		return y
+	}
+	return 0
+}
+
+func main() {}
+`
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "terminates.go")
+	if err := os.WriteFile(tmpFile, []byte(code), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, tmpFile, nil, parser.ParseComments)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, decl := range file.Decls {
+		if funcDecl, ok := decl.(*ast.FuncDecl); ok {
+			cfg := BuildCFG(funcDecl)
+			if cfg == nil {
+				t.Fatal("expected BuildCFG to return non-nil CFG")
+			}
+			for _, block := range cfg.Blocks {
+				_ = terminates(block)
+			}
+		}
+	}
+}

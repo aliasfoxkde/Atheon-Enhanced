@@ -378,12 +378,10 @@ func (d *CloneDetector) DetectClones(dir string) ([]Clone, error) {
 			return nil
 		}
 
-		functions, err := d.ExtractFunctions(path)
-		if err != nil {
-			return nil // Skip files that fail to parse
+		if functions, err := d.ExtractFunctions(path); err == nil {
+			allFunctions = append(allFunctions, functions...)
 		}
 
-		allFunctions = append(allFunctions, functions...)
 		return nil
 	})
 

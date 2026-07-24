@@ -226,7 +226,7 @@ func TestCloneDetection_CloneTypes(t *testing.T) {
 
 	tests := []struct {
 		similarity float64
-		expected  CloneType
+		expected   CloneType
 	}{
 		{0.98, CloneType1},
 		{0.90, CloneType2},
@@ -246,14 +246,14 @@ func TestCloneDetector_TokenSimilarity(t *testing.T) {
 	detector := NewCloneDetector(DefaultCloneDetectionConfig())
 
 	setA := map[string]int{
-		"VAR":   5,
-		"CALL":  2,
-		"STMT":  3,
+		"VAR":  5,
+		"CALL": 2,
+		"STMT": 3,
 	}
 	setB := map[string]int{
-		"VAR":   5,
-		"CALL":  2,
-		"STMT":  3,
+		"VAR":  5,
+		"CALL": 2,
+		"STMT": 3,
 	}
 
 	similarity := detector.tokenSimilarity(setA, setB)
@@ -262,8 +262,8 @@ func TestCloneDetector_TokenSimilarity(t *testing.T) {
 	}
 
 	setC := map[string]int{
-		"VAR":   5,
-		"CALL":  2,
+		"VAR":  5,
+		"CALL": 2,
 	}
 	similarity2 := detector.tokenSimilarity(setA, setC)
 	if similarity2 >= similarity {

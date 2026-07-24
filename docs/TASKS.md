@@ -16,7 +16,7 @@ Current and upcoming development tasks.
 - [x] Add tests for detectPoorlyNamedIdentifier, modifiesVariable
 - [x] PR #177 merged
 
-### Wave 19 (2026-07-24) — Coverage Phase 3-9
+### Wave 19 (2026-07-24) — Coverage Phase 3-13
 - [x] Add phase 3 coverage tests (PR #179 merged)
 - [x] Add phase 4 coverage tests
 - [x] Add phase 5 coverage tests (PR #181 merged)
@@ -24,7 +24,11 @@ Current and upcoming development tasks.
 - [x] Add phase 7 coverage tests (PR #183 merged)
 - [x] Add phase 8 coverage tests (PR #184 merged)
 - [x] Add phase 9 coverage tests (PR #185 merged)
-- [x] Core coverage: 85.3% → 87.6%
+- [x] Add phase 10 coverage tests (PR #187 merged)
+- [x] Add phase 11 coverage tests (PR #188 merged)
+- [x] Add phase 12 coverage tests (PR #189 merged)
+- [x] Add phase 13 coverage tests (PR #190 merged)
+- [x] Core coverage: 85.3% → 87.8%
 
 ## Backlog
 

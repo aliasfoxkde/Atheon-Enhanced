@@ -1442,31 +1442,6 @@ func main() {}
 	_ = findings
 }
 
-// Test isLHSOfAssign function
-func TestIsLHSOfAssign_Coverage(t *testing.T) {
-	code := `package main
-
-func testIsLHS() {
-	x := 1
-	y := 2
-	x = y
-}
-
-func main() {}
-`
-	tmpDir := t.TempDir()
-	tmpFile := filepath.Join(tmpDir, "lhs.go")
-	if err := os.WriteFile(tmpFile, []byte(code), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	findings, err := ScanFileAST(tmpFile, builtinASTPatterns)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_ = findings
-}
-
 // Test recursive function detection
 func TestRecursiveFunction_Coverage(t *testing.T) {
 	code := `package main

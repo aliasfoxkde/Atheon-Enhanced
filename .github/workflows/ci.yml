@@ -244,13 +244,13 @@ jobs:
       - name: Install QEMU and cross-compilation support
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-arm-linux-gnueabihf
+          sudo apt-get install -y gcc-aarch64-linux-gnu
 
       - name: Build for ARM64
         env:
           GOOS: linux
           GOARCH: arm64
-          CC: arm-linux-gnueabihf-gcc
+          CC: aarch64-linux-gnu-gcc
         run: |
           go mod download
           CGO_ENABLED=1 GOOS=linux GOARCH=arm64 go build -v -o atheon-arm64 ./cmd/atheon

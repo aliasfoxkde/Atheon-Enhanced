@@ -466,3 +466,4 @@ func main() {
 	// Basic file should have no type checking issues
 	_ = findings
 }
+

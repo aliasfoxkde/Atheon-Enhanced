@@ -408,10 +408,43 @@ func withoutReturn(x int) int {
 	x = x + 1
 }
 
+func withMultipleReturns(x int) int {
+	if x > 0 {
+		return x
+	}
+	return 0
+}
+
 func main() {}
 `
 	tmpDir := t.TempDir()
 	tmpFile := filepath.Join(tmpDir, "uncond.go")
+	if err := os.WriteFile(tmpFile, []byte(code), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	findings, err := ScanFileAST(tmpFile, builtinASTPatterns)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = findings
+}
+
+func TestDetectPoorlyNamedIdentifier(t *testing.T) {
+	// Test poorly named identifier detection
+	code := `package main
+
+func processData(x int, y int, z int) {
+	tmp1 := x + y
+	tmp2 := y + z
+	result := tmp1 + tmp2
+	_ = result
+}
+
+func main() {}
+`
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "naming.go")
 	if err := os.WriteFile(tmpFile, []byte(code), 0644); err != nil {
 		t.Fatal(err)
 	}

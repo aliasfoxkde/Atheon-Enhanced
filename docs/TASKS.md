@@ -7,6 +7,17 @@ Current and upcoming development tasks.
 - Research and implement SkillSpector-inspired enhancements
 - Unicode deception detection patterns
 
+### Wave 18 (2026-07-24) — Coverage Phase 2
+- [x] Add comprehensive phase 2 coverage tests
+- [x] Core coverage: 84.9% → 85.3%
+- [x] Add tests for typeToString, exprToString, callExprToString
+- [x] Add tests for extractConstraints, slicesEqual, countInterfaceDepth
+- [x] Add tests for hasConditionalReturnPath, hasUnconditionalReturnAtEnd
+- [x] Add tests for detectPoorlyNamedIdentifier, modifiesVariable
+- [x] PR #177 merged
+
+## Backlog
+
 ## Completed
 
 ### Wave 14 (2026-06-28) — SkillSpector Research

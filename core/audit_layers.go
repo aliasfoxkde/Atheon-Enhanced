@@ -428,13 +428,13 @@ func auditSpecConformance(fset *token.FileSet, file *ast.File) []AuditFinding {
 	var findings []AuditFinding
 
 	// Check for unresolved fix markers
-	todoPattern := regexp.MustCompile(`(?i)\b(TODO|FIXME|HACK|XXX)\b`)
+	fixMarkerPattern := regexp.MustCompile(`(?i)\b(TODO|FIXME|HACK|XXX)\b`)
 	for _, comment := range file.Comments {
-		if todoPattern.MatchString(comment.Text()) {
+		if fixMarkerPattern.MatchString(comment.Text()) {
 			findings = append(findings, AuditFinding{
 				Line:     fset.Position(comment.Pos()).Line,
-				Rule:     "unresolved-todo",
-				Message:  fmt.Sprintf("Unresolved TODO/FIXME comment: %s", strings.TrimSpace(comment.Text())),
+				Rule:     "unresolved-fixmarker",
+				Message:  fmt.Sprintf("Unresolved FIXME/HACK comment: %s", strings.TrimSpace(comment.Text())),
 				Severity: "low",
 			})
 		}

@@ -376,9 +376,8 @@ jobs:
           BUNDLE_COUNT=$(./atheon list --enabled | tail -1 | grep -oE '[0-9]+' | head -1)
           echo "YAML source: ${SOURCE_COUNT} patterns"
           echo "Bundle (enabled): ${BUNDLE_COUNT} patterns"
-          # Bundle has 406 total, but 25 are disabled (enabled=false)
-          # So enabled count = 406 - 25 = 381
-          EXPECTED_BUNDLE=381
+          # All 406 patterns are now enabled
+          EXPECTED_BUNDLE=406
           if [ "${BUNDLE_COUNT}" -ne "${EXPECTED_BUNDLE}" ]; then
             echo "❌ Drift: bundle has ${BUNDLE_COUNT} enabled patterns but expected ${EXPECTED_BUNDLE}."
             exit 1

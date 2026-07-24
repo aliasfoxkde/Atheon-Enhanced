@@ -204,6 +204,18 @@ var builtinASTPatterns = []ASTPattern{
 		Severity:    "high",
 		Func:        detectTransactionBug,
 	},
+	{
+		Name:        "null-dereference",
+		Description: "Potential nil pointer dereference - object used after possible nil assignment",
+		Severity:    "high",
+		Func:        detectNullDereference,
+	},
+	{
+		Name:        "dead-assignment",
+		Description: "Variable assigned but never used - dead store",
+		Severity:    "low",
+		Func:        detectDeadAssignment,
+	},
 }
 
 // ScanFileAST performs AST-based pattern scanning on a single Go file.
@@ -2168,4 +2180,216 @@ func detectTransactionBug(fset *token.FileSet, file *ast.File) []ASTFinding {
 		})
 	}
 	return findings
+}
+
+// detectNullDereference detects potential nil pointer dereferences.
+// It tracks variables that may be assigned nil and checks for their subsequent use.
+func detectNullDereference(fset *token.FileSet, file *ast.File) []ASTFinding {
+	var findings []ASTFinding
+
+	for _, decl := range file.Decls {
+		funcDecl, ok := decl.(*ast.FuncDecl)
+		if !ok || funcDecl.Body == nil {
+			continue
+		}
+
+		findNullDereferences(funcDecl, fset, &findings)
+	}
+
+	return findings
+}
+
+// findNullDereferences checks a function for nil dereference patterns.
+func findNullDereferences(funcDecl *ast.FuncDecl, fset *token.FileSet, findings *[]ASTFinding) {
+	// Track variables that are potentially nil
+	nilVars := make(map[string]bool)
+	// Track where variables were last assigned nil
+	lastNilAssign := make(map[string]int)
+
+	ast.Inspect(funcDecl.Body, func(n ast.Node) bool {
+		switch stmt := n.(type) {
+		case *ast.AssignStmt:
+			// Check bounds before accessing RHS
+			if len(stmt.Rhs) >= len(stmt.Lhs) {
+				for i, lhs := range stmt.Lhs {
+					if ident, ok := lhs.(*ast.Ident); ok {
+						if isNilLit(stmt.Rhs[i]) {
+							nilVars[ident.Name] = true
+							lastNilAssign[ident.Name] = fset.Position(ident.Pos()).Line
+						} else if ident.Name != "_" {
+							// Variable is assigned something that might not be nil
+							delete(nilVars, ident.Name)
+							delete(lastNilAssign, ident.Name)
+						}
+					}
+				}
+			}
+
+		case *ast.ReturnStmt:
+			for _, res := range stmt.Results {
+				if ident, ok := res.(*ast.Ident); ok && ident.Name != "" {
+					delete(nilVars, ident.Name)
+				}
+			}
+		}
+
+		// Check for selector expressions that might dereference nil
+		if sel, ok := n.(*ast.SelectorExpr); ok {
+			if ident, ok := sel.X.(*ast.Ident); ok {
+				if nilVars[ident.Name] {
+					line := fset.Position(sel.Pos()).Line
+					if lastLine, exists := lastNilAssign[ident.Name]; exists && line > lastLine {
+						*findings = append(*findings, ASTFinding{
+							Line:     line,
+							Message:  fmt.Sprintf("Potential nil dereference: %s used after possible nil assignment", ident.Name),
+							Severity: "high",
+						})
+					}
+				}
+			}
+		}
+
+		// Check for index expressions on potentially nil slices
+		if idx, ok := n.(*ast.IndexExpr); ok {
+			if ident, ok := idx.X.(*ast.Ident); ok {
+				if nilVars[ident.Name] {
+					line := fset.Position(idx.Pos()).Line
+					if lastLine, exists := lastNilAssign[ident.Name]; exists && line > lastLine {
+						*findings = append(*findings, ASTFinding{
+							Line:     line,
+							Message:  fmt.Sprintf("Potential nil dereference: slice %s indexed after possible nil", ident.Name),
+							Severity: "high",
+						})
+					}
+				}
+			}
+		}
+
+		// Check for method calls on potentially nil pointers
+		if call, ok := n.(*ast.CallExpr); ok {
+			if sel, ok := call.Fun.(*ast.SelectorExpr); ok {
+				if ident, ok := sel.X.(*ast.Ident); ok {
+					if nilVars[ident.Name] {
+						line := fset.Position(call.Pos()).Line
+						if lastLine, exists := lastNilAssign[ident.Name]; exists && line > lastLine {
+							*findings = append(*findings, ASTFinding{
+								Line:     line,
+								Message:  fmt.Sprintf("Potential nil dereference: method call on %s after possible nil", ident.Name),
+								Severity: "high",
+							})
+						}
+					}
+				}
+			}
+		}
+
+		return true
+	})
+}
+
+// isNilLit checks if an expression is a nil literal.
+func isNilLit(expr ast.Expr) bool {
+	if ident, ok := expr.(*ast.Ident); ok {
+		return ident.Name == "nil"
+	}
+	return false
+}
+
+// detectDeadAssignment detects variables that are assigned but never used.
+func detectDeadAssignment(fset *token.FileSet, file *ast.File) []ASTFinding {
+	var findings []ASTFinding
+
+	for _, decl := range file.Decls {
+		funcDecl, ok := decl.(*ast.FuncDecl)
+		if !ok || funcDecl.Body == nil {
+			continue
+		}
+
+		findDeadAssignments(funcDecl, fset, &findings)
+	}
+
+	return findings
+}
+
+// findDeadAssignments checks a function for dead assignment patterns.
+func findDeadAssignments(funcDecl *ast.FuncDecl, fset *token.FileSet, findings *[]ASTFinding) {
+	// Collect all used variables in the function body
+	usedVars := make(map[string]bool)
+	assignedVars := make(map[string]int) // Line where last assigned
+
+	ast.Inspect(funcDecl.Body, func(n ast.Node) bool {
+		// Track variable declarations (:= or var)
+		if assign, ok := n.(*ast.AssignStmt); ok {
+			if assign.Tok == token.DEFINE {
+				for _, lhs := range assign.Lhs {
+					if ident, ok := lhs.(*ast.Ident); ok {
+						if ident.Name != "_" {
+							assignedVars[ident.Name] = fset.Position(ident.Pos()).Line
+						}
+					}
+				}
+				// Mark RHS identifiers as used
+				for _, rhs := range assign.Rhs {
+					markIdentifiersUsed(rhs, usedVars)
+				}
+			}
+		}
+
+		// Track function call arguments - marks variables as used
+		if call, ok := n.(*ast.CallExpr); ok {
+			for _, arg := range call.Args {
+				markIdentifiersUsed(arg, usedVars)
+			}
+		}
+
+		return true
+	})
+
+	// Find variables assigned but never used in a way that contributes to output
+	for varName, assignLine := range assignedVars {
+		if !usedVars[varName] {
+			// Check if it's not a function parameter
+			isParam := false
+			if funcDecl.Type.Params != nil {
+				for _, param := range funcDecl.Type.Params.List {
+					for _, name := range param.Names {
+						if name.Name == varName {
+							isParam = true
+							break
+						}
+					}
+				}
+			}
+
+			if !isParam {
+				*findings = append(*findings, ASTFinding{
+					Line:     assignLine,
+					Message:  fmt.Sprintf("Dead assignment: variable %s is assigned but never used", varName),
+					Severity: "low",
+				})
+			}
+		}
+	}
+}
+
+// isLHSOfAssign checks if an identifier is on the LHS of an assignment.
+func isLHSOfAssign(ident *ast.Ident) bool {
+	parent := ident
+	if parent.Obj != nil && parent.Obj.Kind == ast.Var {
+		return true
+	}
+	return false
+}
+
+// markIdentifiersUsed recursively marks all identifiers in an expression as used.
+func markIdentifiersUsed(expr ast.Expr, usedVars map[string]bool) {
+	ast.Inspect(expr, func(n ast.Node) bool {
+		if ident, ok := n.(*ast.Ident); ok {
+			if ident.Name != "_" {
+				usedVars[ident.Name] = true
+			}
+			return false
+		}
+		return true
+	})
 }

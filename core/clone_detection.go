@@ -366,12 +366,7 @@ func (d *CloneDetector) DetectClones(dir string) ([]Clone, error) {
 	var allFunctions []FunctionInfo
 
 	// Extract functions from all Go files
-	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return nil
-		}
-
-		// Skip non-Go files and hidden directories
+	err := filepath.Walk(dir, func(path string, info os.FileInfo, _ error) error {
 		if info.IsDir() {
 			if strings.HasPrefix(info.Name(), ".") || info.Name() == "vendor" || info.Name() == "node_modules" {
 				return filepath.SkipDir

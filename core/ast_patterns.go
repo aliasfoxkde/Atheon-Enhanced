@@ -728,7 +728,7 @@ func calculateCyclomaticComplexity(stmt ast.Stmt) int {
 	var complexity int
 
 	ast.Inspect(stmt, func(n ast.Node) bool {
-		switch n.(type) {
+		switch n := n.(type) {
 		case *ast.IfStmt:
 			complexity++
 		case *ast.ForStmt:
@@ -740,8 +740,7 @@ func calculateCyclomaticComplexity(stmt ast.Stmt) int {
 		case *ast.CaseClause:
 			complexity++
 		case *ast.BinaryExpr:
-			bin := n.(*ast.BinaryExpr)
-			if bin.Op == token.LAND || bin.Op == token.LOR {
+			if n.Op == token.LAND || n.Op == token.LOR {
 				complexity++
 			}
 		}
@@ -1592,19 +1591,16 @@ func detectDuplicateConfiguration(fset *token.FileSet, file *ast.File) []ASTFind
 
 	// Look for config patterns (struct tags with json/yaml, const declarations)
 	for _, decl := range file.Decls {
-		switch d := decl.(type) {
-		case *ast.GenDecl:
-			if d.Tok == token.CONST {
-				for _, spec := range d.Specs {
-					if vs, ok := spec.(*ast.ValueSpec); ok {
-						for i, name := range vs.Names {
-							if i < len(vs.Values) {
-								if lit, ok := vs.Values[i].(*ast.BasicLit); ok {
-									configs = append(configs, ConfigValue{
-										Key:   name.Name,
-										Value: lit.Value,
-									})
-								}
+		if genDecl, ok := decl.(*ast.GenDecl); ok && genDecl.Tok == token.CONST {
+			for _, spec := range genDecl.Specs {
+				if vs, ok := spec.(*ast.ValueSpec); ok {
+					for i, name := range vs.Names {
+						if i < len(vs.Values) {
+							if lit, ok := vs.Values[i].(*ast.BasicLit); ok {
+								configs = append(configs, ConfigValue{
+									Key:   name.Name,
+									Value: lit.Value,
+								})
 							}
 						}
 					}

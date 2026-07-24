@@ -20,10 +20,14 @@ import (
 type CloneType int
 
 const (
-	CloneType1 CloneType = iota + 1 // Identical code with normalization differences
-	CloneType2                      // Syntactically similar with minor variations
-	CloneType3                      // Copied with modifications
-	CloneType4                      // Different code, same functionality
+	// CloneType1 is identical code with normalization differences
+	CloneType1 CloneType = iota + 1
+	// CloneType2 is syntactically similar with minor variations
+	CloneType2
+	// CloneType3 is copied with modifications
+	CloneType3
+	// CloneType4 is different code that computes the same functionality
+	CloneType4
 )
 
 // Clone represents a detected code clone pair.
@@ -329,9 +333,6 @@ func (d *CloneDetector) exprTokens(expr ast.Expr) []string {
 		}
 	case *ast.FuncLit:
 		tokens = append(tokens, "FUNC_LIT")
-		if e.Type != nil {
-			// Handle func type params if present
-		}
 		if e.Body != nil {
 			tokens = append(tokens, d.stmtTokens(e.Body)...)
 		}

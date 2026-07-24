@@ -442,13 +442,8 @@ func auditSpecConformance(fset *token.FileSet, file *ast.File) []AuditFinding {
 			continue
 		}
 
-		// Check if function returns error
-		returnsError := funcDecl.Type.Results != nil && len(funcDecl.Type.Results.List) > 0
-
-		if returnsError {
-			// Find all call sites of this function
-			// This is a simplified check - real implementation would need interprocedural analysis
-		}
+		// Check if function returns error - for future interprocedural analysis
+		_ = funcDecl.Type.Results != nil && len(funcDecl.Type.Results.List) > 0
 	}
 
 	// Check for TODO comments that should be addressed

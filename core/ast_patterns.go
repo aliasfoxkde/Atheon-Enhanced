@@ -847,27 +847,6 @@ func isRecursiveCall(call *ast.CallExpr) bool {
 	return false
 }
 
-// calculateCognitiveExprComplexity calculates cognitive complexity for expressions.
-func calculateCognitiveExprComplexity(expr ast.Expr, depth int) int {
-	if expr == nil {
-		return 0
-	}
-	switch e := expr.(type) {
-	case *ast.BinaryExpr:
-		return depth + calculateCognitiveExprComplexity(e.X, depth+1) + calculateCognitiveExprComplexity(e.Y, depth+1)
-	case *ast.UnaryExpr:
-		return depth + calculateCognitiveExprComplexity(e.X, depth+1)
-	case *ast.CallExpr:
-		return depth + 1
-	case *ast.ParenExpr:
-		return calculateCognitiveExprComplexity(e.X, depth)
-	case *ast.StarExpr:
-		return calculateCognitiveExprComplexity(e.X, depth)
-	default:
-		return 0
-	}
-}
-
 // LongFunctionConfig holds thresholds for function length.
 var LongFunctionConfig = struct {
 	Warning int
@@ -1214,36 +1193,6 @@ var badNamingPatterns = []string{
 	"tmp_",     // tmp_file
 	"misc_",    // misc_helper
 	"do_",      // do_something - verbs at start often indicate poor design
-}
-
-// Boolean naming conventions
-var yesNoPatterns = map[string]bool{
-	"is":    true,
-	"are":   true,
-	"was":   true,
-	"were":  true,
-	"has":   true,
-	"have":  true,
-	"had":   true,
-	"does":  true,
-	"do":    true,
-	"can":   true,
-	"could": true,
-	"will":  true,
-	"would": true,
-	"should": true,
-	"may":   true,
-	"might": true,
-	"must":  true,
-}
-
-var trueFalsePatterns = map[string]bool{
-	"true":  true,
-	"false": true,
-	"True":  true,
-	"False": true,
-	"TRUE":  true,
-	"FALSE": true,
 }
 
 // detectInconsistentBooleanNaming detects mixed use of Yes/No and True/False style names.

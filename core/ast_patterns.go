@@ -1002,7 +1002,7 @@ var SemanticRedundancyConfig = struct {
 	RedundantOps bool
 }{
 	UnusedVars:   true,
-	DeadCode:    true,
+	DeadCode:     true,
 	RedundantOps: true,
 }
 
@@ -1182,16 +1182,16 @@ func formatBinaryExpr(expr *ast.BinaryExpr) string {
 
 // Bad naming patterns for poorly-named identifiers
 var badNamingPatterns = []string{
-	"real_",    // real_impl, real_helper, etc.
-	"helper_",  // helper_impl, helper_util
-	"_impl",    // foo_impl
-	"impl_",    // impl_foo
-	"util2",    // util2, utils2
-	"util3",    // utils3
-	"temp_",    // temp_var, temp_helper
-	"tmp_",     // tmp_file
-	"misc_",    // misc_helper
-	"do_",      // do_something - verbs at start often indicate poor design
+	"real_",   // real_impl, real_helper, etc.
+	"helper_", // helper_impl, helper_util
+	"_impl",   // foo_impl
+	"impl_",   // impl_foo
+	"util2",   // util2, utils2
+	"util3",   // utils3
+	"temp_",   // temp_var, temp_helper
+	"tmp_",    // tmp_file
+	"misc_",   // misc_helper
+	"do_",     // do_something - verbs at start often indicate poor design
 }
 
 // detectInconsistentBooleanNaming detects mixed use of Yes/No and True/False style names.

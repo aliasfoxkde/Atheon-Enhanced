@@ -48,6 +48,14 @@ Current and upcoming development tasks.
 - OSV.dev CVE lookups
 - Full YARA library integration (currently simplified version in core/yara_scanner.go)
 
+### Recently Completed (Wave 17 - 2026-07-24)
+- [x] Bundle decode tests (decodeJSONStrict, decodeBundleDefs, trimSpace)
+- [x] normalizeConfidence tests with valid confidence levels
+- [x] Clone detection tests (variety of statements, custom config)
+- [x] Audit layer tests (type checking, security, code smells)
+- [x] Expression and call expression tests (exprToString, callExprToString)
+- [x] Test coverage: 81.1% → 83.7%
+
 ### Recently Completed (Wave 16 - 2026-07-24)
 - [x] Null dereference detection pattern (null-dereference)
 - [x] Dead assignment detection pattern (dead-assignment)

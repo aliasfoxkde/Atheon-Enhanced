@@ -1,6 +1,6 @@
 name: ipv6-address
 match: \b(?:[A-Fa-f0-9]{1,4}:){2,7}[A-Fa-f0-9]{1,4}\b
 severity: high
-enabled: false
+enabled: true
 description: 'Pattern: ''ipv6 address''. Pattern in category ''''. This is a high-severity
   issue that could lead to security vulnerabilities or significant quality problems.'

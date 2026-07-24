@@ -1,6 +1,6 @@
 name: ai-buzzwords
 match: (?i)(synergize|leverage|revolutionary|cutting-edge|state-of-the-art|paradigm.shift|disruptive|innovative)
 severity: medium
-enabled: false
+enabled: true
 description: 'Pattern: ''ai buzzwords''. Pattern in category ''''. This is a medium-severity
   issue representing a moderate risk to security, privacy, or code quality.'

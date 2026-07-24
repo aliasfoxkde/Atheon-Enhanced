@@ -1,7 +1,7 @@
 name: llm-generated-marker
 match: (?i)(?:as\s+an\s+AI\s+(?:language\s+)?model|I\s+cannot\s+(?:browse|access|provide\s+(?:legal|medical|financial)))
 severity: medium
-enabled: false
+enabled: true
 description: 'Pattern: ''llm generated marker''. Pattern in category ''''. This is
   a medium-severity issue representing a moderate risk to security, privacy, or code
   quality.'

@@ -2,4 +2,4 @@ name: todo-comment
 match: (?i)\b(TODO|FIXME|XXX|HACK)\b
 severity: low
 description: 'Detects TODO/FIXME/XXX/HACK markers (lenient pattern - matches standalone keywords)'
-enabled: false
+enabled: true

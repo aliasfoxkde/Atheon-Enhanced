@@ -1,6 +1,6 @@
 name: ipv4-address
 match: \b(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|\d)\.(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|\d)\.(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|\d)\.(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|\d)\b
 severity: high
-enabled: false
+enabled: true
 description: 'Pattern: ''ipv4 address''. Pattern in category ''''. This is a high-severity
   issue that could lead to security vulnerabilities or significant quality problems.'

@@ -1,7 +1,7 @@
 name: canada-social-insurance-number
 match: \b\d{3}[- ]\d{3}[- ]\d{3}\b
 severity: high
-enabled: false
+enabled: true
 description: 'Pattern: ''canada social insurance number''. Pattern in category ''''.
   This is a high-severity issue that could lead to security vulnerabilities or significant
   quality problems.'

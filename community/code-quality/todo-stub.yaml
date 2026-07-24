@@ -2,4 +2,4 @@ name: todo-stub
 match: (?i)TODO.*implement|FIXME.*later|XXX.*stub|HACK.*temporary
 severity: low
 description: 'Detects incomplete implementation stubs (subset of todo-fixme)'
-enabled: false
+enabled: true

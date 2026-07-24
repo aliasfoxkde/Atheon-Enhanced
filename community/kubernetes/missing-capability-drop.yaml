@@ -2,5 +2,5 @@ name: k8s-missing-capability-drop
 category: kubernetes
 match: securityContext
 severity: medium
-enabled: false
+enabled: true
 description: "Container does not drop default capabilities. Add securityContext.capabilities.drop to remove unnecessary capabilities. Note: disabled due to RE2 incompatibility - needs AST-based detection."

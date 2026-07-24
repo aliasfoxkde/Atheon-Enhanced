@@ -1,7 +1,7 @@
 name: us-drivers-license
 match: \b[A-Z][0-9]{7}\b
 severity: high
-enabled: false
+enabled: true
 description: 'Pattern: ''us drivers license''. Pattern in category ''''. This is a
   high-severity issue that could lead to security vulnerabilities or significant quality
   problems.'

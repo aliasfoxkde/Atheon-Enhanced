@@ -1,7 +1,7 @@
 name: terraform-sensitive-variable
 match: (?i)sensitive\s*=\s*true
 severity: medium
-enabled: false
+enabled: true
 description: 'Pattern: ''terraform sensitive variable''. Pattern in category ''''.
   This is a medium-severity issue representing a moderate risk to security, privacy,
   or code quality.'

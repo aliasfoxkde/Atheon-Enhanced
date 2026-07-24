@@ -1,7 +1,7 @@
 name: insecure-cookie-missing-secure
 match: (?i)Set-Cookie:\s*[^\n]+
 severity: high
-enabled: false
+enabled: true
 description: 'Detected missing security or quality feature: ''insecure cookie missing
   secure''. This pattern indicates a gap that should be addressed. This is a high-severity
   issue that could lead to security vulnerabilities or significant quality problems.'

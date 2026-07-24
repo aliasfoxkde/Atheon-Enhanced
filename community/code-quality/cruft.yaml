@@ -2,4 +2,4 @@ name: cruft
 match: (?i)(XXX|HACK|FIXME|BUG|TODO.*remove|deprecated.*delete)
 severity: low
 description: 'Detects code cleanup markers (superseded by todo-fixme)'
-enabled: false
+enabled: true

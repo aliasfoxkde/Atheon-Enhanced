@@ -1,7 +1,7 @@
 name: jenkins-api-token
 match: (?i)jenkins.*['"]?[0-9a-f]{32,40}['"]?
 severity: medium
-enabled: false
+enabled: true
 description: 'Detected potential API key or token: ''jenkins api token''. Exposing
   API keys in source code risks unauthorized API access. This is a medium-severity
   issue representing a moderate risk to security, privacy, or code quality.'

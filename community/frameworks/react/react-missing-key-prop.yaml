@@ -1,7 +1,7 @@
 name: react-missing-key-prop
 match: \.\s*map\s*\([^)]*\)\s*=>\s*[<\(]
 severity: low
-enabled: false
+enabled: true
 description: 'Detected potential API key or token: ''react missing key prop''. Exposing
   API keys in source code risks unauthorized API access. This is a low-severity issue
   representing a minor risk or code quality concern.'

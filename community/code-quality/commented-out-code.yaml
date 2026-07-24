@@ -1,6 +1,6 @@
 name: commented-out-code-block
 match: (?m)^(?:\s*//[^\n]{40,}\n){3,}
 severity: low
-enabled: false
+enabled: true
 description: 'Pattern: ''commented out code block''. Pattern in category ''''. This
   is a low-severity issue representing a minor risk or code quality concern.'

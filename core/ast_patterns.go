@@ -2139,13 +2139,7 @@ func detectLockNotReleased(fset *token.FileSet, file *ast.File) []ASTFinding {
 	cfgFindings := DetectLockNotReleased(fset, file)
 	var findings []ASTFinding
 	for _, f := range cfgFindings {
-		findings = append(findings, ASTFinding{
-			File:     f.File,
-			Line:     f.Line,
-			Rule:     f.Rule,
-			Message:  f.Message,
-			Severity: f.Severity,
-		})
+		findings = append(findings, ASTFinding(f))
 	}
 	return findings
 }
@@ -2155,13 +2149,7 @@ func detectResourceLeak(fset *token.FileSet, file *ast.File) []ASTFinding {
 	cfgFindings := DetectResourceLeak(fset, file)
 	var findings []ASTFinding
 	for _, f := range cfgFindings {
-		findings = append(findings, ASTFinding{
-			File:     f.File,
-			Line:     f.Line,
-			Rule:     f.Rule,
-			Message:  f.Message,
-			Severity: f.Severity,
-		})
+		findings = append(findings, ASTFinding(f))
 	}
 	return findings
 }
@@ -2171,13 +2159,7 @@ func detectTransactionBug(fset *token.FileSet, file *ast.File) []ASTFinding {
 	cfgFindings := DetectTransactionBug(fset, file)
 	var findings []ASTFinding
 	for _, f := range cfgFindings {
-		findings = append(findings, ASTFinding{
-			File:     f.File,
-			Line:     f.Line,
-			Rule:     f.Rule,
-			Message:  f.Message,
-			Severity: f.Severity,
-		})
+		findings = append(findings, ASTFinding(f))
 	}
 	return findings
 }

@@ -84,6 +84,7 @@ linters:
           - nilerr         # tests deliberately exercise error paths
           - errcheck       # test cleanup defers (Chmod, Chdir, WriteString) legitimately swallow errors
           - revive         # package-comments missing on test files is fine
+          - staticcheck    # SA5011: possible nil dereference in test helpers is common pattern
       - path: cmd/atheon/main\.go
         linters:
           - gocritic       # main.go is long but linear

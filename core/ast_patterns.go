@@ -1846,7 +1846,7 @@ func checkDuplicateConditionsInStmt(stmt ast.Stmt, fset *token.FileSet, findings
 				line := fset.Position(cond.Pos()).Line
 				*findings = append(*findings, ASTFinding{
 					Line:     line,
-					Message:  fmt.Sprintf("Duplicate condition in if/elif chain: condition appears more than once"),
+					Message:  "Duplicate condition in if/elif chain: condition appears more than once",
 					Severity: "medium",
 				})
 				break
@@ -2064,8 +2064,7 @@ func findIteratorModifications(funcDecl *ast.FuncDecl, fset *token.FileSet, find
 
 		// Get the iterator variable
 		var iterVar string
-		switch ident := forStmt.X.(type) {
-		case *ast.Ident:
+		if ident, ok := forStmt.X.(*ast.Ident); ok {
 			iterVar = ident.Name
 		}
 
@@ -2108,6 +2107,7 @@ func modifiesVariable(stmt ast.Stmt, varName string) bool {
 				// Check for index expressions like list[i]
 				if _, ok := lhs.(*ast.IndexExpr); ok {
 					// Could be modifying the variable if it's a range over the same thing
+					_ = ok // suppress unused variable warning
 				}
 			}
 		case *ast.IncDecStmt:

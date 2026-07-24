@@ -431,3 +431,116 @@ func TestCloneDetector_DetermineCloneType(t *testing.T) {
 		}
 	}
 }
+
+func TestClonePatterns_WithCompositeLit(t *testing.T) {
+	// Test clone detection with composite literals
+	code := `package main
+
+	type Point struct {
+		X int
+		Y int
+	}
+
+	func newPointA() *Point {
+		return &Point{X: 1, Y: 2}
+	}
+
+	func newPointB() *Point {
+		return &Point{X: 1, Y: 2}
+	}
+
+	func main() {}
+`
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "clone_composite.go")
+	if err := os.WriteFile(tmpFile, []byte(code), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	findings, err := ScanFileAST(tmpFile, builtinASTPatterns)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = findings
+}
+
+func TestClonePatterns_WithSendStmt(t *testing.T) {
+	// Test clone detection with send statements (chan <- value)
+	code := `package main
+
+	func sendA(ch chan int) {
+		ch <- 42
+	}
+
+	func sendB(ch chan int) {
+		ch <- 42
+	}
+
+	func main() {}
+`
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "clone_send.go")
+	if err := os.WriteFile(tmpFile, []byte(code), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	findings, err := ScanFileAST(tmpFile, builtinASTPatterns)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = findings
+}
+
+func TestClonePatterns_WithGoStmt(t *testing.T) {
+	// Test clone detection with go statements
+	code := `package main
+
+	func runTaskA() {
+		go func() {}()
+	}
+
+	func runTaskB() {
+		go func() {}()
+	}
+
+	func main() {}
+`
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "clone_go.go")
+	if err := os.WriteFile(tmpFile, []byte(code), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	findings, err := ScanFileAST(tmpFile, builtinASTPatterns)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = findings
+}
+
+func TestClonePatterns_WithDeferStmt(t *testing.T) {
+	// Test clone detection with defer statements
+	code := `package main
+
+	func closeA() {
+		defer func() {}()
+	}
+
+	func closeB() {
+		defer func() {}()
+	}
+
+	func main() {}
+`
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "clone_defer.go")
+	if err := os.WriteFile(tmpFile, []byte(code), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	findings, err := ScanFileAST(tmpFile, builtinASTPatterns)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = findings
+}

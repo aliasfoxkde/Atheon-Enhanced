@@ -14,23 +14,23 @@ import (
 type AuditLayer int
 
 const (
-	// Layer 1: Formatting - whitespace, line length, naming conventions
+	// LayerFormatting is Layer 1: Formatting - whitespace, line length, naming conventions
 	LayerFormatting AuditLayer = iota + 1
-	// Layer 2: Syntax - basic AST syntax errors
+	// LayerSyntax is Layer 2: Syntax - basic AST syntax errors
 	LayerSyntax
-	// Layer 3: TypeChecking - Go type system
+	// LayerTypeChecking is Layer 3: TypeChecking - Go type system
 	LayerTypeChecking
-	// Layer 4: Security - injection vulnerabilities
+	// LayerSecurity is Layer 4: Security - injection vulnerabilities
 	LayerSecurity
-	// Layer 5: Complexity - Cyclomatic, Cognitive, Halstead
+	// LayerComplexity is Layer 5: Complexity - Cyclomatic, Cognitive, Halstead
 	LayerComplexity
-	// Layer 6: CodeSmells - Long functions, dead code
+	// LayerCodeSmells is Layer 6: CodeSmells - Long functions, dead code
 	LayerCodeSmells
-	// Layer 7: Architecture - wrapper chains, abstraction depth
+	// LayerArchitecture is Layer 7: Architecture - wrapper chains, abstraction depth
 	LayerArchitecture
-	// Layer 8: Redundancy - clone detection
+	// LayerRedundancy is Layer 8: Redundancy - clone detection
 	LayerRedundancy
-	// Layer 9: SpecConformance - pattern validation
+	// LayerSpecConformance is Layer 9: SpecConformance - pattern validation
 	LayerSpecConformance
 )
 
@@ -163,7 +163,7 @@ func auditFormatting(fset *token.FileSet, file *ast.File) []AuditFinding {
 	var findings []AuditFinding
 
 	// Line length check (max 120 chars)
-	for i, comment := range file.Comments {
+	for _, comment := range file.Comments {
 		line := fset.Position(comment.Pos()).Line
 		text := comment.Text()
 		if len(text) > 120 {
@@ -174,7 +174,6 @@ func auditFormatting(fset *token.FileSet, file *ast.File) []AuditFinding {
 				Severity: "low",
 			})
 		}
-		_ = i
 	}
 
 	// Naming convention checks
@@ -287,15 +286,11 @@ func auditTypeChecking(fset *token.FileSet, file *ast.File) []AuditFinding {
 		return true
 	})
 
-	// Check for unkeyed struct literals
-	// This is a simplified check - real unkeyed field detection is more complex
-
 	return findings
 }
 
 // Layer 4: Security Audit (delegates to existing patterns)
 func auditSecurity(fset *token.FileSet, file *ast.File) []AuditFinding {
-	// Reuse existing security patterns
 	var findings []AuditFinding
 
 	patterns := []struct {
@@ -432,23 +427,9 @@ func auditRedundancy(fset *token.FileSet, file *ast.File) []AuditFinding {
 func auditSpecConformance(fset *token.FileSet, file *ast.File) []AuditFinding {
 	var findings []AuditFinding
 
-	// Check that patterns in bundle match the YAML spec
-	// This validates that all enabled patterns have proper definitions
-
-	// Check for missing error handling for functions that return errors
-	for _, decl := range file.Decls {
-		funcDecl, ok := decl.(*ast.FuncDecl)
-		if !ok || funcDecl.Name == nil {
-			continue
-		}
-
-		// Check if function returns error - for future interprocedural analysis
-		_ = funcDecl.Type.Results != nil && len(funcDecl.Type.Results.List) > 0
-	}
-
 	// Check for TODO comments that should be addressed
 	todoPattern := regexp.MustCompile(`(?i)\b(TODO|FIXME|HACK|XXX)\b`)
-	for i, comment := range file.Comments {
+	for _, comment := range file.Comments {
 		if todoPattern.MatchString(comment.Text()) {
 			findings = append(findings, AuditFinding{
 				Line:     fset.Position(comment.Pos()).Line,
@@ -457,7 +438,6 @@ func auditSpecConformance(fset *token.FileSet, file *ast.File) []AuditFinding {
 				Severity: "low",
 			})
 		}
-		_ = i
 	}
 
 	return findings

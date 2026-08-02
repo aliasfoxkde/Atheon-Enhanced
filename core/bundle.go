@@ -164,6 +164,13 @@ func init() {
 	initializeWith(data)
 }
 
+// RestoreBundle reloads the embedded bundle into memory, undoing any
+// bundle updates performed by UpdateBundle or handleUpdateBundle. It is
+// used by tests to reset global state between test cases.
+func RestoreBundle() {
+	initializeWith(embeddedBundle)
+}
+
 // initializeWith runs the same setup as init() but accepts the bundle data
 // directly so tests can feed in corrupt data to exercise the error paths.
 func initializeWith(data []byte) error {

@@ -1,7 +1,10 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"strings"
 	"testing"
@@ -1456,5 +1459,902 @@ func TestRunShellCompletion_DefaultShell(t *testing.T) {
 	// Should default to bash
 	if !strings.Contains(output, "_atheon()") {
 		t.Error("expected bash completion as default")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// loadUserConfig tests
+// ---------------------------------------------------------------------------
+
+func TestLoadUserConfig_PathNotExist(t *testing.T) {
+	cfg, err := loadUserConfig("/nonexistent/path/config.json")
+	if err != nil {
+		t.Errorf("expected no error for nonexistent config, got %v", err)
+	}
+	if cfg != nil {
+		t.Error("expected nil config for nonexistent file")
+	}
+}
+
+func TestLoadUserConfig_InvalidJSON(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := tmpDir + "/config.json"
+	if err := os.WriteFile(configPath, []byte("not valid json"), 0644); err != nil {
+		t.Fatalf("failed to write temp config: %v", err)
+	}
+
+	cfg, err := loadUserConfig(configPath)
+	if err == nil {
+		t.Error("expected error for invalid JSON")
+	}
+	if cfg != nil {
+		t.Error("expected nil config for invalid JSON")
+	}
+}
+
+func TestLoadUserConfig_ValidConfig(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := tmpDir + "/config.json"
+	validJSON := `{
+		"name": "test-profile",
+		"description": "Test configuration",
+		"enabled_categories": ["secrets"],
+		"strict_mode": "basic",
+		"exit_on_findings": true
+	}`
+	if err := os.WriteFile(configPath, []byte(validJSON), 0644); err != nil {
+		t.Fatalf("failed to write temp config: %v", err)
+	}
+
+	cfg, err := loadUserConfig(configPath)
+	if err != nil {
+		t.Errorf("expected no error for valid config, got %v", err)
+	}
+	if cfg == nil {
+		t.Fatal("expected non-nil config for valid JSON")
+	}
+	if cfg.Name != "test-profile" {
+		t.Errorf("expected name 'test-profile', got %q", cfg.Name)
+	}
+	if cfg.ExitOnFindings != true {
+		t.Error("expected exit_on_findings to be true")
+	}
+}
+
+func TestLoadUserConfig_DefaultPathEmpty(t *testing.T) {
+	// This test verifies behavior when defaultConfigPath returns empty
+	// We can't easily test this without mocking os.UserHomeDir
+	// But we can verify the function handles nil gracefully
+	cfg, err := loadUserConfig("")
+	// If os.UserHomeDir() fails, path stays "" and returns nil, nil
+	if err != nil {
+		t.Errorf("expected no error when home dir unavailable, got %v", err)
+	}
+	_ = cfg // may be nil if no home dir
+}
+
+// ---------------------------------------------------------------------------
+// parseConfigFlag tests
+// ---------------------------------------------------------------------------
+
+func TestParseConfigFlag_WithConfigPath(t *testing.T) {
+	configPath, rest := parseConfigFlag([]string{"--config=/path/to/config.json", "scan", "."})
+	if configPath != "/path/to/config.json" {
+		t.Errorf("expected config path '/path/to/config.json', got %q", configPath)
+	}
+	if len(rest) != 2 {
+		t.Errorf("expected 2 remaining args, got %d", len(rest))
+	}
+	if rest[0] != "scan" || rest[1] != "." {
+		t.Errorf("unexpected rest args: %v", rest)
+	}
+}
+
+func TestParseConfigFlag_MultipleConfigs(t *testing.T) {
+	// Should take the last --config value
+	_, rest := parseConfigFlag([]string{"--config=/first.json", "--config=/second.json", "scan"})
+	if len(rest) != 1 {
+		t.Errorf("expected 1 remaining arg, got %d", len(rest))
+	}
+}
+
+func TestParseConfigFlag_NoConfig(t *testing.T) {
+	configPath, rest := parseConfigFlag([]string{"scan", "."})
+	if configPath != "" {
+		t.Errorf("expected empty config path, got %q", configPath)
+	}
+	if len(rest) != 2 {
+		t.Errorf("expected 2 remaining args, got %d", len(rest))
+	}
+}
+
+// ---------------------------------------------------------------------------
+// parsePathArgs tests
+// ---------------------------------------------------------------------------
+
+func TestParsePathArgs_WithBaseline(t *testing.T) {
+	baseline, diff, rest := parsePathArgs([]string{"--baseline=/path/to/baseline.yaml", "scan"})
+	if baseline != "/path/to/baseline.yaml" {
+		t.Errorf("expected baseline '/path/to/baseline.yaml', got %q", baseline)
+	}
+	if diff != "" {
+		t.Errorf("expected empty diff, got %q", diff)
+	}
+	if len(rest) != 1 || rest[0] != "scan" {
+		t.Errorf("unexpected rest: %v", rest)
+	}
+}
+
+func TestParsePathArgs_WithDiff(t *testing.T) {
+	baseline, diff, rest := parsePathArgs([]string{"--diff=/path/to/diff.patch", "scan"})
+	if baseline != "" {
+		t.Errorf("expected empty baseline, got %q", baseline)
+	}
+	if diff != "/path/to/diff.patch" {
+		t.Errorf("expected diff '/path/to/diff.patch', got %q", diff)
+	}
+	if len(rest) != 1 || rest[0] != "scan" {
+		t.Errorf("unexpected rest: %v", rest)
+	}
+}
+
+func TestParsePathArgs_WithBoth(t *testing.T) {
+	baseline, diff, rest := parsePathArgs([]string{"--baseline=/baseline.yaml", "--diff=/diff.patch", "scan"})
+	if baseline != "/baseline.yaml" {
+		t.Errorf("expected baseline '/baseline.yaml', got %q", baseline)
+	}
+	if diff != "/diff.patch" {
+		t.Errorf("expected diff '/diff.patch', got %q", diff)
+	}
+	if len(rest) != 1 || rest[0] != "scan" {
+		t.Errorf("unexpected rest: %v", rest)
+	}
+}
+
+func TestParsePathArgs_NoFlags(t *testing.T) {
+	baseline, diff, rest := parsePathArgs([]string{"scan", "."})
+	if baseline != "" {
+		t.Errorf("expected empty baseline, got %q", baseline)
+	}
+	if diff != "" {
+		t.Errorf("expected empty diff, got %q", diff)
+	}
+	if len(rest) != 2 {
+		t.Errorf("expected 2 remaining args, got %d", len(rest))
+	}
+}
+
+// ---------------------------------------------------------------------------
+// configureLogging tests (indirect via env vars)
+// ---------------------------------------------------------------------------
+
+func TestConfigureLogging_DefaultLevel(t *testing.T) {
+	// Save original env
+	origLevel := os.Getenv("ATHEON_LOG_LEVEL")
+	origFormat := os.Getenv("ATHEON_LOG_FORMAT")
+	defer func() {
+		os.Setenv("ATHEON_LOG_LEVEL", origLevel)
+		os.Setenv("ATHEON_LOG_FORMAT", origFormat)
+	}()
+
+	os.Unsetenv("ATHEON_LOG_LEVEL")
+	os.Unsetenv("ATHEON_LOG_FORMAT")
+
+	configureLogging()
+
+	// Just verify it doesn't panic
+	handler := slog.Default().Handler()
+	if handler == nil {
+		t.Error("expected default handler to be set")
+	}
+}
+
+func TestConfigureLogging_DebugLevel(t *testing.T) {
+	origLevel := os.Getenv("ATHEON_LOG_LEVEL")
+	origFormat := os.Getenv("ATHEON_LOG_FORMAT")
+	defer func() {
+		os.Setenv("ATHEON_LOG_LEVEL", origLevel)
+		os.Setenv("ATHEON_LOG_FORMAT", origFormat)
+	}()
+
+	os.Setenv("ATHEON_LOG_LEVEL", "debug")
+	os.Unsetenv("ATHEON_LOG_FORMAT")
+
+	configureLogging()
+	// Verify it doesn't panic and handler is set
+	if slog.Default().Handler() == nil {
+		t.Error("expected handler to be set for debug level")
+	}
+}
+
+func TestConfigureLogging_WarnLevel(t *testing.T) {
+	origLevel := os.Getenv("ATHEON_LOG_LEVEL")
+	origFormat := os.Getenv("ATHEON_LOG_FORMAT")
+	defer func() {
+		os.Setenv("ATHEON_LOG_LEVEL", origLevel)
+		os.Setenv("ATHEON_LOG_FORMAT", origFormat)
+	}()
+
+	os.Setenv("ATHEON_LOG_LEVEL", "warning")
+	os.Unsetenv("ATHEON_LOG_FORMAT")
+
+	configureLogging()
+	if slog.Default().Handler() == nil {
+		t.Error("expected handler to be set for warning level")
+	}
+}
+
+func TestConfigureLogging_ErrorLevel(t *testing.T) {
+	origLevel := os.Getenv("ATHEON_LOG_LEVEL")
+	origFormat := os.Getenv("ATHEON_LOG_FORMAT")
+	defer func() {
+		os.Setenv("ATHEON_LOG_LEVEL", origLevel)
+		os.Setenv("ATHEON_LOG_FORMAT", origFormat)
+	}()
+
+	os.Setenv("ATHEON_LOG_LEVEL", "error")
+	os.Unsetenv("ATHEON_LOG_FORMAT")
+
+	configureLogging()
+	if slog.Default().Handler() == nil {
+		t.Error("expected handler to be set for error level")
+	}
+}
+
+func TestConfigureLogging_JsonFormat(t *testing.T) {
+	origLevel := os.Getenv("ATHEON_LOG_LEVEL")
+	origFormat := os.Getenv("ATHEON_LOG_FORMAT")
+	defer func() {
+		os.Setenv("ATHEON_LOG_LEVEL", origLevel)
+		os.Setenv("ATHEON_LOG_FORMAT", origFormat)
+	}()
+
+	os.Unsetenv("ATHEON_LOG_LEVEL")
+	os.Setenv("ATHEON_LOG_FORMAT", "json")
+
+	configureLogging()
+	if slog.Default().Handler() == nil {
+		t.Error("expected handler to be set for json format")
+	}
+}
+
+func TestConfigureLogging_JsonFormatCaseInsensitive(t *testing.T) {
+	origLevel := os.Getenv("ATHEON_LOG_LEVEL")
+	origFormat := os.Getenv("ATHEON_LOG_FORMAT")
+	defer func() {
+		os.Setenv("ATHEON_LOG_LEVEL", origLevel)
+		os.Setenv("ATHEON_LOG_FORMAT", origFormat)
+	}()
+
+	os.Setenv("ATHEON_LOG_FORMAT", "JSON")
+
+	configureLogging()
+	if slog.Default().Handler() == nil {
+		t.Error("expected handler to be set for JSON format (uppercase)")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// buildSARIFRules edge cases
+// ---------------------------------------------------------------------------
+
+func TestBuildSARIFRules_WithEnabledAndDisabledPatterns(t *testing.T) {
+	patterns := core.All()
+	if len(patterns) == 0 {
+		t.Skip("no patterns available")
+	}
+
+	// Disable a pattern and check it doesn't appear in rules
+	target := patterns[0]
+	origEnabled := target.Enabled()
+	core.SetPatternEnabled(target.Name(), false)
+	defer core.SetPatternEnabled(target.Name(), origEnabled)
+
+	rules := buildSARIFRules([]core.Finding{})
+
+	// Find the disabled pattern
+	for _, r := range rules {
+		if id, ok := r["id"].(string); ok && id == target.Name() {
+			t.Error("expected disabled pattern not to appear in SARIF rules")
+		}
+	}
+}
+
+func TestBuildSARIFRules_PatternWithEmptyDescription(t *testing.T) {
+	// Test the branch where p.Description() returns empty
+	findings := []core.Finding{{Pattern: "test-pattern", File: "f.txt", Line: 1}}
+	rules := buildSARIFRules(findings)
+
+	if len(rules) == 0 {
+		t.Error("expected at least one rule")
+	}
+}
+
+func TestBuildSARIFRules_PatternWithTags(t *testing.T) {
+	patterns := core.All()
+	if len(patterns) == 0 {
+		t.Skip("no patterns")
+	}
+
+	// Use a pattern that likely has tags
+	findings := []core.Finding{{Pattern: patterns[0].Name(), File: "f.txt", Line: 1}}
+	rules := buildSARIFRules(findings)
+
+	if len(rules) == 0 {
+		t.Error("expected at least one rule")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// patternCWE tests
+// ---------------------------------------------------------------------------
+
+func TestPatternCWE_CategoryLevelCWE(t *testing.T) {
+	// Test a pattern that uses category-level CWE mapping
+	result := patternCWE("some-unknown-pattern", "secrets")
+	if result != "CWE-798" {
+		t.Errorf("expected CWE-798 for secrets category, got %q", result)
+	}
+}
+
+func TestPatternCWE_WebSecurityCategory(t *testing.T) {
+	result := patternCWE("unknown-pattern", "web-security")
+	if result != "CWE-79" {
+		t.Errorf("expected CWE-79 for web-security category, got %q", result)
+	}
+}
+
+func TestPatternCWE_SecurityHardeningCategory(t *testing.T) {
+	result := patternCWE("unknown-pattern", "security-hardening")
+	if result != "CWE-269" {
+		t.Errorf("expected CWE-269 for security-hardening category, got %q", result)
+	}
+}
+
+func TestPatternCWE_ComplianceCategory(t *testing.T) {
+	result := patternCWE("unknown-pattern", "compliance")
+	if result != "CWE-732" {
+		t.Errorf("expected CWE-732 for compliance category, got %q", result)
+	}
+}
+
+func TestPatternCWE_PIICategory(t *testing.T) {
+	result := patternCWE("unknown-pattern", "pii")
+	if result != "CWE-359" {
+		t.Errorf("expected CWE-359 for pii category, got %q", result)
+	}
+}
+
+func TestPatternCWE_EmptyPatternAndCategory(t *testing.T) {
+	// Unknown pattern and unknown category
+	result := patternCWE("", "")
+	if result != "" {
+		t.Errorf("expected empty string for unknown pattern/category, got %q", result)
+	}
+}
+
+func TestPatternCWE_KnownRuleTakesPrecedence(t *testing.T) {
+	// generic-api-key has explicit rule mapping (CWE-312)
+	result := patternCWE("generic-api-key", "secrets")
+	if result != "CWE-312" {
+		t.Errorf("expected CWE-312 for generic-api-key rule, got %q", result)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// printFindings edge cases
+// ---------------------------------------------------------------------------
+
+func TestPrintFindings_QuietModeWithFindings(t *testing.T) {
+	findings := []core.Finding{
+		{Pattern: "test", File: "f.txt", Line: 1},
+	}
+	stats := &core.Stats{Files: 1, Bytes: 100, ElapsedMs: 10}
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("printFindings panicked in quiet mode: %v", r)
+		}
+	}()
+
+	// quietMode=true suppresses output but shouldn't panic
+	printFindings(findings, stats, false, false, true, "")
+}
+
+func TestPrintFindings_QuietModeWithErrors(t *testing.T) {
+	findings := []core.Finding{}
+	stats := &core.Stats{Files: 1, Bytes: 100, ElapsedMs: 10, Errors: []error{fmt.Errorf("read error")}}
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("printFindings panicked: %v", r)
+		}
+	}()
+
+	// quietMode=true should suppress errors output
+	printFindings(findings, stats, false, false, true, "")
+}
+
+func TestPrintFindings_JsonOutputWithErrors(t *testing.T) {
+	findings := []core.Finding{{Pattern: "test", File: "f.txt", Line: 1}}
+	stats := &core.Stats{Files: 1, Errors: []error{fmt.Errorf("read error")}}
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("printFindings panicked: %v", r)
+		}
+	}()
+
+	// JSON mode should suppress errors output
+	printFindings(findings, stats, true, false, false, "")
+}
+
+func TestPrintFindings_SarifOutputWithErrors(t *testing.T) {
+	findings := []core.Finding{{Pattern: "test", File: "f.txt", Line: 1}}
+	stats := &core.Stats{Files: 1, Errors: []error{fmt.Errorf("read error")}}
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("printFindings panicked: %v", r)
+		}
+	}()
+
+	// SARIF mode should suppress errors output
+	printFindings(findings, stats, false, true, false, "")
+}
+
+func TestPrintFindings_SeverityThreshold(t *testing.T) {
+	findings := []core.Finding{
+		{Pattern: "test", File: "f.txt", Line: 1, Severity: "critical"},
+		{Pattern: "test", File: "f.txt", Line: 2, Severity: "low"},
+	}
+	stats := &core.Stats{Files: 1}
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("printFindings panicked: %v", r)
+		}
+	}()
+
+	// Filter to only critical
+	printFindings(findings, stats, false, false, false, "critical")
+}
+
+func TestPrintFindings_ZeroStatsFiles(t *testing.T) {
+	findings := []core.Finding{}
+	stats := &core.Stats{Files: 0, Bytes: 0, ElapsedMs: 0}
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("printFindings panicked: %v", r)
+		}
+	}()
+
+	// Should not print scan stats when Files=0
+	printFindings(findings, stats, false, false, false, "")
+}
+
+func TestPrintFindings_WithFingerprint(t *testing.T) {
+	findings := []core.Finding{
+		{Pattern: "test", File: "f.txt", Line: 1, Fingerprint: "abc123"},
+	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("printFindings panicked: %v", r)
+		}
+	}()
+
+	printFindings(findings, nil, false, false, false, "")
+}
+
+// ---------------------------------------------------------------------------
+// parseUnifiedDiff edge cases
+// ---------------------------------------------------------------------------
+
+func TestParseUnifiedDiff_MultipleFiles(t *testing.T) {
+	diff := `diff --git a/file1.go b/file1.go
+--- a/file1.go
++++ b/file1.go
+@@ -1,3 +1,4 @@
++new line 1
+diff --git a/file2.go b/file2.go
+--- a/file2.go
++++ b/file2.go
+@@ -5,3 +5,4 @@
++new line 2
+`
+	ranges := parseUnifiedDiff(diff)
+
+	if len(ranges) != 2 {
+		t.Errorf("expected 2 files, got %d", len(ranges))
+	}
+}
+
+func TestParseUnifiedDiff_ComplexHunkHeader(t *testing.T) {
+	// Test hunk header with comma-separated count
+	diff := `diff --git a/file.go b/file.go
+--- a/file.go
++++ b/file.go
+@@ -10,15 +10,20 @@
+-old
++new
+`
+	ranges := parseUnifiedDiff(diff)
+
+	fileRanges, ok := ranges["file.go"]
+	if !ok {
+		t.Fatalf("expected file.go key, got keys: %v", mapKeys(ranges))
+	}
+	// +10,20 means start=10, count=20 -> end=10+20-1=29
+	if len(fileRanges) < 1 {
+		t.Fatalf("expected at least 1 range, got %d", len(fileRanges))
+	}
+	if fileRanges[0].start != 10 || fileRanges[0].end != 29 {
+		t.Errorf("range = [%d, %d], want [10, 29]", fileRanges[0].start, fileRanges[0].end)
+	}
+}
+
+func TestParseUnifiedDiff_DiffCommandFormat(t *testing.T) {
+	// Test "diff a/path b/path" format - note that --- line overwrites the diff line path
+	diff := `diff a/old.go b/new.go
+--- a/old.go
++++ b/new.go
+@@ -1,2 +1,3 @@
+ old line
++new line
+`
+	ranges := parseUnifiedDiff(diff)
+
+	// The --- line overwrites the diff line path, so key is "old.go"
+	if _, ok := ranges["old.go"]; !ok {
+		t.Errorf("expected key 'old.go', got keys: %v", mapKeys(ranges))
+	}
+}
+
+// ---------------------------------------------------------------------------
+// run function edge cases
+// ---------------------------------------------------------------------------
+
+func TestRun_VersionFlag(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("run with --version panicked: %v", r)
+		}
+	}()
+
+	code := run(context.Background(), []string{"--version"})
+	if code != 0 {
+		t.Errorf("expected exit code 0 for --version, got %d", code)
+	}
+}
+
+func TestRun_HelpFlag(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("run with --help panicked: %v", r)
+		}
+	}()
+
+	code := run(context.Background(), []string{"--help"})
+	if code != 0 {
+		t.Errorf("expected exit code 0 for --help, got %d", code)
+	}
+}
+
+func TestRun_EmptyArgs(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("run with empty args panicked: %v", r)
+		}
+	}()
+
+	code := run(context.Background(), []string{})
+	if code != 0 {
+		t.Errorf("expected exit code 0 for empty args, got %d", code)
+	}
+}
+
+func TestRun_JsonThenVersion(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("run with --json --version panicked: %v", r)
+		}
+	}()
+
+	// --json should be stripped and version should print
+	code := run(context.Background(), []string{"--json", "--version"})
+	if code != 0 {
+		t.Errorf("expected exit code 0 for --json --version, got %d", code)
+	}
+}
+
+func TestRun_SarifThenVersion(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("run with --sarif --version panicked: %v", r)
+		}
+	}()
+
+	code := run(context.Background(), []string{"--sarif", "--version"})
+	if code != 0 {
+		t.Errorf("expected exit code 0 for --sarif --version, got %d", code)
+	}
+}
+
+func TestRun_EnableWithoutPattern(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("run with enable panicked: %v", r)
+		}
+	}()
+
+	code := run(context.Background(), []string{"enable"})
+	if code != 1 {
+		t.Errorf("expected exit code 1 for enable without pattern, got %d", code)
+	}
+}
+
+func TestRun_EnableUnknownPattern(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("run with unknown pattern panicked: %v", r)
+		}
+	}()
+
+	code := run(context.Background(), []string{"enable", "unknown-pattern-xyz"})
+	if code != 1 {
+		t.Errorf("expected exit code 1 for unknown pattern, got %d", code)
+	}
+}
+
+func TestRun_DisableWithoutPattern(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("run with disable panicked: %v", r)
+		}
+	}()
+
+	code := run(context.Background(), []string{"disable"})
+	if code != 1 {
+		t.Errorf("expected exit code 1 for disable without pattern, got %d", code)
+	}
+}
+
+func TestRun_DisableUnknownPattern(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("run with unknown pattern panicked: %v", r)
+		}
+	}()
+
+	code := run(context.Background(), []string{"disable", "unknown-pattern-xyz"})
+	if code != 1 {
+		t.Errorf("expected exit code 1 for unknown pattern, got %d", code)
+	}
+}
+
+func TestRun_FileWithoutPath(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("run with --file without path panicked: %v", r)
+		}
+	}()
+
+	code := run(context.Background(), []string{"--file"})
+	if code != 1 {
+		t.Errorf("expected exit code 1 for --file without path, got %d", code)
+	}
+}
+
+func TestRun_FileWithNonexistentPath(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("run with nonexistent file panicked: %v", r)
+		}
+	}()
+
+	code := run(context.Background(), []string{"--file", "/nonexistent/path/xyz.txt"})
+	if code != 1 {
+		t.Errorf("expected exit code 1 for nonexistent file, got %d", code)
+	}
+}
+
+func TestRun_StdinWithEmptyInput(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("run with stdin panicked: %v", r)
+		}
+	}()
+
+	// Simulate empty stdin
+	origStdin := os.Stdin
+	r, w, _ := os.Pipe()
+	os.Stdin = r
+	go func() {
+		w.Close()
+	}()
+
+	code := run(context.Background(), []string{"-"})
+
+	os.Stdin = origStdin
+	r.Close()
+
+	if code != 0 {
+		t.Errorf("expected exit code 0 for empty stdin, got %d", code)
+	}
+}
+
+func TestRun_UnknownCategory(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("run with unknown category panicked: %v", r)
+		}
+	}()
+
+	// This should warn about unknown category but still work
+	code := run(context.Background(), []string{"--categories=unknown-cat", "--help"})
+	_ = code // May return 0 or 1 depending on implementation
+}
+
+func TestRun_CategoriesWithAll(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("run with --all panicked: %v", r)
+		}
+	}()
+
+	code := run(context.Background(), []string{"--all", "--help"})
+	_ = code
+}
+
+func TestRun_NonExistentPath(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("run with nonexistent path panicked: %v", r)
+		}
+	}()
+
+	code := run(context.Background(), []string{"/nonexistent/path/xyz"})
+	if code != 1 {
+		t.Errorf("expected exit code 1 for nonexistent path, got %d", code)
+	}
+}
+
+func TestRun_WithBaselinePath(t *testing.T) {
+	tmpDir := t.TempDir()
+	baselinePath := tmpDir + "/baseline.yaml"
+	// Create an empty but valid baseline file
+	if err := os.WriteFile(baselinePath, []byte("findings: []"), 0644); err != nil {
+		t.Fatalf("failed to write baseline: %v", err)
+	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("run with baseline panicked: %v", r)
+		}
+	}()
+
+	code := run(context.Background(), []string{"--baseline=" + baselinePath, "--help"})
+	_ = code
+}
+
+func TestRun_WithInvalidBaseline(t *testing.T) {
+	tmpDir := t.TempDir()
+	baselinePath := tmpDir + "/baseline.yaml"
+	// Create an invalid baseline file
+	if err := os.WriteFile(baselinePath, []byte("invalid: ["), 0644); err != nil {
+		t.Fatalf("failed to write baseline: %v", err)
+	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("run with invalid baseline panicked: %v", r)
+		}
+	}()
+
+	// First create a temp file to scan
+	tmpFile := tmpDir + "/test.txt"
+	os.WriteFile(tmpFile, []byte("test content"), 0644)
+
+	code := run(context.Background(), []string{"--baseline=" + baselinePath, tmpFile})
+	if code != 1 {
+		t.Errorf("expected exit code 1 for invalid baseline, got %d", code)
+	}
+}
+
+func TestRun_EnvScan(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("run with --env panicked: %v", r)
+		}
+	}()
+
+	code := run(context.Background(), []string{"--env"})
+	// May return 0 or 1 depending on env vars
+	_ = code
+}
+
+func TestRun_WithDiffMode(t *testing.T) {
+	tmpDir := t.TempDir()
+	diffFile := tmpDir + "/diff.patch"
+	diffContent := `diff --git a/test.txt b/test.txt
+--- a/test.txt
++++ b/test.txt
+@@ -1,2 +1,3 @@
+ line 1
++added line
+`
+	if err := os.WriteFile(diffFile, []byte(diffContent), 0644); err != nil {
+		t.Fatalf("failed to write diff: %v", err)
+	}
+
+	// First create a temp file to scan
+	tmpFile := tmpDir + "/test.txt"
+	os.WriteFile(tmpFile, []byte("line 1\nline 2\n"), 0644)
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("run with --diff panicked: %v", r)
+		}
+	}()
+
+	code := run(context.Background(), []string{"--diff", "--diff=" + diffFile, tmpFile})
+	_ = code
+}
+
+// ---------------------------------------------------------------------------
+// riskScoreToMap tests
+// ---------------------------------------------------------------------------
+
+func TestRiskScoreToMap_NilRiskScore(t *testing.T) {
+	result := riskScoreToMap(nil)
+	if result != nil {
+		t.Error("expected nil for nil risk score")
+	}
+}
+
+func TestRiskScoreToMap_ValidRiskScore(t *testing.T) {
+	rs := core.NewRiskScore([]core.Finding{
+		{Severity: "critical", Pattern: "test", File: "f.txt", Line: 1},
+	})
+
+	result := riskScoreToMap(rs)
+	if result == nil {
+		t.Fatal("expected non-nil result")
+	}
+	if _, ok := result["score"]; !ok {
+		t.Error("expected score key")
+	}
+	if _, ok := result["level"]; !ok {
+		t.Error("expected level key")
+	}
+	if _, ok := result["finding_count"]; !ok {
+		t.Error("expected finding_count key")
+	}
+	if _, ok := result["highest_severity"]; !ok {
+		t.Error("expected highest_severity key")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// sarifSeverityScore edge cases
+// ---------------------------------------------------------------------------
+
+func TestSarifSeverityScore_DefaultCase(t *testing.T) {
+	result := sarifSeverityScore("unknown-severity")
+	if result != "5.0" {
+		t.Errorf("expected 5.0 for unknown severity, got %q", result)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// sarifLevel edge cases
+// ---------------------------------------------------------------------------
+
+func TestSarifLevel_DefaultCase(t *testing.T) {
+	result := sarifLevel("unknown-severity")
+	if result != "none" {
+		t.Errorf("expected 'none' for unknown severity, got %q", result)
 	}
 }

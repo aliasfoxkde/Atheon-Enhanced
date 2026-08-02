@@ -5,8 +5,16 @@ import (
 	"context"
 	"log/slog"
 	"strings"
+	"sync/atomic"
 	"testing"
 )
+
+// atomicBoolTrue returns an atomic.Bool set to true.
+func atomicBoolTrue() atomic.Bool {
+	var b atomic.Bool
+	b.Store(true)
+	return b
+}
 
 // captureHandler is a slog.Handler that records every emitted record
 // into a buffer. We use it instead of swapping slog.Default globally so
@@ -72,7 +80,7 @@ func TestCombinedRegexCompileErrorLogged(t *testing.T) {
 		name:     "wave8-bad-pattern",
 		match:    "[a-",
 		category: "wave8-test-cat",
-		enabled:  true,
+		enabled:  atomicBoolTrue(),
 		severity: "low",
 	}}
 	rebuildActiveScanners()

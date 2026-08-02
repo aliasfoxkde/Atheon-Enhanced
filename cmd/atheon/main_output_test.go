@@ -23,7 +23,7 @@ func TestPrintFindingsFull(t *testing.T) {
 
 	// Just verify the function doesn't panic
 	// Output testing would require proper synchronization
-	printFindings(findings, stats, false, false)
+	printFindings(findings, stats, false, false, false, "")
 }
 
 // TestScanErrorsPresent covers the exit-code-bump helper. A scan that
@@ -64,7 +64,7 @@ func TestPrintFindingsSurfacesErrors(t *testing.T) {
 	oldStderr := os.Stderr
 	r, w, _ := os.Pipe()
 	os.Stderr = w
-	printFindings(findings, stats, false, false)
+	printFindings(findings, stats, false, false, false, "")
 	w.Close()
 	os.Stderr = oldStderr
 

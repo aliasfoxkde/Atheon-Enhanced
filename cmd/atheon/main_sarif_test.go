@@ -149,7 +149,7 @@ func TestPrintFindingsLineZero(t *testing.T) {
 		{Pattern: "test", File: "somefile.txt", Line: 0, Content: "secret content here!"},
 	}
 	out := captureStdout(t, func() {
-		printFindings(findings, nil, false, false)
+		printFindings(findings, nil, false, false, false, "")
 	})
 	if !strings.Contains(out, "somefile.txt") {
 		t.Errorf("expected file name in output, got: %s", out)
@@ -166,7 +166,7 @@ func TestPrintFindingsStatsZeroFiles(t *testing.T) {
 	findings := []core.Finding{}
 	stats := &core.Stats{Files: 0, Bytes: 0, ElapsedMs: 0}
 	out := captureStdout(t, func() {
-		printFindings(findings, stats, false, false)
+		printFindings(findings, stats, false, false, false, "")
 	})
 	// Stats line ("scanned N file(s)...") must not appear when Files == 0
 	if strings.Contains(out, "scanned") {
@@ -308,7 +308,7 @@ func TestPrintFindingsLinePositive(t *testing.T) {
 		{Pattern: "test-pat", File: "code.go", Line: 7, Content: "secret content here!"},
 	}
 	out := captureStdout(t, func() {
-		printFindings(findings, nil, false, false)
+		printFindings(findings, nil, false, false, false, "")
 	})
 	if !strings.Contains(out, "code.go:7") {
 		t.Errorf("expected 'code.go:7' in output for Line=7, got: %s", out)
@@ -321,7 +321,7 @@ func TestPrintFindingsStatsPositiveFiles(t *testing.T) {
 	findings := []core.Finding{}
 	stats := &core.Stats{Files: 3, Bytes: 4096, ElapsedMs: 12}
 	out := captureStdout(t, func() {
-		printFindings(findings, stats, false, false)
+		printFindings(findings, stats, false, false, false, "")
 	})
 	if !strings.Contains(out, "scanned") {
 		t.Errorf("expected stats 'scanned' line for Files=3, got: %s", out)
@@ -335,7 +335,7 @@ func TestPrintFindingsStatsPositiveFiles(t *testing.T) {
 // printed when the findings slice is empty and output is plain text.
 func TestPrintFindingsNoFindingsText(t *testing.T) {
 	out := captureStdout(t, func() {
-		printFindings(nil, nil, false, false)
+		printFindings(nil, nil, false, false, false, "")
 	})
 	if !strings.Contains(out, "no findings") {
 		t.Errorf("expected 'no findings' text for empty slice, got: %s", out)

@@ -196,7 +196,7 @@ func TestPrintFindings(t *testing.T) {
 		}
 	}()
 
-	printFindings(findings, stats, false, false)
+	printFindings(findings, stats, false, false, false, "")
 }
 
 func TestPrintFindingsSarifOutput(t *testing.T) {
@@ -217,7 +217,7 @@ func TestPrintFindingsSarifOutput(t *testing.T) {
 	}()
 
 	// This exercises the sarifOutput branch
-	printFindings(findings, nil, false, true)
+	printFindings(findings, nil, false, true, false, "")
 }
 
 func TestPrintJSONFindings(t *testing.T) {
@@ -289,7 +289,7 @@ func TestPrintFindingsWithNilStats(t *testing.T) {
 		}
 	}()
 
-	printFindings(findings, nil, false, false)
+	printFindings(findings, nil, false, false, false, "")
 }
 
 func TestPrintFindingsWithEmptyFindings(t *testing.T) {
@@ -307,7 +307,7 @@ func TestPrintFindingsWithEmptyFindings(t *testing.T) {
 		}
 	}()
 
-	printFindings(findings, stats, false, false)
+	printFindings(findings, stats, false, false, false, "")
 }
 
 func TestParseCategoriesEdgeCases(t *testing.T) {
@@ -384,7 +384,7 @@ func TestMainIntegration(t *testing.T) {
 		// Test with empty findings
 		findings := []core.Finding{}
 		stats := &core.Stats{}
-		printFindings(findings, stats, false, false)
+		printFindings(findings, stats, false, false, false, "")
 	})
 
 	// Test 4: Format bytes functionality

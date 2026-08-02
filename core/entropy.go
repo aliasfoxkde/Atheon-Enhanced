@@ -1,19 +1,27 @@
 package core
 
 import (
+	"container/list"
 	"math"
 	"sync"
 )
 
-// entropyCache provides thread-safe caching of entropy calculations.
+// entropyCache provides thread-safe LRU caching of entropy calculations.
 // Strings that appear multiple times (e.g., repeated headers, footers)
 // benefit from caching to avoid redundant computation.
+// Uses LRU eviction to handle more than maxEntries unique strings.
 var entropyCache = struct {
-	m    map[string]float64
-	mu   sync.RWMutex
-	max  int
-	size int
-}{m: make(map[string]float64), max: 1024}
+	m    map[string]*list.Element // key -> list.Element
+	lru  *list.List              // front=MRU, back=LRU
+	mu   sync.Mutex
+	limit int
+}{m: make(map[string]*list.Element), lru: list.New(), limit: 1024}
+
+// cacheEntry stores both key and value in the list for proper LRU eviction.
+type cacheEntry struct {
+	key   string
+	value float64
+}
 
 // shannonEntropy calculates the Shannon entropy of a string.
 // Higher entropy values indicate more randomness (typical of real secrets).
@@ -24,13 +32,16 @@ func shannonEntropy(s string) float64 {
 		return 0
 	}
 
-	// Check cache first (read lock)
-	entropyCache.mu.RLock()
-	if e, ok := entropyCache.m[s]; ok {
-		entropyCache.mu.RUnlock()
-		return e
+	// Fast path: check cache with lock
+	entropyCache.mu.Lock()
+	if elem, ok := entropyCache.m[s]; ok {
+		// Move to front (most recently used)
+		entropyCache.lru.MoveToFront(elem)
+		entry := elem.Value.(*cacheEntry)
+		entropyCache.mu.Unlock()
+		return entry.value
 	}
-	entropyCache.mu.RUnlock()
+	entropyCache.mu.Unlock()
 
 	// Calculate entropy
 	var entropy float64
@@ -45,13 +56,23 @@ func shannonEntropy(s string) float64 {
 		}
 	}
 
-	// Store in cache (write lock)
+	// Store in cache with LRU eviction under lock
 	entropyCache.mu.Lock()
-	if entropyCache.size < entropyCache.max {
-		entropyCache.m[s] = entropy
-		entropyCache.size++
+	defer entropyCache.mu.Unlock()
+
+	// Evict LRU entry if at limit
+	if entropyCache.lru.Len() >= entropyCache.limit {
+		oldest := entropyCache.lru.Back()
+		if oldest != nil {
+			entry := oldest.Value.(*cacheEntry)
+			delete(entropyCache.m, entry.key)
+			entropyCache.lru.Remove(oldest)
+		}
 	}
-	entropyCache.mu.Unlock()
+
+	// Add new entry
+	elem := entropyCache.lru.PushFront(&cacheEntry{key: s, value: entropy})
+	entropyCache.m[s] = elem
 
 	return entropy
 }

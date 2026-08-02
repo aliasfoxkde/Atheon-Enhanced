@@ -95,7 +95,7 @@ func TestSetActiveCategoriesFull(t *testing.T) {
 
 // TestBundlePatternEnabledState tests enabled state persistence
 func TestBundlePatternEnabledState(t *testing.T) {
-	p := &bundlePattern{name: "test-pattern", category: "test", enabled: true}
+	p := &bundlePattern{name: "test-pattern", category: "test", enabled: atomicBoolTrue()}
 
 	// Test initial state
 	if !p.Enabled() {

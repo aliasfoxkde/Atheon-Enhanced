@@ -7,14 +7,21 @@ Current and upcoming development tasks.
 - Research and implement SkillSpector-inspired enhancements
 - Unicode deception detection patterns
 
-### Wave 18 (2026-07-24) — Coverage Phase 2
-- [x] Add comprehensive phase 2 coverage tests
-- [x] Core coverage: 84.9% → 85.3%
-- [x] Add tests for typeToString, exprToString, callExprToString
-- [x] Add tests for extractConstraints, slicesEqual, countInterfaceDepth
-- [x] Add tests for hasConditionalReturnPath, hasUnconditionalReturnAtEnd
-- [x] Add tests for detectPoorlyNamedIdentifier, modifiesVariable
-- [x] PR #177 merged
+### Wave 20 (2026-08-01) — Systematic Improvements
+- [x] Security fixes (entropy cache race condition, bounded decompression, error suppression)
+- [x] Performance optimizations (O(n²) clone detection → bucketed, atomic.Bool pattern enabled)
+- [x] CLI enhancements: --config, --diff, --quiet, --severity-threshold, --output-file, shell completion
+- [x] User config support: ~/.atheon/config.json loading
+- [x] Test coverage improvements (exprTokens, atomicio errors)
+- [x] PR #192 merged
+
+## Backlog
+
+- Unicode deception detection (RTL overrides, homoglyphs, zero-width chars)
+- OSV.dev CVE lookups
+- Full YARA library integration (currently simplified version in core/yara_scanner.go)
+
+## Completed
 
 ### Wave 19 (2026-07-24) — Coverage Phase 3-13
 - [x] Add phase 3 coverage tests (PR #179 merged)
@@ -30,9 +37,40 @@ Current and upcoming development tasks.
 - [x] Add phase 13 coverage tests (PR #190 merged)
 - [x] Core coverage: 85.3% → 87.8%
 
-## Backlog
+### Wave 18 (2026-07-24) — Coverage Phase 2
+- [x] Add comprehensive phase 2 coverage tests
+- [x] Core coverage: 84.9% → 85.3%
+- [x] Add tests for typeToString, exprToString, callExprToString
+- [x] Add tests for extractConstraints, slicesEqual, countInterfaceDepth
+- [x] Add tests for hasConditionalReturnPath, hasUnconditionalReturnAtEnd
+- [x] Add tests for detectPoorlyNamedIdentifier, modifiesVariable
+- [x] PR #177 merged
 
-## Completed
+### Wave 17 (2026-07-24)
+- [x] Bundle decode tests (decodeJSONStrict, decodeBundleDefs, trimSpace)
+- [x] normalizeConfidence tests with valid confidence levels
+- [x] Clone detection tests (variety of statements, custom config)
+- [x] Audit layer tests (type checking, security, code smells)
+- [x] Expression and call expression tests (exprToString, callExprToString)
+- [x] Test coverage: 81.1% → 84.7%
+- [x] Added comprehensive coverage_test.go with AST pattern tests
+
+### Wave 16 (2026-07-24)
+- [x] Null dereference detection pattern (null-dereference)
+- [x] Dead assignment detection pattern (dead-assignment)
+- [x] CFG-based bug detection: lock-not-released, resource-leak, transaction-not-ended
+- [x] Circular import detection (import graph analysis)
+- [x] Test coverage: 79.9% → 80.3%
+
+### Wave 15 (2026-07-16)
+- [x] Taint tracking analysis (source → sink flow) - core/taint.go
+- [x] Taint command injection pattern - community/security-hardening/taint-command-injection.yaml
+- [x] Risk scoring system (0-100) - core/risk.go, integrated into JSON/SARIF output
+- [x] Baseline suppression for re-scans - core/suppression.go with --baseline flag
+- [x] YARA scanner (simplified) - core/yara_scanner.go
+- [x] Test coverage: 66.2% → 77.0%
+- [x] Fix Findigs typo → Findings in suppression.go
+- [x] Add tests for atomic_file, ignore, yara_scanner modules
 
 ### Wave 14 (2026-06-28) — SkillSpector Research
 - [x] Research NVIDIA SkillSpector architecture
@@ -66,39 +104,6 @@ Current and upcoming development tasks.
 - [x] PR template improvements
 - [x] Release environment variables
 - [x] GO_VERSION in goreleaser
-
-## Backlog
-
-- Unicode deception detection (RTL overrides, homoglyphs, zero-width chars)
-- OSV.dev CVE lookups
-- Full YARA library integration (currently simplified version in core/yara_scanner.go)
-
-### Recently Completed (Wave 17 - 2026-07-24)
-- [x] Bundle decode tests (decodeJSONStrict, decodeBundleDefs, trimSpace)
-- [x] normalizeConfidence tests with valid confidence levels
-- [x] Clone detection tests (variety of statements, custom config)
-- [x] Audit layer tests (type checking, security, code smells)
-- [x] Expression and call expression tests (exprToString, callExprToString)
-- [x] Test coverage: 81.1% → 84.7%
-- [x] Added comprehensive coverage_test.go with AST pattern tests
-- [x] Python-specific functions (containsDangerousSource, hasStringLiteral, isStringType) remain at 0% - these only execute on Python code scans, not Go tests
-
-### Recently Completed (Wave 16 - 2026-07-24)
-- [x] Null dereference detection pattern (null-dereference)
-- [x] Dead assignment detection pattern (dead-assignment)
-- [x] CFG-based bug detection: lock-not-released, resource-leak, transaction-not-ended
-- [x] Circular import detection (import graph analysis)
-- [x] Test coverage: 79.9% → 80.3%
-
-## Recently Completed (Wave 15 - 2026-07-16)
-- [x] Taint tracking analysis (source → sink flow) - core/taint.go
-- [x] Taint command injection pattern - community/security-hardening/taint-command-injection.yaml
-- [x] Risk scoring system (0-100) - core/risk.go, integrated into JSON/SARIF output
-- [x] Baseline suppression for re-scans - core/suppression.go with --baseline flag
-- [x] YARA scanner (simplified) - core/yara_scanner.go
-- [x] Test coverage: 66.2% → 77.0%
-- [x] Fix Findigs typo → Findings in suppression.go
-- [x] Add tests for atomic_file, ignore, yara_scanner modules
 
 ## See Also
 

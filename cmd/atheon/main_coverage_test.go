@@ -786,3 +786,675 @@ func TestParseBaseline_WithBaseline(t *testing.T) {
 		t.Errorf("expected 1 remaining arg, got %d", len(rest))
 	}
 }
+
+// ---------------------------------------------------------------------------
+// parseUnifiedDiff tests
+// ---------------------------------------------------------------------------
+
+func TestParseUnifiedDiff_EmptyInput(t *testing.T) {
+	result := parseUnifiedDiff("")
+	if len(result) != 0 {
+		t.Errorf("expected empty map for empty input, got %v", result)
+	}
+}
+
+func TestParseUnifiedDiff_SingleFile(t *testing.T) {
+	diff := `diff --git a/src/main.go b/src/main.go
+index 1234567..abcdefg 100644
+--- a/src/main.go
++++ b/src/main.go
+@@ -1,5 +1,5 @@
+ package main
+-func old() {}
++func new() {}
+`
+	ranges := parseUnifiedDiff(diff)
+
+	// Should have one file entry
+	if len(ranges) != 1 {
+		t.Fatalf("expected 1 file, got %d: %v", len(ranges), ranges)
+	}
+
+	// Check file path was extracted
+	if _, ok := ranges["src/main.go"]; !ok {
+		t.Errorf("expected key 'src/main.go', got keys: %v", mapKeys(ranges))
+	}
+}
+
+func TestParseUnifiedDiff_WithHunkRanges(t *testing.T) {
+	diff := `diff --git a/file.txt b/file.txt
+--- a/file.txt
++++ b/file.txt
+@@ -10,7 +10,7 @@ context line 3
+-failed line
++fixed line
+ context
+@@ -50,3 +50,4 @@ more context
++new line at end
+`
+	ranges := parseUnifiedDiff(diff)
+
+	fileRanges, ok := ranges["file.txt"]
+	if !ok {
+		t.Fatalf("expected file.txt key, got keys: %v", mapKeys(ranges))
+	}
+
+	// First hunk: line 10, count 7 -> range [10, 16]
+	if len(fileRanges) < 1 {
+		t.Fatalf("expected at least 1 range, got %d", len(fileRanges))
+	}
+	if fileRanges[0].start != 10 || fileRanges[0].end != 16 {
+		t.Errorf("first range = [%d, %d], want [10, 16]", fileRanges[0].start, fileRanges[0].end)
+	}
+}
+
+func TestParseUnifiedDiff_DoubleDashFormat(t *testing.T) {
+	// Test the "--- a/path" format
+	diff := `--- a/pkg/utils.go
++++ b/pkg/utils.go
+@@ -5,3 +5,4 @@ func helper() {
++added line
+`
+	ranges := parseUnifiedDiff(diff)
+
+	if _, ok := ranges["pkg/utils.go"]; !ok {
+		t.Errorf("expected key 'pkg/utils.go', got keys: %v", mapKeys(ranges))
+	}
+}
+
+func TestParseUnifiedDiff_NoHunks(t *testing.T) {
+	// Diff with file header but no hunk headers - no hunks means no ranges saved
+	diff := `diff --git a/empty.go b/empty.go
+--- a/empty.go
++++ b/empty.go
+`
+	ranges := parseUnifiedDiff(diff)
+	// Without any @@ markers, hunks slice remains empty and file is not saved
+	if len(ranges) != 0 {
+		t.Errorf("expected 0 entries when no hunks present, got %d", len(ranges))
+	}
+}
+
+func TestParseUnifiedDiff_ZeroCountHunk(t *testing.T) {
+	// Hunk with count=0 should default to count=1
+	diff := `diff --git a/file.go b/file.go
+--- a/file.go
++++ b/file.go
+@@ -1,0 +1,1 @@
++brand new line
+`
+	ranges := parseUnifiedDiff(diff)
+
+	fileRanges, ok := ranges["file.go"]
+	if !ok {
+		t.Fatalf("expected file.go key, got keys: %v", mapKeys(ranges))
+	}
+	if len(fileRanges) != 1 {
+		t.Fatalf("expected 1 range, got %d", len(fileRanges))
+	}
+	// start=1, count=0 -> default count=1 -> end = 1+1-1 = 1
+	if fileRanges[0].start != 1 || fileRanges[0].end != 1 {
+		t.Errorf("range = [%d, %d], want [1, 1]", fileRanges[0].start, fileRanges[0].end)
+	}
+}
+
+func mapKeys[K comparable, V any](m map[K][]V) []K {
+	keys := make([]K, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
+// ---------------------------------------------------------------------------
+// filterDiffFindings tests
+// ---------------------------------------------------------------------------
+
+func TestFilterDiffFindings_NoDiffPath(t *testing.T) {
+	findings := []core.Finding{
+		{Pattern: "p", File: "f.txt", Line: 1},
+	}
+	result := filterDiffFindings(findings, "")
+	if len(result) != 1 {
+		t.Errorf("expected all findings when diffPath empty, got %d", len(result))
+	}
+}
+
+func TestFilterDiffFindings_NonexistentFile(t *testing.T) {
+	findings := []core.Finding{
+		{Pattern: "p", File: "f.txt", Line: 1},
+	}
+	result := filterDiffFindings(findings, "/nonexistent/diff.file")
+	// Should return all findings when diff file can't be read
+	if len(result) != 1 {
+		t.Errorf("expected all findings when diff unreadable, got %d", len(result))
+	}
+}
+
+func TestFilterDiffFindings_NoMatches(t *testing.T) {
+	// Create a temp diff file
+	tmpDir := t.TempDir()
+	diffPath := tmpDir + "/diff.patch"
+	diffContent := `diff --git a/other.go b/other.go
+--- a/other.go
++++ b/other.go
+@@ -1,3 +1,3 @@
+-old line
++new line
+`
+	if err := os.WriteFile(diffPath, []byte(diffContent), 0644); err != nil {
+		t.Fatalf("failed to write diff file: %v", err)
+	}
+
+	findings := []core.Finding{
+		{Pattern: "p", File: "f.txt", Line: 1},  // Not in diff
+	}
+	result := filterDiffFindings(findings, diffPath)
+	if len(result) != 0 {
+		t.Errorf("expected 0 findings, got %d", len(result))
+	}
+}
+
+func TestFilterDiffFindings_Match(t *testing.T) {
+	tmpDir := t.TempDir()
+	diffPath := tmpDir + "/diff.patch"
+	diffContent := `diff --git a/src/main.go b/src/main.go
+--- a/src/main.go
++++ b/src/main.go
+@@ -10,5 +10,5 @@ func main() {
+-old line
++new line
+`
+	if err := os.WriteFile(diffPath, []byte(diffContent), 0644); err != nil {
+		t.Fatalf("failed to write diff file: %v", err)
+	}
+
+	findings := []core.Finding{
+		{Pattern: "p", File: "src/main.go", Line: 12}, // Within hunk range [10, 14]
+	}
+	result := filterDiffFindings(findings, diffPath)
+	if len(result) != 1 {
+		t.Errorf("expected 1 finding, got %d", len(result))
+	}
+}
+
+func TestFilterDiffFindings_OutOfRange(t *testing.T) {
+	tmpDir := t.TempDir()
+	diffPath := tmpDir + "/diff.patch"
+	diffContent := `diff --git a/src/main.go b/src/main.go
+--- a/src/main.go
++++ b/src/main.go
+@@ -10,5 +10,5 @@ func main() {
+-old line
++new line
+`
+	if err := os.WriteFile(diffPath, []byte(diffContent), 0644); err != nil {
+		t.Fatalf("failed to write diff file: %v", err)
+	}
+
+	// Line 100 is outside the hunk range [10, 14]
+	findings := []core.Finding{
+		{Pattern: "p", File: "src/main.go", Line: 100},
+	}
+	result := filterDiffFindings(findings, diffPath)
+	if len(result) != 0 {
+		t.Errorf("expected 0 findings for out-of-range line, got %d", len(result))
+	}
+}
+
+func TestFilterDiffFindings_MultipleRanges(t *testing.T) {
+	tmpDir := t.TempDir()
+	diffPath := tmpDir + "/diff.patch"
+	diffContent := `diff --git a/src/main.go b/src/main.go
+--- a/src/main.go
++++ b/src/main.go
+@@ -5,3 +5,4 @@ first hunk
++added1
+@@ -20,3 +20,4 @@ second hunk
++added2
+`
+	if err := os.WriteFile(diffPath, []byte(diffContent), 0644); err != nil {
+		t.Fatalf("failed to write diff file: %v", err)
+	}
+
+	findings := []core.Finding{
+		{Pattern: "p", File: "src/main.go", Line: 7},  // In first hunk [5, 8]
+		{Pattern: "p", File: "src/main.go", Line: 22}, // In second hunk [20, 23]
+		{Pattern: "p", File: "src/main.go", Line: 50}, // Outside all hunks
+	}
+	result := filterDiffFindings(findings, diffPath)
+	if len(result) != 2 {
+		t.Errorf("expected 2 findings, got %d", len(result))
+	}
+}
+
+// ---------------------------------------------------------------------------
+// filterBySeverity tests
+// ---------------------------------------------------------------------------
+
+func TestFilterBySeverity_UnknownThreshold(t *testing.T) {
+	findings := []core.Finding{
+		{Pattern: "p", File: "f.txt", Line: 1, Severity: "critical"},
+		{Pattern: "p", File: "f.txt", Line: 2, Severity: "low"},
+	}
+	result := filterBySeverity(findings, "unknown")
+	// Unknown threshold returns all findings
+	if len(result) != 2 {
+		t.Errorf("expected 2 findings for unknown threshold, got %d", len(result))
+	}
+}
+
+func TestFilterBySeverity_Critical(t *testing.T) {
+	findings := []core.Finding{
+		{Pattern: "p", File: "f.txt", Line: 1, Severity: "critical"},
+		{Pattern: "p", File: "f.txt", Line: 2, Severity: "high"},
+		{Pattern: "p", File: "f.txt", Line: 3, Severity: "medium"},
+		{Pattern: "p", File: "f.txt", Line: 4, Severity: "low"},
+	}
+	result := filterBySeverity(findings, "critical")
+	if len(result) != 1 {
+		t.Errorf("expected 1 finding for critical threshold, got %d", len(result))
+	}
+}
+
+func TestFilterBySeverity_High(t *testing.T) {
+	findings := []core.Finding{
+		{Pattern: "p", File: "f.txt", Line: 1, Severity: "critical"},
+		{Pattern: "p", File: "f.txt", Line: 2, Severity: "high"},
+		{Pattern: "p", File: "f.txt", Line: 3, Severity: "medium"},
+		{Pattern: "p", File: "f.txt", Line: 4, Severity: "low"},
+	}
+	result := filterBySeverity(findings, "high")
+	if len(result) != 2 {
+		t.Errorf("expected 2 findings for high threshold, got %d", len(result))
+	}
+}
+
+func TestFilterBySeverity_Medium(t *testing.T) {
+	findings := []core.Finding{
+		{Pattern: "p", File: "f.txt", Line: 1, Severity: "critical"},
+		{Pattern: "p", File: "f.txt", Line: 2, Severity: "high"},
+		{Pattern: "p", File: "f.txt", Line: 3, Severity: "medium"},
+		{Pattern: "p", File: "f.txt", Line: 4, Severity: "low"},
+	}
+	result := filterBySeverity(findings, "medium")
+	if len(result) != 3 {
+		t.Errorf("expected 3 findings for medium threshold, got %d", len(result))
+	}
+}
+
+func TestFilterBySeverity_Low(t *testing.T) {
+	findings := []core.Finding{
+		{Pattern: "p", File: "f.txt", Line: 1, Severity: "critical"},
+		{Pattern: "p", File: "f.txt", Line: 2, Severity: "high"},
+		{Pattern: "p", File: "f.txt", Line: 3, Severity: "medium"},
+		{Pattern: "p", File: "f.txt", Line: 4, Severity: "low"},
+	}
+	result := filterBySeverity(findings, "low")
+	if len(result) != 4 {
+		t.Errorf("expected 4 findings for low threshold, got %d", len(result))
+	}
+}
+
+func TestFilterBySeverity_CaseInsensitive(t *testing.T) {
+	findings := []core.Finding{
+		{Pattern: "p", File: "f.txt", Line: 1, Severity: "critical"},
+	}
+	result := filterBySeverity(findings, "CRITICAL")
+	if len(result) != 1 {
+		t.Errorf("expected 1 finding for uppercase threshold, got %d", len(result))
+	}
+}
+
+func TestFilterBySeverity_EmptyFindings(t *testing.T) {
+	findings := []core.Finding{}
+	result := filterBySeverity(findings, "high")
+	if len(result) != 0 {
+		t.Errorf("expected 0 findings, got %d", len(result))
+	}
+}
+
+func TestFilterBySeverity_UnknownSeverity(t *testing.T) {
+	findings := []core.Finding{
+		{Pattern: "p", File: "f.txt", Line: 1, Severity: "unknown-severity"},
+		{Pattern: "p", File: "f.txt", Line: 2, Severity: "critical"},
+	}
+	result := filterBySeverity(findings, "high")
+	// Unknown severity is filtered out, only critical passes high threshold
+	if len(result) != 1 {
+		t.Errorf("expected 1 finding for unknown severity, got %d", len(result))
+	}
+}
+
+// ---------------------------------------------------------------------------
+// parseGlobalFlags tests (improved coverage)
+// ---------------------------------------------------------------------------
+
+func TestParseGlobalFlags_Empty(t *testing.T) {
+	_, quiet, diff, severity, output, completion := parseGlobalFlags([]string{})
+	if quiet || diff || severity != "" || output != "" || completion {
+		t.Error("expected all false/empty for empty args")
+	}
+}
+
+func TestParseGlobalFlags_QuietMode(t *testing.T) {
+	_, quiet, _, _, _, _ := parseGlobalFlags([]string{"--quiet"})
+	if !quiet {
+		t.Error("expected quiet=true for --quiet")
+	}
+}
+
+func TestParseGlobalFlags_QuietModeShort(t *testing.T) {
+	_, quiet, _, _, _, _ := parseGlobalFlags([]string{"-q"})
+	if !quiet {
+		t.Error("expected quiet=true for -q")
+	}
+}
+
+func TestParseGlobalFlags_DiffMode(t *testing.T) {
+	_, _, diff, _, _, _ := parseGlobalFlags([]string{"--diff"})
+	if !diff {
+		t.Error("expected diff=true for --diff")
+	}
+}
+
+func TestParseGlobalFlags_SeverityThreshold(t *testing.T) {
+	_, _, _, severity, _, _ := parseGlobalFlags([]string{"--severity-threshold=high"})
+	if severity != "high" {
+		t.Errorf("expected severity=high, got %q", severity)
+	}
+}
+
+func TestParseGlobalFlags_OutputFile(t *testing.T) {
+	_, _, _, _, output, _ := parseGlobalFlags([]string{"--output-file=/path/to/out.txt"})
+	if output != "/path/to/out.txt" {
+		t.Errorf("expected output=/path/to/out.txt, got %q", output)
+	}
+}
+
+func TestParseGlobalFlags_CompletionFlag(t *testing.T) {
+	_, _, _, _, _, completion := parseGlobalFlags([]string{"--completion"})
+	if !completion {
+		t.Error("expected completion=true for --completion")
+	}
+}
+
+func TestParseGlobalFlags_CompletionFlagEqual(t *testing.T) {
+	_, _, _, _, _, completion := parseGlobalFlags([]string{"--completion=bash"})
+	if !completion {
+		t.Error("expected completion=true for --completion=bash")
+	}
+}
+
+func TestParseGlobalFlags_ShellCompleteFlag(t *testing.T) {
+	_, _, _, _, _, completion := parseGlobalFlags([]string{"--shell-complete"})
+	if !completion {
+		t.Error("expected completion=true for --shell-complete")
+	}
+}
+
+func TestParseGlobalFlags_MixedFlags(t *testing.T) {
+	rest, quiet, diff, severity, output, completion := parseGlobalFlags([]string{
+		"--quiet", "--diff", "--severity-threshold=medium", "--output-file=out.txt",
+	})
+	if !quiet {
+		t.Error("expected quiet=true")
+	}
+	if !diff {
+		t.Error("expected diff=true")
+	}
+	if severity != "medium" {
+		t.Errorf("expected severity=medium, got %q", severity)
+	}
+	if output != "out.txt" {
+		t.Errorf("expected output=out.txt, got %q", output)
+	}
+	if completion {
+		t.Error("expected completion=false for mixed flags without completion")
+	}
+	if len(rest) != 0 {
+		t.Errorf("expected 0 remaining args, got %d", len(rest))
+	}
+}
+
+func TestParseGlobalFlags_RemainingArgs(t *testing.T) {
+	rest, _, _, _, _, _ := parseGlobalFlags([]string{"--quiet", "scan", "."})
+	if len(rest) != 2 {
+		t.Errorf("expected 2 remaining args, got %d", len(rest))
+	}
+	if rest[0] != "scan" || rest[1] != "." {
+		t.Errorf("unexpected remaining args: %v", rest)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// setupOutputFile tests (improved coverage)
+// ---------------------------------------------------------------------------
+
+func TestSetupOutputFile_EmptyPath(t *testing.T) {
+	result := setupOutputFile("")
+	if result != nil {
+		t.Error("expected nil for empty path")
+	}
+}
+
+func TestSetupOutputFile_CreateFile(t *testing.T) {
+	tmpDir := t.TempDir()
+	tmpFile := tmpDir + "/output.txt"
+
+	// Save original stdout
+	origStdout := os.Stdout
+	defer func() { os.Stdout = origStdout }()
+
+	result := setupOutputFile(tmpFile)
+	if result == nil {
+		t.Fatal("expected non-nil result")
+	}
+	result.Close()
+
+	// Verify file was created
+	if _, err := os.Stat(tmpFile); os.IsNotExist(err) {
+		t.Error("expected output file to be created")
+	}
+}
+
+func TestSetupOutputFile_InvalidPath(t *testing.T) {
+	// Save original stdout and stderr
+	origStdout := os.Stdout
+	origStderr := os.Stderr
+	defer func() { os.Stdout = origStdout; os.Stderr = origStderr }()
+
+	r, w, _ := os.Pipe()
+	os.Stderr = w
+
+	// /root is typically not writable
+	result := setupOutputFile("/root/.atheon/output.txt")
+
+	w.Close()
+	os.Stderr = origStderr
+
+	if result != nil {
+		t.Error("expected nil result for unwritable path")
+	}
+
+	// Verify error message was printed
+	buf, _ := io.ReadAll(r)
+	if !strings.Contains(string(buf), "cannot create output file") {
+		t.Errorf("expected error about cannot create output file, got: %q", string(buf))
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Shell completion tests
+// ---------------------------------------------------------------------------
+
+func TestPrintBashCompletion(t *testing.T) {
+	// Capture stdout
+	origStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	printBashCompletion()
+
+	w.Close()
+	os.Stdout = origStdout
+
+	var buf strings.Builder
+	io.Copy(&buf, r)
+
+	output := buf.String()
+	if !strings.Contains(output, "_atheon()") {
+		t.Error("expected bash completion function")
+	}
+	if !strings.Contains(output, "complete -F _atheon atheon") {
+		t.Error("expected complete registration")
+	}
+}
+
+func TestPrintZshCompletion(t *testing.T) {
+	origStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	printZshCompletion()
+
+	w.Close()
+	os.Stdout = origStdout
+
+	var buf strings.Builder
+	io.Copy(&buf, r)
+
+	output := buf.String()
+	if !strings.Contains(output, "_atheon()") {
+		t.Error("expected zsh completion function")
+	}
+	if !strings.Contains(output, "_describe") {
+		t.Error("expected _describe call")
+	}
+}
+
+func TestPrintFishCompletion(t *testing.T) {
+	origStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	printFishCompletion()
+
+	w.Close()
+	os.Stdout = origStdout
+
+	var buf strings.Builder
+	io.Copy(&buf, r)
+
+	output := buf.String()
+	if !strings.Contains(output, "complete -c atheon") {
+		t.Error("expected fish complete command")
+	}
+	if !strings.Contains(output, "-l json") {
+		t.Error("expected -l json flag in fish completion")
+	}
+}
+
+func TestRunShellCompletion_Bash(t *testing.T) {
+	// Save original
+	origEnv := os.Getenv("SHELL")
+	origArgs := os.Args
+	defer func() {
+		os.Setenv("SHELL", origEnv)
+		os.Args = origArgs
+	}()
+
+	os.Setenv("SHELL", "/bin/bash")
+	os.Args = []string{"atheon", "--completion=bash"}
+
+	origStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	runShellCompletion(os.Args)
+
+	w.Close()
+	os.Stdout = origStdout
+
+	var buf strings.Builder
+	io.Copy(&buf, r)
+
+	output := buf.String()
+	if !strings.Contains(output, "_atheon()") {
+		t.Error("expected bash completion output")
+	}
+}
+
+func TestRunShellCompletion_Zsh(t *testing.T) {
+	origEnv := os.Getenv("SHELL")
+	defer func() { os.Setenv("SHELL", origEnv) }()
+
+	os.Setenv("SHELL", "/bin/zsh")
+
+	origStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	runShellCompletion([]string{"atheon"})
+
+	w.Close()
+	os.Stdout = origStdout
+
+	var buf strings.Builder
+	io.Copy(&buf, r)
+
+	output := buf.String()
+	if !strings.Contains(output, "_describe") {
+		t.Error("expected zsh completion output")
+	}
+}
+
+func TestRunShellCompletion_Fish(t *testing.T) {
+	origEnv := os.Getenv("SHELL")
+	defer func() { os.Setenv("SHELL", origEnv) }()
+
+	os.Setenv("SHELL", "/bin/fish")
+
+	origStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	runShellCompletion([]string{"atheon"})
+
+	w.Close()
+	os.Stdout = origStdout
+
+	var buf strings.Builder
+	io.Copy(&buf, r)
+
+	output := buf.String()
+	if !strings.Contains(output, "complete -c atheon") {
+		t.Error("expected fish completion output")
+	}
+}
+
+func TestRunShellCompletion_DefaultShell(t *testing.T) {
+	origEnv := os.Getenv("SHELL")
+	defer func() { os.Setenv("SHELL", origEnv) }()
+
+	// Empty SHELL should fall back to bash
+	os.Setenv("SHELL", "")
+
+	origStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	runShellCompletion([]string{"atheon"})
+
+	w.Close()
+	os.Stdout = origStdout
+
+	var buf strings.Builder
+	io.Copy(&buf, r)
+
+	output := buf.String()
+	// Should default to bash
+	if !strings.Contains(output, "_atheon()") {
+		t.Error("expected bash completion as default")
+	}
+}

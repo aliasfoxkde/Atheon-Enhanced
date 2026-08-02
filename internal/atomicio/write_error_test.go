@@ -20,32 +20,76 @@ func TestWriteFile_CreateTempError(t *testing.T) {
 	}
 }
 
-// TestWriteFile_RenameError tests error handling when rename fails
+// TestWriteFile_RenameError tests error handling when rename fails.
+// We create a directory at the target path so Rename fails because
+// it cannot overwrite a directory with a file.
 func TestWriteFile_RenameError(t *testing.T) {
 	tmp := t.TempDir()
-	path := filepath.Join(tmp, "target.txt")
+	targetPath := filepath.Join(tmp, "existing_dir")
 
-	// Create the file first with a directory that will cause rename to fail
-	// by making the parent a read-only directory
-	subdir := filepath.Join(tmp, "readonly_subdir")
-	if err := os.MkdirAll(subdir, 0755); err != nil {
-		t.Fatalf("MkdirAll failed: %v", err)
+	// Create a directory at the target path - this will cause Rename to fail
+	// because we can't rename a file over a directory
+	if err := os.MkdirAll(targetPath, 0755); err != nil {
+		t.Fatalf("MkdirAll for target directory failed: %v", err)
 	}
-	readonlyDir := filepath.Join(subdir, "deep")
-	if err := os.MkdirAll(readonlyDir, 0755); err != nil {
-		t.Fatalf("MkdirAll failed: %v", err)
-	}
-	if err := os.Chmod(readonlyDir, 0555); err != nil {
-		t.Skip("cannot make directory read-only, skipping test")
-	}
-	defer os.Chmod(readonlyDir, 0755)
 
-	path = filepath.Join(readonlyDir, "file.txt")
+	// Also ensure the parent directory is writable so CreateTemp succeeds
+	if err := os.Chmod(tmp, 0755); err != nil {
+		t.Skip("cannot make temp directory writable, skipping test")
+	}
 
-	// This should fail because we can't create files in read-only directory
-	err := WriteFile(path, []byte("data"), 0644)
+	// WriteFile will try to Rename a temp file to targetPath (a directory)
+	// This should fail with an error from Rename
+	err := WriteFile(targetPath, []byte("data"), 0644)
 	if err == nil {
-		t.Error("expected error when writing to read-only directory")
+		t.Error("expected error when rename fails because target is a directory")
+	}
+}
+
+// TestWriteFile_RenameErrorCleanup verifies that temp file is cleaned up
+// when Rename fails. This tests the defer cleanup path (lines 123-125).
+func TestWriteFile_RenameErrorCleanup(t *testing.T) {
+	tmp := t.TempDir()
+	targetPath := filepath.Join(tmp, "existing_dir")
+
+	// Create a directory at the target path to cause Rename to fail
+	if err := os.MkdirAll(targetPath, 0755); err != nil {
+		t.Fatalf("MkdirAll for target directory failed: %v", err)
+	}
+	if err := os.Chmod(tmp, 0755); err != nil {
+		t.Skip("cannot make temp directory writable, skipping test")
+	}
+
+	// Count temp files before
+	entriesBefore, err := os.ReadDir(tmp)
+	if err != nil {
+		t.Fatalf("ReadDir failed: %v", err)
+	}
+
+	// Attempt WriteFile - should fail at Rename
+	err = WriteFile(targetPath, []byte("data"), 0644)
+	if err == nil {
+		t.Fatal("expected error when rename fails")
+	}
+
+	// Count temp files after - should be same (temp file cleaned up)
+	entriesAfter, err := os.ReadDir(tmp)
+	if err != nil {
+		t.Fatalf("ReadDir failed: %v", err)
+	}
+
+	// Verify no extra temp files left behind
+	if len(entriesAfter) != len(entriesBefore) {
+		t.Errorf("temp file was not cleaned up: before=%d after=%d", len(entriesBefore), len(entriesAfter))
+	}
+
+	// Also verify target path is still a directory (not corrupted)
+	info, err := os.Stat(targetPath)
+	if err != nil {
+		t.Fatalf("Stat failed: %v", err)
+	}
+	if !info.IsDir() {
+		t.Errorf("target path was corrupted, is now %v", info.Mode())
 	}
 }
 

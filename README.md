@@ -158,7 +158,7 @@ atheon ./my-project
 atheon --categories=secrets,pii ./my-project
 
 # Use configuration profile
-atheon --profile config/profiles/pipeline.json ./my-project
+atheon --config config/profiles/pipeline.json ./my-project
 
 # List all patterns with status
 atheon list
@@ -214,11 +214,23 @@ if errors.Is(err, core.ErrPatternNotFound) {
 
 ### **Advanced Usage**
 ```bash
-# Use configuration profile
-atheon --profile config/profiles/pipeline.json ./my-project
+# Use configuration profile (or ~/.atheon/config.json by default)
+atheon --config config/profiles/pipeline.json ./my-project
 
 # Scan with all patterns (including disabled ones)
 atheon --all ./test-project
+
+# Scan only changed lines from a diff (PR workflows)
+atheon --diff=changes.diff ./my-project
+
+# Filter findings by severity threshold
+atheon --severity-threshold=high ./my-project
+
+# Quiet mode - suppress all output except findings (CI friendly)
+atheon --quiet ./my-project
+
+# Write output to file
+atheon --output-file=findings.json ./my-project
 
 # JSON output for automation
 atheon --json ./my-project > findings.json
@@ -372,11 +384,15 @@ chmod +x .git/hooks/pre-commit
 
 ### **Using Configuration Profiles**
 ```bash
-# Copy profile to config directory
+# Copy profile to config directory (loaded automatically as ~/.atheon/config.json)
 cp config/profiles/production.json ~/.atheon/config.json
 
-# Or use per-scan
-atheon --profile config/profiles/pipeline.json ./my-project
+# Or use per-scan (CLI flag overrides default config)
+atheon --config config/profiles/pipeline.json ./my-project
+
+# Generate shell completion scripts
+atheon --completion=bash > atheon_completion.sh
+source atheon_completion.sh
 ```
 
 </details>

@@ -27,8 +27,8 @@ atheon --sarif . > results.sarif  # SARIF for GitHub Security tab
 | [Pattern Format](PATTERN_FORMAT.md) | YAML schema for writing patterns |
 | [Development Guide](development.md) | Branch strategy, local setup, release process |
 | [Self-Scan Integration](self-scan.md) | Running Atheon against your own CI pipeline |
-| [MCP Server Setup](integrations/mcp.md) | Use Atheon from Claude Desktop, VS Code, Cursor |
-| [GitHub Agent Integration](integrations/github-agents.md) | GitHub Models API and Agentic Workflows |
+| [MCP Server Setup](integrations/Mcp.md) | Use Atheon from Claude Desktop, VS Code, Cursor |
+| [GitHub Agent Integration](integrations/Github-agents.md) | GitHub Models API and Agentic Workflows |
 | [Owner Checklist](OWNER_CHECKLIST.md) | Setup tasks, recommendations, maintenance |
 
 ## Source

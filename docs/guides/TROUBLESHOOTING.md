@@ -6,7 +6,7 @@ Comprehensive troubleshooting guide for common issues and their solutions.
 
 ### Most Common Issues
 
-1. **Pattern count shows 57 instead of 87**
+1. **Pattern count shows unexpected value**
    ```bash
    # Remove local bundle cache
    rm ~/.atheon/patterns.bundle
@@ -15,7 +15,7 @@ Comprehensive troubleshooting guide for common issues and their solutions.
    go build -o atheon ./cmd/atheon
 
    # Verify
-   ./atheon list | wc -l  # Should show 87
+   ./atheon list | wc -l  # Should show 406 patterns
    ```
 
 2. **Tests failing with category errors**
@@ -45,8 +45,8 @@ Comprehensive troubleshooting guide for common issues and their solutions.
 ### Patterns Not Loading
 
 **Symptoms:**
-- Only 57 patterns shown instead of 85
-- Missing AI detection, DevOps, or framework categories
+- Pattern count doesn't match expected value
+- Missing categories
 - Stale pattern results
 
 **Solutions:**
@@ -69,7 +69,7 @@ go build -o atheon ./cmd/atheon
 # Should show: ai-detection, code-quality, devops, django, finance, healthcare, nodejs, pii, react, secrets
 
 ./atheon list | wc -l
-# Should show: 87
+# Should show: 406
 ```
 
 ### Pattern Not Matching Expected Content

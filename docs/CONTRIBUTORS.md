@@ -39,8 +39,8 @@ Atheon is built by the community. Every pattern added is a permanent contributio
 
 ### aliasfoxkde/Atheon Contributors
 
-- **[Live Contributors Graph](https://github.com/aliasfoxkde/Atheon/graphs/contributors)** - View all contributors to the enhanced version
-- **[Contributor Activity](https://github.com/aliasfoxkde/Atheon/pulse)** - Recent contributor activity
+- **[Live Contributors Graph](https://github.com/aliasfoxkde/Atheon-Enhanced/graphs/contributors)** - View all contributors to the enhanced version
+- **[Contributor Activity](https://github.com/aliasfoxkde/Atheon-Enhanced/pulse)** - Recent contributor activity
 
 Major contributors to the enhanced version include:
 
@@ -68,9 +68,9 @@ Every contribution benefits both projects:
 3. Your name goes here permanently
 
 ### For Enhanced Fork
-1. Open a pull request in [aliasfoxkde/Atheon](https://github.com/aliasfoxkde/Atheon)
+1. Open a pull request in [aliasfoxkde/Atheon](https://github.com/aliasfoxkde/Atheon-Enhanced)
 2. Add experimental features, patterns, or improvements
-3. Your contribution appears in the [contributors graph](https://github.com/aliasfoxkde/Atheon/graphs/contributors)
+3. Your contribution appears in the [contributors graph](https://github.com/aliasfoxkde/Atheon-Enhanced/graphs/contributors)
 
 ---
 

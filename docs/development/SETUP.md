@@ -60,7 +60,7 @@ go build -o bundler/bundler ./bundler
 # Verify installation
 ./atheon --version
 ./atheon list | wc -l
-# Expected: 87 patterns
+# Expected: 406 patterns
 ```
 
 ### 4. Development Tools

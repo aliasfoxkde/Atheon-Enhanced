@@ -344,9 +344,7 @@ func TestHandleUpdateBundleSuccess(t *testing.T) {
 	}
 
 	// Restore the original bundle so subsequent tests are not affected.
-	// (loadBundle is not exported, but we can use SetActiveCategories to reset filters
-	// and rely on the embedded bundle being reloaded by the next test that needs it)
-	core.SetActiveCategories(nil)
+	core.RestoreBundle()
 }
 
 // ------------------------------------------------------------------

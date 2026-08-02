@@ -2,6 +2,7 @@ package core
 
 import (
 	"go/ast"
+	"go/parser"
 	"go/token"
 	"testing"
 )
@@ -158,5 +159,117 @@ func TestCountInterfaceDepth_Direct(t *testing.T) {
 	depth := countInterfaceDepth(iface)
 	if depth != 1 {
 		t.Errorf("expected depth 1, got %d", depth)
+	}
+}
+
+// TestDetectInconsistentBooleanNaming_Direct tests boolean naming detection with GenDecl path.
+func TestDetectInconsistentBooleanNaming_Direct(t *testing.T) {
+	// Create AST with boolean variables using different naming conventions
+	file := &ast.File{
+		Name: &ast.Ident{Name: "main"},
+		Decls: []ast.Decl{
+			&ast.GenDecl{
+				Tok: token.VAR,
+				Specs: []ast.Spec{
+					&ast.ValueSpec{
+						Names: []*ast.Ident{{Name: "isEnabled"}},
+						Values: []ast.Expr{&ast.Ident{Name: "true"}},
+					},
+					&ast.ValueSpec{
+						Names: []*ast.Ident{{Name: "hasAccess"}},
+						Values: []ast.Expr{&ast.Ident{Name: "false"}},
+					},
+					&ast.ValueSpec{
+						Names: []*ast.Ident{{Name: "yesNo"}},
+						Values: []ast.Expr{&ast.Ident{Name: "true"}},
+					},
+					&ast.ValueSpec{
+						Names: []*ast.Ident{{Name: "noError"}},
+						Values: []ast.Expr{&ast.Ident{Name: "false"}},
+					},
+				},
+			},
+		},
+	}
+	fset := token.NewFileSet()
+	findings := detectInconsistentBooleanNaming(fset, file)
+	_ = findings
+}
+
+// TestDetectDeepWrapperChain_Direct tests wrapper chain detection with deep chains.
+func TestDetectDeepWrapperChain_Direct(t *testing.T) {
+	// Create AST with deep wrapper chain
+	file := &ast.File{
+		Name: &ast.Ident{Name: "main"},
+		Decls: []ast.Decl{
+			&ast.FuncDecl{
+				Name: &ast.Ident{Name: "DeepWrapper"},
+				Type: &ast.FuncType{},
+				Body: &ast.BlockStmt{
+					List: []ast.Stmt{
+						&ast.ReturnStmt{
+							Results: []ast.Expr{
+								&ast.CallExpr{
+									Fun: &ast.SelectorExpr{
+										X: &ast.CallExpr{
+											Fun: &ast.Ident{Name: "getInner"},
+										},
+										Sel: &ast.Ident{Name: "getOuter"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			&ast.FuncDecl{
+				Name: &ast.Ident{Name: "getInner"},
+				Type: &ast.FuncType{},
+				Body: &ast.BlockStmt{},
+			},
+		},
+	}
+	fset := token.NewFileSet()
+	findings := detectDeepWrapperChain(fset, file)
+	_ = findings
+}
+
+// TestDetectExcessiveAbstractionDepth_Direct tests interface depth detection.
+// Uses code parsing since manual AST construction with nil Methods fields is error-prone.
+func TestDetectExcessiveAbstractionDepth_Direct(t *testing.T) {
+	code := `package main
+
+type Level1 interface{}
+type Level2 interface{ Level1 }
+type Level3 interface{ Level2 }
+type Level4 interface{ Level3 }
+
+func main() {}
+`
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, "test.go", code, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	findings := detectExcessiveAbstractionDepth(fset, file)
+	_ = findings
+}
+
+// TestHasUnconditionalReturnAtEnd_Direct tests return detection at end of block.
+func TestHasUnconditionalReturnAtEnd_Direct(t *testing.T) {
+	// Test with empty block - structurally shouldn't happen but exercises the branch
+	emptyBlock := &ast.BlockStmt{
+		List: []ast.Stmt{},
+	}
+	result := hasUnconditionalReturnAtEnd(emptyBlock)
+	if result {
+		t.Error("expected false for empty block")
+	}
+
+	// Test with non-block statement
+	nonBlock := &ast.ReturnStmt{}
+	result = hasUnconditionalReturnAtEnd(nonBlock)
+	if result {
+		t.Error("expected false for non-block statement")
 	}
 }

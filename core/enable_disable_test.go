@@ -50,7 +50,7 @@ func TestEnablePatternSyncError(t *testing.T) {
 	originalState := false
 	for _, p := range allPatterns {
 		if p.name == name {
-			originalState = p.enabled
+			originalState = p.enabled.Load()
 			break
 		}
 	}
@@ -87,7 +87,7 @@ func TestDisablePatternSyncError(t *testing.T) {
 	originalState := false
 	for _, p := range allPatterns {
 		if p.name == name {
-			originalState = p.enabled
+			originalState = p.enabled.Load()
 			break
 		}
 	}

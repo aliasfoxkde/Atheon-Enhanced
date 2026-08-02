@@ -45,7 +45,7 @@ func TestInitializePatternStateOK(t *testing.T) {
 
 	// Verify target is now disabled
 	for _, p := range allPatterns {
-		if p.name == targetName && p.enabled {
+		if p.name == targetName && p.enabled.Load() {
 			t.Errorf("Pattern %s should be disabled after InitializePatternState", targetName)
 		}
 	}
@@ -67,7 +67,7 @@ func TestSyncPatternStateRun(t *testing.T) {
 	originalEnabled := false
 	for _, p := range allPatterns {
 		if p.name == name {
-			originalEnabled = p.enabled
+			originalEnabled = p.enabled.Load()
 			break
 		}
 	}
@@ -114,7 +114,7 @@ func TestApplyPatternStateAllDisabled(t *testing.T) {
 
 	for _, p := range allPatterns {
 		if p.name == name1 || p.name == name2 {
-			if p.enabled {
+			if p.enabled.Load() {
 				t.Errorf("Pattern %s should be disabled", p.name)
 			}
 		}

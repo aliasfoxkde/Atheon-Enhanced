@@ -90,7 +90,7 @@ func TestDownloadBundleNoChanges(t *testing.T) {
 			Name:     p.name,
 			Category: p.category,
 			Match:    p.match,
-			Enabled:  p.enabled,
+			Enabled:  p.enabled.Load(),
 		})
 	}
 	jb, err := json.Marshal(current)

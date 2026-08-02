@@ -394,25 +394,73 @@ func (d *CloneDetector) DetectClones(dir string) ([]Clone, error) {
 }
 
 // compareFunctions compares all pairs of functions to detect clones.
+// Uses bucketing to avoid O(n²) comparisons: functions are grouped by
+// token count bucket, and only functions in the same bucket are compared.
 func (d *CloneDetector) compareFunctions(functions []FunctionInfo) []Clone {
 	var clones []Clone
 
-	// Sort for deterministic output
-	sort.Slice(functions, func(i, j int) bool {
-		if functions[i].File != functions[j].File {
-			return functions[i].File < functions[j].File
-		}
-		return functions[i].Line < functions[j].Line
-	})
+	// Bucket functions by token count (bucket size = 20 tokens)
+	// This groups functions by similar size, which is a strong indicator
+	// they might be clones of each other.
+	buckets := make(map[int][]int) // bucket -> []function indices
+	for i := range functions {
+		bucket := len(functions[i].Tokens) / 20
+		buckets[bucket] = append(buckets[bucket], i)
+	}
 
-	// Compare each pair
-	for i := 0; i < len(functions); i++ {
-		for j := i + 1; j < len(functions); j++ {
-			if clone := d.comparePair(functions[i], functions[j]); clone != nil {
-				clones = append(clones, *clone)
+	// Compare only within buckets (and only buckets with >1 function)
+	for _, indices := range buckets {
+		if len(indices) < 2 {
+			continue
+		}
+		// For large buckets (>100), be more selective to avoid O(n²) blowup
+		// Only compare functions that have some token overlap
+		if len(indices) > 100 {
+			// Use secondary bucketing by first token to reduce comparisons
+			secondaryBuckets := make(map[string][]int)
+			for _, idx := range indices {
+				tokens := functions[idx].Tokens
+				if len(tokens) > 0 {
+					// Bucket by first 3 tokens
+					n := 3
+					if n > len(tokens) {
+						n = len(tokens)
+					}
+					key := strings.Join(tokens[:n], ",")
+					secondaryBuckets[key] = append(secondaryBuckets[key], idx)
+				}
+			}
+			for _, secIndices := range secondaryBuckets {
+				if len(secIndices) < 2 {
+					continue
+				}
+				for i := 0; i < len(secIndices); i++ {
+					for j := i + 1; j < len(secIndices); j++ {
+						if clone := d.comparePair(functions[secIndices[i]], functions[secIndices[j]]); clone != nil {
+							clones = append(clones, *clone)
+						}
+					}
+				}
+			}
+		} else {
+			// Small bucket: compare all pairs
+			for i := 0; i < len(indices); i++ {
+				for j := i + 1; j < len(indices); j++ {
+					if clone := d.comparePair(functions[indices[i]], functions[indices[j]]); clone != nil {
+						clones = append(clones, *clone)
+					}
+				}
 			}
 		}
 	}
+
+	// Sort for deterministic output
+	sort.Slice(clones, func(i, j int) bool {
+		if clones[i].FileA != clones[j].FileA {
+			return clones[i].FileA < clones[j].FileA
+		}
+		return clones[i].LineA < clones[j].LineA
+	})
 
 	return clones
 }

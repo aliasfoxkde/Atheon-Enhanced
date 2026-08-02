@@ -28,7 +28,7 @@ func TestEnablePatternSyncErrorEnv(t *testing.T) {
 	originalEnabled := false
 	for _, p := range allPatterns {
 		if p.name == name {
-			originalEnabled = p.enabled
+			originalEnabled = p.enabled.Load()
 			break
 		}
 	}
@@ -62,7 +62,7 @@ func TestDisablePatternSyncErrorEnv(t *testing.T) {
 	originalEnabled := false
 	for _, p := range allPatterns {
 		if p.name == name {
-			originalEnabled = p.enabled
+			originalEnabled = p.enabled.Load()
 			break
 		}
 	}
@@ -127,7 +127,7 @@ func TestEnablePatternSyncErrorCrossplatform(t *testing.T) {
 	originalEnabled := false
 	for _, p := range allPatterns {
 		if p.name == name {
-			originalEnabled = p.enabled
+			originalEnabled = p.enabled.Load()
 			break
 		}
 	}
@@ -160,7 +160,7 @@ func TestDisablePatternSyncErrorCrossplatform(t *testing.T) {
 	originalEnabled := false
 	for _, p := range allPatterns {
 		if p.name == name {
-			originalEnabled = p.enabled
+			originalEnabled = p.enabled.Load()
 			break
 		}
 	}

@@ -69,7 +69,7 @@ func TestApplyPatternState(t *testing.T) {
 	// Save current pattern states
 	originalStates := make(map[string]bool)
 	for _, p := range allPatterns {
-		originalStates[p.name] = p.enabled
+		originalStates[p.name] = p.enabled.Load()
 	}
 
 	// Create test state
@@ -86,7 +86,7 @@ func TestApplyPatternState(t *testing.T) {
 	// Verify patterns were disabled
 	for _, p := range allPatterns {
 		if shouldDisable, exists := testState.Patterns[p.name]; exists {
-			if shouldDisable && p.enabled {
+			if shouldDisable && p.enabled.Load() {
 				t.Errorf("Pattern %s should be disabled but is enabled", p.name)
 			}
 		}
@@ -95,7 +95,7 @@ func TestApplyPatternState(t *testing.T) {
 	// Restore original states
 	for _, p := range allPatterns {
 		if originalState, exists := originalStates[p.name]; exists {
-			p.enabled = originalState
+			p.enabled.Store(originalState)
 		}
 	}
 }

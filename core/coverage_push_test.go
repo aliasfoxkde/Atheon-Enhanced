@@ -109,7 +109,7 @@ func TestLoadBundleOldBundleAllDisabled(t *testing.T) {
 	// Both should have been auto-enabled by the !anyEnabled reset
 	for _, p := range allPatterns {
 		if p.name == "old-1" || p.name == "old-2" {
-			if !p.enabled {
+			if !p.enabled.Load() {
 				t.Errorf("expected old-bundle pattern %q to be auto-enabled", p.name)
 			}
 		}
@@ -251,18 +251,18 @@ func TestSetActiveCategoriesResetAll(t *testing.T) {
 	}
 	original := make([]snap, len(allPatterns))
 	for i, p := range allPatterns {
-		original[i] = snap{p: p, en: p.enabled}
+		original[i] = snap{p: p, en: p.enabled.Load()}
 	}
 	defer func() {
 		for _, s := range original {
-			s.p.enabled = s.en
+			s.p.enabled.Store(s.en)
 		}
 		SetActiveCategories(nil)
 	}()
 
 	// Disable every pattern
 	for _, p := range allPatterns {
-		p.enabled = false
+		p.enabled.Store(false)
 	}
 
 	// Set categories to a non-empty list with no matches
@@ -289,18 +289,18 @@ func TestSetActiveCategoriesResetInternal(t *testing.T) {
 	}
 	original := make([]snap, len(allPatterns))
 	for i, p := range allPatterns {
-		original[i] = snap{p: p, en: p.enabled}
+		original[i] = snap{p: p, en: p.enabled.Load()}
 	}
 	defer func() {
 		for _, s := range original {
-			s.p.enabled = s.en
+			s.p.enabled.Store(s.en)
 		}
 		SetActiveCategories(nil)
 	}()
 
 	// Disable every pattern
 	for _, p := range allPatterns {
-		p.enabled = false
+		p.enabled.Store(false)
 	}
 
 	// Toggle through category filters — exercises both empty-list and nil

@@ -4,8 +4,16 @@ Current and upcoming development tasks.
 
 ## In Progress
 
-- Research and implement SkillSpector-inspired enhancements
-- Unicode deception detection patterns
+- PI_INTEGRATION architecture implementation (Phases 1-6 complete)
+- Runtime adapter framework development
+
+### Wave 21 (2026-08-02) — PI_INTEGRATION Architecture
+- [x] Runtime foundation (scanner, rules, patterns, parser, formatter, config, cache, diagnostics)
+- [x] Canonical Diagnostics model
+- [x] Output formatters (Console, JSON, SARIF, Markdown)
+- [x] Configuration system with JSON/YAML support
+- [x] Runtime API (Analyze, Benchmark, ValidateConfig)
+- [x] Adapter framework with Registry
 
 ### Wave 20 (2026-08-01) — Systematic Improvements
 - [x] Security fixes (entropy cache race condition, bounded decompression, error suppression)

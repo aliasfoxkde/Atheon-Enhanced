@@ -385,6 +385,120 @@ func main() {}
 	_ = findings
 }
 
+// TestHasConditionalReturnPath_ElseIf_Direct tests hasConditionalReturnPath with
+// else-if chains where the inner IfStmt has a return in its body.
+// This exercises the hasReturnInBody(s.Else) branch at line 1739.
+func TestHasConditionalReturnPath_ElseIf_Direct(t *testing.T) {
+	// Test IfStmt with else-if chain where inner if has a return
+	// This exercises the hasReturnInBody(s.Else) branch where s.Else is an *ast.IfStmt
+	ifStmtElseIf := &ast.IfStmt{
+		Cond: &ast.Ident{Name: "x"},
+		Body: &ast.BlockStmt{
+			List: []ast.Stmt{},
+		},
+		Else: &ast.IfStmt{ // else-if case - s.Else is an IfStmt, not BlockStmt or ReturnStmt
+			Cond: &ast.Ident{Name: "y"},
+			Body: &ast.BlockStmt{
+				List: []ast.Stmt{
+					&ast.ReturnStmt{Results: []ast.Expr{&ast.Ident{Name: "2"}}},
+				},
+			},
+		},
+	}
+	result := hasConditionalReturnPath(ifStmtElseIf)
+	if !result {
+		t.Error("expected true for IfStmt with else-if chain where inner if has return")
+	}
+
+	// Test nested else-if (three levels) where deepest if has a return
+	ifStmtNestedElseIf := &ast.IfStmt{
+		Cond: &ast.Ident{Name: "a"},
+		Body: &ast.BlockStmt{
+			List: []ast.Stmt{},
+		},
+		Else: &ast.IfStmt{
+			Cond: &ast.Ident{Name: "b"},
+			Body: &ast.BlockStmt{
+				List: []ast.Stmt{},
+			},
+			Else: &ast.IfStmt{
+				Cond: &ast.Ident{Name: "c"},
+				Body: &ast.BlockStmt{
+					List: []ast.Stmt{
+						&ast.ReturnStmt{Results: []ast.Expr{&ast.Ident{Name: "3"}}},
+					},
+				},
+			},
+		},
+	}
+	result = hasConditionalReturnPath(ifStmtNestedElseIf)
+	if !result {
+		t.Error("expected true for nested else-if chain where deepest if has return")
+	}
+}
+
+// TestDetectExcessiveAbstractionDepth_Inline_Direct tests interface depth detection
+// with inline embedded interfaces that exceed MaxAbstractionDepth (3).
+// This exercises the depth > MaxAbstractionDepth branch at line 1530.
+func TestDetectExcessiveAbstractionDepth_Inline_Direct(t *testing.T) {
+	// Create 5 levels of inline embedded interfaces (depth 4) to exceed MaxAbstractionDepth of 3
+	// Using inline interface{} types (ast.InterfaceType with empty Methods)
+	code := `package main
+
+type DeepIface interface{
+	interface{
+		interface{
+			interface{
+				interface{
+				}
+			}
+		}
+	}
+}
+
+func main() {}
+`
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, "test.go", code, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	findings := detectExcessiveAbstractionDepth(fset, file)
+	// Should trigger a finding since depth 4 > MaxAbstractionDepth 3
+	if len(findings) == 0 {
+		t.Error("expected finding for inline embedded interface depth exceeding MaxAbstractionDepth")
+	}
+}
+
+// TestDetectExcessiveAbstractionDepth_DeeplyNested_Direct tests with even deeper nesting.
+func TestDetectExcessiveAbstractionDepth_DeeplyNested_Direct(t *testing.T) {
+	// Create 5 levels of inline embedded interfaces
+	code := `package main
+
+type VeryDeepIface interface{
+	interface{
+		interface{
+			interface{
+				interface{
+				}
+			}
+		}
+	}
+}
+
+func main() {}
+`
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, "test.go", code, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	findings := detectExcessiveAbstractionDepth(fset, file)
+	if len(findings) == 0 {
+		t.Error("expected finding for deeply nested inline interface (depth 5)")
+	}
+}
+
 // TestHasUnconditionalReturnAtEnd_Direct tests return detection at end of block.
 func TestHasUnconditionalReturnAtEnd_Direct(t *testing.T) {
 	// Test with empty block - structurally shouldn't happen but exercises the branch

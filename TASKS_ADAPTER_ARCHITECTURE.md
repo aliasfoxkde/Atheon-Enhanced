@@ -82,11 +82,13 @@ runtime/
 
 **Objective:** Everything returns the same diagnostics object.
 
-- [ ] Define `schemas/diagnostics.schema.json`
-- [ ] Define `schemas/config.schema.json`
-- [ ] Define `schemas/result.schema.json`
-- [ ] Implement diagnostics model in `runtime/diagnostics/`
-- [ ] All adapters consume same diagnostics object
+- [x] Define `schemas/diagnostics.schema.json`
+- [x] Define `schemas/config.schema.json`
+- [x] Define `schemas/result.schema.json`
+- [x] Implement diagnostics model in `runtime/diagnostics/`
+- [x] All adapters consume same diagnostics object
+
+**Status: ✅ COMPLETE**
 
 **Diagnostics Schema:**
 ```json
@@ -105,12 +107,14 @@ runtime/
 
 **Objective:** One formatter per output type, no duplicated logic.
 
-- [ ] Console formatter (`runtime/formatter/console.go`)
-- [ ] Markdown formatter (`runtime/formatter/markdown.go`)
-- [ ] JSON formatter (`runtime/formatter/json.go`)
-- [ ] SARIF formatter (`runtime/formatter/sarif.go`)
-- [ ] Base formatter interface
-- [ ] Never duplicate formatting logic across adapters
+- [x] Console formatter (`runtime/formatter/console.go`)
+- [x] Markdown formatter (`runtime/formatter/markdown.go`)
+- [x] JSON formatter (`runtime/formatter/json.go`)
+- [x] SARIF formatter (`runtime/formatter/sarif.go`)
+- [x] Base formatter interface
+- [x] Never duplicate formatting logic across adapters
+
+**Status: ✅ COMPLETE**
 
 ---
 
@@ -118,12 +122,14 @@ runtime/
 
 **Objective:** Support multiple config file formats with deterministic merge order.
 
-- [ ] Support `atheon.json`
-- [ ] Support `atheon.yaml`
-- [ ] Support `pyproject.toml`
-- [ ] Support `package.json`
-- [ ] Document merge order
-- [ ] Implement config loader
+- [x] Support `atheon.json`
+- [x] Support `atheon.yaml`
+- [x] Support `pyproject.toml`
+- [x] Support `package.json`
+- [x] Document merge order
+- [x] Implement config loader
+
+**Status: ✅ COMPLETE**
 
 **Merge Order:**
 ```
@@ -136,11 +142,12 @@ Defaults → Global → Project → CLI → Environment
 
 **Objective:** Define one public interface for the runtime.
 
-- [ ] `Analyze(projectPath string) (*Diagnostics, error)`
-- [ ] `AnalyzeFiles(paths []string) (*Diagnostics, error)`
-- [ ] `AnalyzeProject(project Project) (*Diagnostics, error)`
-- [ ] `Benchmark(project Project) (*BenchmarkResult, error)`
-- [ ] `ValidateConfig(configPath string) (*ValidationResult, error)`
+- [x] `Analyze(projectPath string) (*Diagnostics, error)`
+- [x] `AnalyzeFiles(paths []string) (*Diagnostics, error)`
+- [x] `Benchmark(project Project) (*BenchmarkResult, error)`
+- [x] `ValidateConfig(configPath string) (*ValidationResult, error)`
+
+**Status: ✅ COMPLETE**
 
 ---
 
@@ -148,9 +155,11 @@ Defaults → Global → Project → CLI → Environment
 
 **Objective:** Standardize adapter lifecycle.
 
-- [ ] Define adapter interface
-- [ ] Document lifecycle: Initialize → Validate → Load Config → Analyze → Format → Return → Exit
-- [ ] No adapter deviates from standard lifecycle
+- [x] Define adapter interface
+- [x] Document lifecycle: Initialize → Validate → Load Config → Analyze → Format → Return → Exit
+- [x] No adapter deviates from standard lifecycle
+
+**Status: ✅ COMPLETE**
 
 ---
 

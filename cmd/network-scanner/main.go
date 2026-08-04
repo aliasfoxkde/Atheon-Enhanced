@@ -57,7 +57,7 @@ func (s *NetworkScanner) ScanURL(ctx context.Context, targetURL string) ([]Secur
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// Check security headers
 	issues = append(issues, checkSecurityHeaders(targetURL, resp.Header)...)

@@ -362,9 +362,13 @@ func (s *Scanner) ScanDirIncremental(root string) ([]string, error) {
 	// Save updated cache if SkipUnchanged is enabled
 	if s.Options.SkipUnchanged {
 		cacheDir := GetCacheDir()
-		os.MkdirAll(cacheDir, 0755)
-		cache.Save(cachePath)
-		fmt.Printf("Incremental scan: %d files changed, %d unchanged (cache saved to %s)\n", changedCount, unchangedCount, cachePath)
+		if err := os.MkdirAll(cacheDir, 0755); err != nil {
+			fmt.Fprintf(os.Stderr, "warning: failed to create cache dir: %v\n", err)
+		} else if err := cache.Save(cachePath); err != nil {
+			fmt.Fprintf(os.Stderr, "warning: failed to save cache: %v\n", err)
+		} else {
+			fmt.Printf("Incremental scan: %d files changed, %d unchanged (cache saved to %s)\n", changedCount, unchangedCount, cachePath)
+		}
 	}
 
 	return files, nil

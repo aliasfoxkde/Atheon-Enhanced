@@ -47,20 +47,24 @@ func NewDaemon(config DaemonConfig) *Daemon {
 // Start begins the daemon listening loop
 func (d *Daemon) Start(ctx context.Context) error {
 	// Remove existing socket file
-	os.Remove(d.config.SocketPath)
+	_ = os.Remove(d.config.SocketPath)
 
 	// Ensure directory exists
-	os.MkdirAll(filepath.Dir(d.config.SocketPath), 0755)
+	if err := os.MkdirAll(filepath.Dir(d.config.SocketPath), 0755); err != nil {
+		return fmt.Errorf("failed to create socket directory: %w", err)
+	}
 
 	// Create Unix socket
 	ln, err := net.Listen("unix", d.config.SocketPath)
 	if err != nil {
 		return fmt.Errorf("failed to listen on socket: %w", err)
 	}
-	defer os.Remove(d.config.SocketPath)
+	defer func() { _ = os.Remove(d.config.SocketPath) }()
 
 	// Set socket permissions
-	os.Chmod(d.config.SocketPath, 0666)
+	if err := os.Chmod(d.config.SocketPath, 0666); err != nil {
+		return fmt.Errorf("failed to set socket permissions: %w", err)
+	}
 
 	fmt.Printf("Atheon daemon listening on %s\n", d.config.SocketPath)
 
@@ -85,7 +89,7 @@ func (d *Daemon) Start(ctx context.Context) error {
 
 // handleConnection handles a single client connection
 func (d *Daemon) handleConnection(conn net.Conn) {
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	// Read request
 	data, err := io.ReadAll(conn)
@@ -119,14 +123,18 @@ func (d *Daemon) handleConnection(conn net.Conn) {
 		return
 	}
 
-	conn.Write(respData)
+	if _, err := conn.Write(respData); err != nil {
+		fmt.Fprintf(os.Stderr, "write error: %v\n", err)
+	}
 }
 
 // sendError sends an error response
 func (d *Daemon) sendError(conn net.Conn, msg string) {
 	resp := ScanResponse{Success: false, Error: msg}
 	data, _ := json.Marshal(resp)
-	conn.Write(data)
+	if _, err := conn.Write(data); err != nil {
+		fmt.Fprintf(os.Stderr, "error response write failed: %v\n", err)
+	}
 }
 
 // Status returns daemon status

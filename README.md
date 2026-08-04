@@ -104,11 +104,17 @@ Atheon-Enhanced/
 │   ├── CONTRIBUTING.md
 │   └── SECURITY.md
 ├── docs/                 # Full documentation
+│   ├── guides/          # User guides
+│   │   ├── PI_CLI_INTEGRATION.md  # Pi CLI adapter setup
+│   │   ├── SELF_SCAN.md           # Self-scan CI integration
+│   │   ├── BACKEND_INTEGRATION.md # Backend integration
+│   │   ├── PATTERN_AUTHORING.md   # Writing patterns
+│   │   └── TROUBLESHOOTING.md     # Common issues
 │   ├── architecture/     # System architecture
-│   ├── development/       # Developer guides
-│   ├── integrations/      # MCP & tool integrations
-│   ├── reports/          # Analysis & comparison reports
-│   └── *.md              # Guides and references
+│   ├── development/     # Developer guides
+│   ├── integrations/    # MCP, GitHub agents, pre-commit
+│   ├── planning/        # Project planning docs
+│   └── reports/         # Analysis & comparison reports
 ├── community/            # Pattern definitions
 │   └── ai-detection/      # AI detection patterns
 ├── cmd/                  # CLI & MCP server

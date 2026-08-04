@@ -231,28 +231,28 @@ func TestDetectInconsistentBooleanNaming_Direct(t *testing.T) {
 					},
 					// True/False style (_ok, _success, active, valid, found suffixes)
 					&ast.ValueSpec{
-						Names: []*ast.Ident{{Name: "operation_ok"}},
+						Names:  []*ast.Ident{{Name: "operation_ok"}},
 						Values: []ast.Expr{&ast.Ident{Name: "true"}},
 					},
 					&ast.ValueSpec{
-						Names: []*ast.Ident{{Name: "request_success"}},
+						Names:  []*ast.Ident{{Name: "request_success"}},
 						Values: []ast.Expr{&ast.Ident{Name: "false"}},
 					},
 					&ast.ValueSpec{
-						Names: []*ast.Ident{{Name: "isActive"}},
+						Names:  []*ast.Ident{{Name: "isActive"}},
 						Values: []ast.Expr{&ast.Ident{Name: "true"}},
 					},
 					&ast.ValueSpec{
-						Names: []*ast.Ident{{Name: "isValid"}},
+						Names:  []*ast.Ident{{Name: "isValid"}},
 						Values: []ast.Expr{&ast.Ident{Name: "false"}},
 					},
 					&ast.ValueSpec{
-						Names: []*ast.Ident{{Name: "item_found"}},
+						Names:  []*ast.Ident{{Name: "item_found"}},
 						Values: []ast.Expr{&ast.Ident{Name: "true"}},
 					},
 					// Disable prefix for trueFalseStyle
 					&ast.ValueSpec{
-						Names: []*ast.Ident{{Name: "disableCache"}},
+						Names:  []*ast.Ident{{Name: "disableCache"}},
 						Values: []ast.Expr{&ast.Ident{Name: "false"}},
 					},
 				},

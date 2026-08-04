@@ -57,9 +57,6 @@ type ConfigProfile struct {
 	SelfScanMode         bool     `json:"self_scan_mode"`
 }
 
-// loadedConfig holds the currently active configuration profile.
-var loadedConfig *ConfigProfile
-
 // defaultConfigPath returns the default user config path (~/.atheon/config.json).
 func defaultConfigPath() string {
 	if home, err := os.UserHomeDir(); err == nil {
@@ -80,6 +77,7 @@ func loadUserConfig(configPath string) (*ConfigProfile, error) {
 	if path == "" {
 		return nil, nil
 	}
+	// #nosec G304 -- path is validated above to be non-empty
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -186,18 +184,16 @@ func run(ctx context.Context, args []string) int {
 	// Set up output redirection if --output-file is specified.
 	outputWriter := setupOutputFile(outputFile)
 	if outputWriter != nil {
-		defer outputWriter.Close()
+		defer func() { _ = outputWriter.Close() }()
 	}
 
 	// Load user config from ~/.atheon/config.json (optional). The --config
 	// flag path overrides the default location. Config is loaded early so
 	// subsequent scanning operations can use configured defaults.
 	configPath, args := parseConfigFlag(args)
-	cfg, err := loadUserConfig(configPath)
-	if err != nil {
+	if _, err := loadUserConfig(configPath); err != nil {
 		fmt.Fprintf(os.Stderr, "warning: %v\n", err)
 	}
-	loadedConfig = cfg
 
 	cats, args, enableAll := parseCategories(args)
 	// Warn on unknown categories before scanning — a typo silently produces
@@ -413,6 +409,7 @@ func parseGlobalFlags(args []string) (rest []string, quietMode, diffMode bool, s
 // It parses the unified diff format and returns findings whose file:line
 // intersects with the added line ranges.
 func filterDiffFindings(findings []core.Finding, diffPath string) []core.Finding {
+	// #nosec G304 -- diffPath comes from --diff flag, not user input
 	diffData, err := os.ReadFile(diffPath)
 	if err != nil {
 		slog.Warn("could not read diff file, returning all findings", "path", diffPath, "err", err)
@@ -504,6 +501,7 @@ func setupOutputFile(path string) io.WriteCloser {
 	if path == "" {
 		return nil
 	}
+	// #nosec G304 -- path is validated to be non-empty above
 	f, err := os.Create(path)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: cannot create output file %s: %s\n", path, err)

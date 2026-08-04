@@ -9,11 +9,11 @@ import (
 	"testing"
 )
 
-// atomicBoolTrue returns an atomic.Bool set to true.
-func atomicBoolTrue() atomic.Bool {
+// atomicBoolTrue returns a *atomic.Bool set to true.
+func atomicBoolTrue() *atomic.Bool {
 	var b atomic.Bool
 	b.Store(true)
-	return b
+	return &b
 }
 
 // captureHandler is a slog.Handler that records every emitted record

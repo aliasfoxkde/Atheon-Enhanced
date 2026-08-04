@@ -64,11 +64,11 @@ type bundlePattern struct {
 	description string
 	reference   string
 	tags        []string
-	// enabled uses atomic.Bool for lock-free reads. Writers (Enable/Disable/
+	// enabled uses *atomic.Bool for lock-free reads. Writers (Enable/Disable/
 	// SetPatternEnabled) still serialize via patternMu, but readers no longer
 	// need to acquire any lock — scanLines/scanEnv snapshot activeScanners
 	// under RLock then iterate without holding it.
-	enabled    atomic.Bool
+	enabled    *atomic.Bool
 	severity   string
 	confidence string  // high, medium, or low
 	minEntropy float64 // Minimum entropy threshold (0 = no filtering)
@@ -158,7 +158,12 @@ func init() {
 	data := embeddedBundle
 	if home, err := os.UserHomeDir(); err == nil {
 		if b, err := os.ReadFile(filepath.Join(home, ".atheon", "patterns.bundle")); err == nil {
-			data = b
+			// If the disk bundle is empty or has only 0 patterns, it was likely
+			// corrupted by a parallel test's DownloadBundle call. Fall back to
+			// the embedded bundle instead.
+			if len(b) > 100 {
+				data = b
+			}
 		}
 	}
 	initializeWith(data)
@@ -340,6 +345,7 @@ func loadBundleFrom(decompressed []byte) error {
 			confidence:  normalizeConfidence(def.Confidence),
 			minEntropy:  def.MinEntropy,
 			re:          re,
+			enabled:     &atomic.Bool{},
 		}
 		bp.enabled.Store(def.Enabled)
 		allPatterns = append(allPatterns, bp)

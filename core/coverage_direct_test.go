@@ -81,7 +81,7 @@ func TestTypeToStringBranch_Direct(t *testing.T) {
 
 	// Test SelectorExpr where X is not an Ident
 	selectorExpr := &ast.SelectorExpr{
-		X: &ast.BasicLit{Kind: token.STRING, Value: `"test"`}, // X is not an Ident
+		X:   &ast.BasicLit{Kind: token.STRING, Value: `"test"`}, // X is not an Ident
 		Sel: &ast.Ident{Name: "field"},
 	}
 	result = typeToString(selectorExpr)
@@ -172,19 +172,19 @@ func TestDetectInconsistentBooleanNaming_Direct(t *testing.T) {
 				Tok: token.VAR,
 				Specs: []ast.Spec{
 					&ast.ValueSpec{
-						Names: []*ast.Ident{{Name: "isEnabled"}},
+						Names:  []*ast.Ident{{Name: "isEnabled"}},
 						Values: []ast.Expr{&ast.Ident{Name: "true"}},
 					},
 					&ast.ValueSpec{
-						Names: []*ast.Ident{{Name: "hasAccess"}},
+						Names:  []*ast.Ident{{Name: "hasAccess"}},
 						Values: []ast.Expr{&ast.Ident{Name: "false"}},
 					},
 					&ast.ValueSpec{
-						Names: []*ast.Ident{{Name: "yesNo"}},
+						Names:  []*ast.Ident{{Name: "yesNo"}},
 						Values: []ast.Expr{&ast.Ident{Name: "true"}},
 					},
 					&ast.ValueSpec{
-						Names: []*ast.Ident{{Name: "noError"}},
+						Names:  []*ast.Ident{{Name: "noError"}},
 						Values: []ast.Expr{&ast.Ident{Name: "false"}},
 					},
 				},

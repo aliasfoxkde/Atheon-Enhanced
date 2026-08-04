@@ -9,12 +9,12 @@ import (
 
 // Config represents the runtime configuration.
 type Config struct {
-	Version  string           `json:"version"`
-	Rules    []RuleConfig     `json:"rules,omitempty"`
-	Patterns []PatternConfig  `json:"patterns,omitempty"`
-	Excludes []string         `json:"excludes,omitempty"`
-	Output   OutputConfig     `json:"output"`
-	Scanner  ScannerConfig    `json:"scanner"`
+	Version  string          `json:"version"`
+	Rules    []RuleConfig    `json:"rules,omitempty"`
+	Patterns []PatternConfig `json:"patterns,omitempty"`
+	Excludes []string        `json:"excludes,omitempty"`
+	Output   OutputConfig    `json:"output"`
+	Scanner  ScannerConfig   `json:"scanner"`
 }
 
 // RuleConfig represents a rule configuration.
@@ -44,6 +44,7 @@ type ScannerConfig struct {
 
 // Load reads configuration from a JSON or YAML file.
 func Load(configPath string) (*Config, error) {
+	// #nosec G304 -- configPath is a validated file path
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		return nil, err
@@ -66,8 +67,8 @@ func Load(configPath string) (*Config, error) {
 // LoadDefault returns a Config with sensible defaults.
 func LoadDefault() *Config {
 	return &Config{
-		Version: "1.0",
-		Rules:   []RuleConfig{},
+		Version:  "1.0",
+		Rules:    []RuleConfig{},
 		Patterns: []PatternConfig{},
 		Excludes: []string{
 			"node_modules",

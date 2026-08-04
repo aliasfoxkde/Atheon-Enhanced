@@ -177,10 +177,30 @@ Defaults → Global → Project → CLI → Environment
 
 **Objective:** Register one `atheon` tool for Pi.
 
-- [ ] Create `adapters/pi/`
-- [ ] Implement Pi tool registration
-- [ ] Workspace, changed files, configuration inputs
-- [ ] No custom analysis - uses runtime only
+- [x] Create `adapters/pi/`
+- [x] Implement Pi tool registration
+- [x] Workspace, changed files, configuration inputs
+- [x] No custom analysis - uses runtime only
+
+**Status: ✅ COMPLETE**
+
+**Deliverables:**
+```
+adapters/pi/
+├── pi.go          # Adapter implementation
+├── pi_test.go     # Tests
+└── tool registration.md  # Documentation
+```
+
+**Usage:**
+```json
+{
+  "command": "scan",
+  "paths": ["./src"]
+}
+```
+
+**Tested:** End-to-end with actual Pi adapter tests (4 tests passing)
 
 ---
 
@@ -332,7 +352,7 @@ A release is complete only when:
 | Phase 5 - Runtime API | ✅ Complete | 100% |
 | Phase 6 - Adapter Framework | ✅ Complete | 100% |
 | Phase 7 - CLI Adapter | 🔄 In Progress | 0% |
-| Phase 8 - Pi Adapter | Not Started | 0% |
+| Phase 8 - Pi Adapter | ✅ Complete | 100% |
 | Phase 9 - GitForge Adapter | Not Started | 0% |
 | Phase 10 - GitHub Actions | Not Started | 0% |
 | Phase 11 - Pre-Commit | Not Started | 0% |

@@ -89,10 +89,10 @@ func (r *AdapterRegistry) Unregister(name string) bool {
 
 // Errors for adapter operations.
 var (
-	ErrNilAdapter            = &AdapterError{"adapter cannot be nil"}
-	ErrInvalidAdapterName    = &AdapterError{"adapter name cannot be empty"}
+	ErrNilAdapter               = &AdapterError{"adapter cannot be nil"}
+	ErrInvalidAdapterName       = &AdapterError{"adapter name cannot be empty"}
 	ErrAdapterAlreadyRegistered = &AdapterError{"adapter already registered"}
-	ErrAdapterNotFound       = &AdapterError{"adapter not found"}
+	ErrAdapterNotFound          = &AdapterError{"adapter not found"}
 )
 
 // AdapterError represents an adapter-related error.

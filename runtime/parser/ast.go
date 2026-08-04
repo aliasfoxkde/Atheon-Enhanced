@@ -321,6 +321,10 @@ func GetNodeKind(node ast.Node) string {
 		return "File"
 	case *ast.Package:
 		return "Package"
+	case *ast.TypeSpec:
+		return "TypeSpec"
+	case *ast.ValueSpec:
+		return "ValueSpec"
 	case *ast.ImportSpec:
 		return "ImportSpec"
 	case *ast.GenDecl:
@@ -353,6 +357,10 @@ func GetNodeKind(node ast.Node) string {
 		return "RangeStmt"
 	case *ast.SwitchStmt:
 		return "SwitchStmt"
+	case *ast.SelectStmt:
+		return "SelectStmt"
+	case *ast.TypeSwitchStmt:
+		return "TypeSwitchStmt"
 	case *ast.CaseClause:
 		return "CaseClause"
 	case *ast.CommClause:

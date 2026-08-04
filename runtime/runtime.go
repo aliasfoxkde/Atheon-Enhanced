@@ -17,11 +17,11 @@ import (
 // It orchestrates all components to perform analysis on code projects.
 type Runtime struct {
 	scanner  *scanner.Scanner
-	rules   *rules.Registry
+	rules    *rules.Registry
 	patterns *patterns.Matcher
-	config  *config.Config
-	cache   *cache.Cache
-	formats map[string]formatter.Formatter
+	config   *config.Config
+	cache    *cache.Cache
+	formats  map[string]formatter.Formatter
 }
 
 // RuntimeOption configures the Runtime.
@@ -66,11 +66,11 @@ func WithCache(c *cache.Cache) RuntimeOption {
 func NewRuntime(opts ...RuntimeOption) *Runtime {
 	r := &Runtime{
 		scanner:  scanner.NewScanner(scanner.Options{}),
-		rules:   rules.NewRegistry(),
+		rules:    rules.NewRegistry(),
 		patterns: patterns.NewMatcher(patterns.BuiltinPatterns()),
-		config:  config.LoadDefault(),
-		cache:   cache.NewCache(0),
-		formats: make(map[string]formatter.Formatter),
+		config:   config.LoadDefault(),
+		cache:    cache.NewCache(0),
+		formats:  make(map[string]formatter.Formatter),
 	}
 
 	// Register built-in rules
@@ -191,11 +191,11 @@ func (r *Runtime) UpdateConfig(cfg *config.Config) {
 
 // BenchmarkResult contains the results of a benchmark run.
 type BenchmarkResult struct {
-	FilesScanned     int
-	FilesAnalyzed    int
-	Duration         float64
-	ThroughputFiles  float64 // files per second
-	MemoryUsedMB     float64
+	FilesScanned    int
+	FilesAnalyzed   int
+	Duration        float64
+	ThroughputFiles float64 // files per second
+	MemoryUsedMB    float64
 }
 
 // Benchmark runs a performance benchmark on the given project.
@@ -226,10 +226,13 @@ type ValidationResult struct {
 func (r *Runtime) ValidateConfig(configPath string) (*ValidationResult, error) {
 	cfg, err := config.Load(configPath)
 	if err != nil {
-		return &ValidationResult{
+		result := &ValidationResult{
 			Valid:  false,
 			Errors: []string{err.Error()},
-		}, nil
+		}
+		// Return result alongside error for validation failures so caller can
+		// distinguish file-not-found from parse errors.
+		return result, err
 	}
 
 	result := &ValidationResult{Valid: true}

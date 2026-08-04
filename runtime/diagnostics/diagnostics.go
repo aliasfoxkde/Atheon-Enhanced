@@ -11,11 +11,11 @@ type Diagnostics struct {
 
 type Summary struct {
 	TotalFindings int `json:"total_findings"`
-	Critical     int `json:"critical"`
-	High         int `json:"high"`
-	Medium       int `json:"medium"`
-	Low          int `json:"low"`
-	Info         int `json:"info"`
+	Critical      int `json:"critical"`
+	High          int `json:"high"`
+	Medium        int `json:"medium"`
+	Low           int `json:"low"`
+	Info          int `json:"info"`
 }
 
 type Statistics struct {
@@ -129,10 +129,10 @@ func (d *Diagnostics) copy() *Diagnostics {
 	}
 
 	result := &Diagnostics{
-		Summary:   d.Summary,
+		Summary:    d.Summary,
 		Statistics: d.Statistics,
-		Timing:    d.Timing,
-		Metadata:  d.Metadata,
+		Timing:     d.Timing,
+		Metadata:   d.Metadata,
 	}
 
 	// Deep copy issues

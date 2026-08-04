@@ -76,10 +76,10 @@ func detectCreditCard(file string, node interface{}) *diagnostics.Issue {
 
 	// Common credit card patterns
 	patterns := []*regexp.Regexp{
-		regexp.MustCompile(`\b4[0-9]{12}(?:[0-9]{3})?\b`),             // Visa
-		regexp.MustCompile(`\b5[1-5][0-9]{14}\b`),                     // MasterCard
-		regexp.MustCompile(`\b3[47][0-9]{13}\b`),                     // American Express
-		regexp.MustCompile(`\b6(?:011|5[0-9]{2})[0-9]{12}\b`),        // Discover
+		regexp.MustCompile(`\b4[0-9]{12}(?:[0-9]{3})?\b`),                                   // Visa
+		regexp.MustCompile(`\b5[1-5][0-9]{14}\b`),                                           // MasterCard
+		regexp.MustCompile(`\b3[47][0-9]{13}\b`),                                            // American Express
+		regexp.MustCompile(`\b6(?:011|5[0-9]{2})[0-9]{12}\b`),                               // Discover
 		regexp.MustCompile(`\b(?:3[0-9]{4}|4[0-9]{4}|5[0-9]{4})[0-9]{4}[0-9]{4}[0-9]{4}\b`), // Generic
 	}
 
@@ -106,8 +106,8 @@ func detectAWSKey(file string, node interface{}) *diagnostics.Issue {
 
 	// AWS access key patterns
 	patterns := []*regexp.Regexp{
-		regexp.MustCompile(`(?i)AKIA[0-9A-Z]{16}`),                 // Access Key ID
-		regexp.MustCompile(`(?i)AWS_ACCESS_KEY_ID\s*=\s*[^ ]+`),   // Environment variable style
+		regexp.MustCompile(`(?i)AKIA[0-9A-Z]{16}`),                  // Access Key ID
+		regexp.MustCompile(`(?i)AWS_ACCESS_KEY_ID\s*=\s*[^ ]+`),     // Environment variable style
 		regexp.MustCompile(`(?i)aws_secret_access_key\s*=\s*[^ ]+`), // Secret key style
 	}
 

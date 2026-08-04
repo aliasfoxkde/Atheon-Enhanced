@@ -140,8 +140,8 @@ func TestRegisterBuiltinRules(t *testing.T) {
 
 func TestRuleG401CreditCard(t *testing.T) {
 	tests := []struct {
-		name     string
-		content  string
+		name      string
+		content   string
 		wantIssue bool
 	}{
 		{"Visa card", "4111111111111111", true},
@@ -277,12 +277,12 @@ func TestRuleCheckWithNonStringNode(t *testing.T) {
 	rules := []*Rule{RuleG401, RuleG402, RuleG403, RuleG404, RuleG405}
 
 	for _, rule := range rules {
-		issue := rule.Check("test.go", 12345)       // integer node
+		issue := rule.Check("test.go", 12345) // integer node
 		if issue != nil {
 			t.Errorf("Rule %s should return nil for integer node, got %+v", rule.ID, issue)
 		}
 
-		issue = rule.Check("test.go", nil)           // nil node
+		issue = rule.Check("test.go", nil) // nil node
 		if issue != nil {
 			t.Errorf("Rule %s should return nil for nil node, got %+v", rule.ID, issue)
 		}

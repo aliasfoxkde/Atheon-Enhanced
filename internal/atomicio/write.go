@@ -3,10 +3,28 @@ package atomicio
 
 import (
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
 )
+
+// tempFile interface for wrapping os.File to enable error injection in tests
+type tempFile interface {
+	io.Writer
+	Sync() error
+	Close() error
+	Name() string
+}
+
+// fileWriter wraps an *os.File to implement tempFile
+type fileWriter struct {
+	*os.File
+}
+
+func (fw fileWriter) Name() string {
+	return fw.File.Name()
+}
 
 // WriteFile writes data to path via tempfile-then-rename. POSIX rename
 // is atomic within a filesystem, so a process crash, power loss, or SIGKILL
@@ -31,8 +49,20 @@ import (
 // the directory is the user's own home subdirectory, not a user-controlled
 // value. gosec G304 (file inclusion) does not apply.
 func WriteFile(path string, data []byte, perm os.FileMode) (retErr error) {
+	return WriteFileWithFile(path, data, perm, func(dir, pattern string) (tempFile, error) {
+		f, err := os.CreateTemp(dir, pattern)
+		if err != nil {
+			return nil, err
+		}
+		return fileWriter{File: f}, nil
+	})
+}
+
+// WriteFileWithFile is the internal implementation that accepts a file creator function
+// for testing purposes. The fileCreator should create a temporary file.
+func WriteFileWithFile(path string, data []byte, perm os.FileMode, fileCreator func(dir, pattern string) (tempFile, error)) (retErr error) {
 	dir := filepath.Dir(path)
-	tmp, err := os.CreateTemp(dir, filepath.Base(path)+".tmp-*")
+	tmp, err := fileCreator(dir, filepath.Base(path)+".tmp-*")
 	if err != nil {
 		return fmt.Errorf("atomic write: create temp: %w", err)
 	}

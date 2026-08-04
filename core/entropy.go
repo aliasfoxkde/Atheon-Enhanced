@@ -11,9 +11,9 @@ import (
 // benefit from caching to avoid redundant computation.
 // Uses LRU eviction to handle more than maxEntries unique strings.
 var entropyCache = struct {
-	m    map[string]*list.Element // key -> list.Element
-	lru  *list.List              // front=MRU, back=LRU
-	mu   sync.Mutex
+	m     map[string]*list.Element // key -> list.Element
+	lru   *list.List               // front=MRU, back=LRU
+	mu    sync.Mutex
 	limit int
 }{m: make(map[string]*list.Element), lru: list.New(), limit: 1024}
 

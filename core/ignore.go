@@ -3,6 +3,7 @@ package core
 import (
 	"bufio"
 	"errors"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -23,7 +24,7 @@ func compileIgnoreFile(path string) (*ignoreMatcher, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }() //nolint:errcheck // Close error is irrelevant after read
 
 	var rules []ignoreRule
 	sc := bufio.NewScanner(f)
@@ -39,6 +40,7 @@ func compileIgnoreFile(path string) (*ignoreMatcher, error) {
 		}
 		re, err := ignorePatternToRegexp(line)
 		if err != nil {
+			slog.Warn("ignoring invalid pattern", "pattern", line, "err", err)
 			continue
 		}
 		rules = append(rules, ignoreRule{re: re, negated: negated})

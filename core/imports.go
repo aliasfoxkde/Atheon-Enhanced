@@ -116,7 +116,7 @@ func DetectCircularImports(graph *ImportGraph) [][]string {
 	var dfs func(node string) bool
 	dfs = func(node string) bool {
 		if inStack[node] {
-			// Found a cycle - extract it from the path
+			// Found a cycle - extract it from the path starting from first occurrence of this node
 			cycleStart := -1
 			for i, n := range path {
 				if n == node {
@@ -129,7 +129,7 @@ func DetectCircularImports(graph *ImportGraph) [][]string {
 				cycle = append(cycle, node)
 				cycles = append(cycles, cycle)
 			}
-			return true
+			// Don't return - continue DFS to find all cycles in the graph
 		}
 
 		if visited[node] {

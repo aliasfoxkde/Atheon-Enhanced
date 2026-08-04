@@ -28,6 +28,9 @@ var (
 	// a pattern in the active bundle.
 	ErrPatternNotFound = errors.New("pattern not found")
 
+	// ErrBundleInit is returned when bundle initialization fails.
+	ErrBundleInit = errors.New("bundle initialization failed")
+
 	// ErrBundleDownload is returned by DownloadBundle when the upstream
 	// bundle cannot be fetched or the response body cannot be persisted.
 	ErrBundleDownload = errors.New("bundle download failed")

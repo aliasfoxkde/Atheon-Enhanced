@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"syscall"
 	"testing"
 )
@@ -327,7 +328,8 @@ func TestWriteFile_SpecialPermissions(t *testing.T) {
 	}
 }
 
-// TestWriteFile_AllowsSymlink tests that we can write to a symlinked path
+// TestWriteFile_AllowsSymlink tests that we refuse to write to a symlinked path
+// for security reasons (symlink attack mitigation).
 func TestWriteFile_AllowsSymlink(t *testing.T) {
 	tmp := t.TempDir()
 	realPath := filepath.Join(tmp, "real.txt")
@@ -343,18 +345,21 @@ func TestWriteFile_AllowsSymlink(t *testing.T) {
 		t.Skip("symlinks not supported, skipping test")
 	}
 
-	// Write through symlink
-	if err := WriteFile(linkPath, []byte("updated"), 0644); err != nil {
-		t.Fatalf("WriteFile through symlink failed: %v", err)
+	// Writing through symlink should be refused for security
+	err := WriteFile(linkPath, []byte("updated"), 0644)
+	if err == nil {
+		t.Error("WriteFile through symlink: expected error, got nil")
+	} else if !strings.Contains(err.Error(), "is a symlink") {
+		t.Errorf("WriteFile through symlink: expected symlink error, got: %v", err)
 	}
 
-	// Both should have updated content
-	got, err := os.ReadFile(linkPath)
+	// Original file should be unchanged
+	got, err := os.ReadFile(realPath)
 	if err != nil {
-		t.Fatalf("ReadFile through symlink failed: %v", err)
+		t.Fatalf("ReadFile real path failed: %v", err)
 	}
-	if string(got) != "updated" {
-		t.Errorf("got %q, want %q", got, "updated")
+	if string(got) != "original" {
+		t.Errorf("got %q, want %q", got, "original")
 	}
 }
 

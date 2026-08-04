@@ -612,7 +612,7 @@ type CloneFinding struct {
 func detectClones(fset *token.FileSet, file *ast.File) []ASTFinding {
 	var findings []ASTFinding
 
-	detector := NewCloneDetector(DefaultCloneDetectionConfig())
+	detector := NewCloneDetector(nil) // Use default config if none provided
 
 	// We need to work with the parsed file - extract functions
 	var functions []FunctionInfo

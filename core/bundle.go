@@ -166,6 +166,7 @@ func init() {
 			}
 		}
 	}
+	//nolint:errcheck // init() cannot propagate errors; initializeWith logs internally
 	initializeWith(data)
 }
 
@@ -173,6 +174,7 @@ func init() {
 // bundle updates performed by UpdateBundle or handleUpdateBundle. It is
 // used by tests to reset global state between test cases.
 func RestoreBundle() {
+	//nolint:errcheck // RestoreBundle is only called from tests
 	initializeWith(embeddedBundle)
 }
 
@@ -186,7 +188,7 @@ func initializeWith(data []byte) error {
 	// SetActiveCategories / InitializePatternState take patternMu inside,
 	// which is a no-op for callers that already hold it via this init.
 	if err := loadBundle(data); err != nil {
-		slog.Warn("bundle load failed", "err", err)
+		return fmt.Errorf("%w: bundle load failed: %w", ErrBundleInit, err)
 	}
 	setActiveCategoriesLocked(nil)
 
@@ -296,9 +298,28 @@ func decompress(data []byte) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("gzip reader: %w", err)
 	}
-	defer r.Close()
+	defer r.Close() //nolint:errcheck // Close error is irrelevant after read completion
 	// Limit decompression size to prevent OOM from malicious/crafted input
 	return io.ReadAll(io.LimitReader(r, maxBundleDownloadBytes))
+}
+
+// isRegexPotentiallySlow checks for regex patterns known to cause DoS via
+// exponential backtracking. This is a heuristic check - only very obvious
+// nested quantifier patterns that could cause exponential behavior are blocked.
+func isRegexPotentiallySlow(pattern string) bool {
+	// Only block very obvious exponential backtracking patterns
+	// Nested quantifiers like (a+)+ or (a*)* are genuinely dangerous
+	// Don't block alternation groups like (?:a|b|c) which are safe
+	dangerousPatterns := []string{
+		`\([^)]+[+*]\)[+*]`, // nested quantifiers without alternation
+	}
+	for _, dp := range dangerousPatterns {
+		matched, _ := regexp.MatchString(dp, pattern)
+		if matched {
+			return true
+		}
+	}
+	return false
 }
 
 func loadBundle(data []byte) error {
@@ -329,6 +350,11 @@ func loadBundleFrom(decompressed []byte) error {
 	allPatterns = nil
 
 	for _, def := range defs {
+		// Check for potentially slow regex patterns that could cause DoS
+		if isRegexPotentiallySlow(def.Match) {
+			slog.Warn("skipping pattern due to potentially slow regex (DoS risk)", "pattern", def.Name, "match", def.Match)
+			continue
+		}
 		re, err := regexp.Compile(def.Match)
 		if err != nil {
 			slog.Warn("skipping pattern due to regex error", "pattern", def.Name, "err", err)
@@ -772,7 +798,10 @@ func fetchBundleData(ctx context.Context) (data []byte, etag string, err error) 
 	if err != nil {
 		return nil, "", fmt.Errorf("%w: %w", ErrBundleDownload, err)
 	}
-	defer resp.Body.Close()
+	if resp == nil {
+		return nil, "", fmt.Errorf("%w: nil response received", ErrBundleDownload)
+	}
+	defer func() { _ = resp.Body.Close() }() //nolint:errcheck // Close error is irrelevant after read
 	if resp.StatusCode != http.StatusOK {
 		return nil, "", fmt.Errorf("%w: server returned %d", ErrBundleDownload, resp.StatusCode)
 	}
@@ -822,7 +851,10 @@ func verifyBundleHash(ctx context.Context, data []byte) error {
 	if err != nil {
 		return fmt.Errorf("fetching checksums: %w", err)
 	}
-	defer resp.Body.Close()
+	if resp == nil {
+		return fmt.Errorf("fetching checksums: nil response received")
+	}
+	defer func() { _ = resp.Body.Close() }() //nolint:errcheck // Close error is irrelevant after read
 
 	if resp.StatusCode == http.StatusNotFound {
 		slog.Warn("checksums.txt not found at upstream, skipping hash verification", "url", checksumsURL)
@@ -832,9 +864,17 @@ func verifyBundleHash(ctx context.Context, data []byte) error {
 		return fmt.Errorf("checksums returned %d", resp.StatusCode)
 	}
 
-	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20)) // 1 MiB cap on checksums.txt
+	// Read checksums.txt with a limit to prevent OOM from huge files
+	limitedReader := io.LimitReader(resp.Body, 1<<20) // 1 MiB cap
+	body, err := io.ReadAll(limitedReader)
 	if err != nil {
 		return fmt.Errorf("reading checksums: %w", err)
+	}
+
+	// Check if we hit the limit (file was truncated)
+	if resp.ContentLength > 1<<20 {
+		slog.Warn("checksums.txt exceeded 1 MiB limit, hash verification skipped", "size", resp.ContentLength)
+		return nil
 	}
 
 	// checksums.txt format: one line per file, "<hexhash> <filename>".

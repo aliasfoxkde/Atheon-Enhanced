@@ -546,17 +546,17 @@ func detectReflectiveGetattrSink(fset *token.FileSet, file *ast.File) []ASTFindi
 
 		// Extract the literal string value
 		if lit, ok := secondArg.(*ast.BasicLit); ok && lit.Kind == token.STRING {
-			// Remove quotes
+			// Remove quotes - validate length to prevent panic
 			val := lit.Value
-			if len(val) >= 2 {
+			if len(val) >= 2 && val[0] == '"' && val[len(val)-1] == '"' {
 				val = val[1 : len(val)-1]
-			}
-			if dangerousGetattrNames[val] {
-				findings = append(findings, ASTFinding{
-					Line:     fset.Position(call.Pos()).Line,
-					Message:  fmt.Sprintf("Reflective dangerous call via getattr() with literal sink name: %s", val),
-					Severity: "high",
-				})
+				if dangerousGetattrNames[val] {
+					findings = append(findings, ASTFinding{
+						Line:     fset.Position(call.Pos()).Line,
+						Message:  fmt.Sprintf("Reflective dangerous call via getattr() with literal sink name: %s", val),
+						Severity: "high",
+					})
+				}
 			}
 		}
 		return true

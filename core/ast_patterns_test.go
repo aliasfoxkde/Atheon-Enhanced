@@ -716,3 +716,78 @@ func getEnv() {
 	// Just verify it runs - os.Getenv is a common pattern
 	_ = findings
 }
+
+func TestScanFileAST_UnusedParameter(t *testing.T) {
+	content := `package main
+
+func unusedParam(a int, b string, c bool) {
+	println(a)
+	println(b)
+}
+
+func usedParam(a int, b string, c bool) {
+	println(a)
+	println(b)
+	println(c)
+}
+`
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "test.go")
+	if err := os.WriteFile(tmpFile, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	findings, err := ScanFileAST(tmpFile, builtinASTPatterns)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var unusedFindings []ASTFinding
+	for _, f := range findings {
+		if f.Rule == "unused-parameter" {
+			unusedFindings = append(unusedFindings, f)
+		}
+	}
+
+	if len(unusedFindings) != 1 {
+		t.Errorf("expected 1 unused-parameter finding (c in unusedParam), got %d: %v", len(unusedFindings), unusedFindings)
+	}
+}
+
+func TestScanFileAST_DeferInLoop(t *testing.T) {
+	content := `package main
+
+func badLoop() {
+	for i := 0; i < 10; i++ {
+		defer cleanup()
+	}
+}
+
+func goodLoop() {
+	for i := 0; i < 10; i++ {
+		cleanup()
+	}
+}
+`
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "test.go")
+	if err := os.WriteFile(tmpFile, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	findings, err := ScanFileAST(tmpFile, builtinASTPatterns)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var deferFindings []ASTFinding
+	for _, f := range findings {
+		if f.Rule == "defer-in-loop" {
+			deferFindings = append(deferFindings, f)
+		}
+	}
+
+	if len(deferFindings) != 1 {
+		t.Errorf("expected 1 defer-in-loop finding, got %d", len(deferFindings))
+	}
+}

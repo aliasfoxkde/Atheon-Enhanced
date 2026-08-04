@@ -303,25 +303,6 @@ func decompress(data []byte) ([]byte, error) {
 	return io.ReadAll(io.LimitReader(r, maxBundleDownloadBytes))
 }
 
-// isRegexPotentiallySlow checks for regex patterns known to cause DoS via
-// exponential backtracking. This is a heuristic check - only very obvious
-// nested quantifier patterns that could cause exponential behavior are blocked.
-func isRegexPotentiallySlow(pattern string) bool {
-	// Only block very obvious exponential backtracking patterns
-	// Nested quantifiers like (a+)+ or (a*)* are genuinely dangerous
-	// Don't block alternation groups like (?:a|b|c) which are safe
-	dangerousPatterns := []string{
-		`\([^)]+[+*]\)[+*]`, // nested quantifiers without alternation
-	}
-	for _, dp := range dangerousPatterns {
-		matched, _ := regexp.MatchString(dp, pattern)
-		if matched {
-			return true
-		}
-	}
-	return false
-}
-
 func loadBundle(data []byte) error {
 	decompressed, err := decompress(data)
 	if err != nil {
@@ -350,11 +331,6 @@ func loadBundleFrom(decompressed []byte) error {
 	allPatterns = nil
 
 	for _, def := range defs {
-		// Check for potentially slow regex patterns that could cause DoS
-		if isRegexPotentiallySlow(def.Match) {
-			slog.Warn("skipping pattern due to potentially slow regex (DoS risk)", "pattern", def.Name, "match", def.Match)
-			continue
-		}
 		re, err := regexp.Compile(def.Match)
 		if err != nil {
 			slog.Warn("skipping pattern due to regex error", "pattern", def.Name, "err", err)

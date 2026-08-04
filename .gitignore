@@ -36,3 +36,4 @@ CLAUDE.md
 .ruff_cache/
 bin/
 *.profraw
+*.profraw

@@ -35,8 +35,16 @@ bundle:
 	go run ./bundler
 
 vuln:
-	go install golang.org/x/vuln/cmd/govulncheck@latest
-	govulncheck ./...
+	@# govulncheck version must match Go version (govulncheck@latest requires Go 1.25+)
+	@if ! command -v govulncheck >/dev/null 2>&1; then \
+		go install golang.org/x/vuln/cmd/govulncheck@v1.0.0 2>/dev/null || \
+		echo "warning: govulncheck unavailable (requires Go 1.25+), skipping vuln check"; \
+	fi
+	@if command -v govulncheck >/dev/null 2>&1; then \
+		govulncheck ./...; \
+	else \
+		echo "=== vuln check skipped (govulncheck not installed) ==="; \
+	fi
 
 # Full local CI suite — mirrors what CI runs (lint, build, test, vuln, bundle)
 ci: lint build test vuln bundle

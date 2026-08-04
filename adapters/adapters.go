@@ -1,3 +1,5 @@
+// Package adapters provides the adapter framework for integrating external
+// pattern and rule sources into the Atheon analysis pipeline.
 package adapters
 
 import (

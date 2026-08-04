@@ -37,3 +37,8 @@ CLAUDE.md
 bin/
 *.profraw
 *.profraw
+
+# Wiki artifacts
+wiki-repo/
+wiki-push/
+daemon

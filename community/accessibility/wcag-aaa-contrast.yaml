@@ -1,0 +1,13 @@
+name: wcag-aaa-contrast
+match: (background-color|background|color|fill|stroke)[^;]*#[fF]{3}[fF]{3}|opacity.*0\.[1-7]
+severity: medium
+description: 'WCAG AAA: Enhanced color contrast requirements. AAA requires 7:1 contrast ratio for normal text, 4.5:1 for large text. Avoid #RGB shorthand colors.'
+metadata:
+  standard: WCAG 2.1 AAA
+  criterion: 1.4.6 Contrast (Enhanced)
+  category: accessibility
+tags:
+  - accessibility
+  - wcag
+  - aaa
+  - color-contrast

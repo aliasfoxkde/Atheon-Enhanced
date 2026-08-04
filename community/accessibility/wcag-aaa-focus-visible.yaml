@@ -1,0 +1,14 @@
+name: wcag-aaa-focus-visible
+match: outline:\s*none|outline:\s*0|focus:\s*none|focus:\s*0
+severity: high
+description: 'WCAG AAA: Enhanced focus indication. AAA requires visible focus indicators with 3:1 contrast ratio against adjacent colors. Never remove outline without providing alternative.'
+metadata:
+  standard: WCAG 2.1 AAA
+  criterion: 2.4.11 Focus Appearance (Enhanced)
+  category: accessibility
+tags:
+  - accessibility
+  - wcag
+  - aaa
+  - focus
+  - keyboard

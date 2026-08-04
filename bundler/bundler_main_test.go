@@ -1,11 +1,35 @@
 package main
 
 import (
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
 )
+
+func TestBundleWalkErr_Error(t *testing.T) {
+	// Test with nil error
+	err := &bundleWalkErr{path: "/some/path"}
+	if got := err.Error(); got != "/some/path" {
+		t.Errorf("Error() with nil err = %q, want %q", got, "/some/path")
+	}
+
+	// Test with actual error
+	innerErr := errors.New("permission denied")
+	err = &bundleWalkErr{path: "/some/path", err: innerErr}
+	if got := err.Error(); got != "/some/path: permission denied" {
+		t.Errorf("Error() with err = %q, want %q", got, "/some/path: permission denied")
+	}
+}
+
+func TestBundleWalkErr_Unwrap(t *testing.T) {
+	innerErr := errors.New("permission denied")
+	err := &bundleWalkErr{path: "/some/path", err: innerErr}
+	if got := err.Unwrap(); got != innerErr {
+		t.Errorf("Unwrap() = %v, want %v", got, innerErr)
+	}
+}
 
 // TestBundlerMain tests the main() function via build/run
 func TestBundlerMain(t *testing.T) {

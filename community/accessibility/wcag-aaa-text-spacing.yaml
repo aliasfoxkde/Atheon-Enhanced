@@ -1,0 +1,13 @@
+name: wcag-aaa-text-spacing
+match: line-height[^;]*[0-9]pt|line-height[^;]*[0-1]\.[0-9]|letter-spacing[^;]*[0-9]px|word-spacing[^;]*[0-9]px
+severity: medium
+description: 'WCAG AAA: Text spacing requirements. For AAA, line-height should be at least 1.5, letter-spacing at least 0.12em, word-spacing at least 0.16em.'
+metadata:
+  standard: WCAG 2.1 AAA
+  criterion: 1.4.12 Text Spacing
+  category: accessibility
+tags:
+  - accessibility
+  - wcag
+  - aaa
+  - text-spacing

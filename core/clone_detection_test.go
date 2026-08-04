@@ -8,6 +8,33 @@ import (
 
 // Tests for clone detection - these need duplicate code to trigger clone detection
 
+func TestNewCloneDetector_WithConfig(t *testing.T) {
+	// Test with explicit config - covers line 71
+	config := &CloneDetectionConfig{
+		MinSimilarity: 0.8,
+		MinTokens:     10,
+		MaxDepth:      5,
+	}
+	detector := NewCloneDetector(config)
+	if detector == nil {
+		t.Fatal("expected non-nil detector")
+	}
+	if detector.config != config {
+		t.Error("expected config to be set")
+	}
+}
+
+func TestNewCloneDetector_NilConfig(t *testing.T) {
+	// Test with nil config - uses default
+	detector := NewCloneDetector(nil)
+	if detector == nil {
+		t.Fatal("expected non-nil detector")
+	}
+	if detector.config == nil {
+		t.Error("expected config to be set to default")
+	}
+}
+
 func TestClonePatterns(t *testing.T) {
 	// Create duplicate functions to trigger clone detection
 	code := `package main
@@ -655,6 +682,159 @@ func TestClonePatterns_WithDeferStmt(t *testing.T) {
 `
 	tmpDir := t.TempDir()
 	tmpFile := filepath.Join(tmpDir, "clone_defer.go")
+	if err := os.WriteFile(tmpFile, []byte(code), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	findings, err := ScanFileAST(tmpFile, builtinASTPatterns)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = findings
+}
+
+func TestCloneDetection_AllStatementTypes(t *testing.T) {
+	// Test code that exercises ALL AST statement types for stmtTokens coverage
+	// Functions must have >= MinTokens (20) to be analyzed
+	// Each function below has 25+ tokens to ensure processing
+	code := `package main
+
+func processWithIfStmt(condition bool, value int) int {
+	result := value * 2
+	extra := 10
+	modifier := 5
+	if condition {
+		result = result + extra
+		result = result * 2
+	} else {
+		result = result - modifier
+		result = result / 2
+	}
+	final := result + modifier
+	return final
+}
+
+func processWithForStmt(items []int) int {
+	sum := 0
+	temp := 0
+	for i := 0; i < len(items); i++ {
+		temp = items[i]
+		sum = sum + temp
+		sum = sum * 1
+	}
+	return sum
+}
+
+func processWithRangeStmt(items []int) int {
+	sum := 0
+	temp := 0
+	for index, value := range items {
+		temp = value + index
+		sum = sum + temp
+		sum = sum * 2
+	}
+	return sum
+}
+
+func processWithSwitchStmt(value int) string {
+	result := "unknown"
+	temp := "default"
+	switch value {
+	case 1:
+		result = "one"
+		temp = "first"
+	case 2:
+		result = "two"
+		temp = "second"
+	case 3:
+		result = "three"
+		temp = "third"
+	default:
+		result = "other"
+		temp = "default"
+	}
+	return result
+}
+
+func processWithReturnStmt() int {
+	x := 10
+	y := 20
+	z := 30
+	temp := x + y + z
+	return temp
+}
+
+func processWithDeferStmt() int {
+	result := 0
+	temp := 1
+	defer func() {
+		result = result + temp
+		result = result * 2
+	}()
+	result = 100
+	temp = result + temp
+	return result
+}
+
+func processWithGoStmt(done chan int) {
+	temp := 42
+	go func() {
+		value := temp
+		done <- value
+	}()
+}
+
+func processWithAssignStmt() int {
+	a := 1
+	b := 2
+	c := 3
+	d := 4
+	temp := a + b
+	a, b = b, c
+	c, d = d, a
+	return temp
+}
+
+func processWithExprStmt() int {
+	x := 10
+	y := x * 2
+	z := y + x
+	println(x)
+	println(y)
+	println(z)
+	return z
+}
+
+func processWithIncDecStmt() int {
+	x := 10
+	temp := 1
+	x++
+	temp++
+	x--
+	temp--
+	return x + temp
+}
+
+func processWithSendStmt(done chan int) {
+	temp := 100
+	value := temp * 2
+	done <- value
+}
+
+func processWithDefaultStmt(x int) {
+	if x > 10 {
+		println("large")
+	} else if x > 5 {
+		println("medium")
+	} else {
+		println("small")
+	}
+}
+
+func main() {}
+`
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "clone_all_stmts.go")
 	if err := os.WriteFile(tmpFile, []byte(code), 0644); err != nil {
 		t.Fatal(err)
 	}

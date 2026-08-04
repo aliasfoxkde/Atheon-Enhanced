@@ -332,7 +332,7 @@ func (s *Scanner) ScanDirIncremental(root string) ([]string, error) {
 		fileInfo, err := d.Info()
 		if err != nil {
 			// Skip files where we can't get info - continue walking
-			return nil
+			return nil // #nosec nilerr // intentional: skip inaccessible files
 		}
 
 		// If SkipUnchanged is disabled, always scan

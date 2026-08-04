@@ -49,7 +49,7 @@ func (d *Daemon) Start(ctx context.Context) error {
 	_ = os.Remove(d.config.SocketPath)
 
 	// Ensure directory exists
-	if err := os.MkdirAll(filepath.Dir(d.config.SocketPath), 0750); err != nil {
+	if err := os.MkdirAll(filepath.Dir(d.config.SocketPath), 0o750); err != nil {
 		return fmt.Errorf("failed to create socket directory: %w", err)
 	}
 
@@ -61,7 +61,7 @@ func (d *Daemon) Start(ctx context.Context) error {
 	defer func() { _ = os.Remove(d.config.SocketPath) }()
 
 	// Set socket permissions
-	if err := os.Chmod(d.config.SocketPath, 0600); err != nil {
+	if err := os.Chmod(d.config.SocketPath, 0o600); err != nil {
 		return fmt.Errorf("failed to set socket permissions: %w", err)
 	}
 

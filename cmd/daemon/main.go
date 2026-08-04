@@ -28,7 +28,7 @@ type ScanRequest struct {
 type ScanResponse struct {
 	Success bool   `json:"success"`
 	Message string `json:"message,omitempty"`
-	Error  string `json:"error,omitempty"`
+	Error   string `json:"error,omitempty"`
 }
 
 // Daemon is the Atheon daemon service

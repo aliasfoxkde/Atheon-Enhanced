@@ -1068,7 +1068,7 @@ func (t *testFileInfo) Size() int64        { return t.size }
 func (t *testFileInfo) Mode() os.FileMode  { return 0644 }
 func (t *testFileInfo) ModTime() time.Time { return time.Unix(t.modTime, 0) }
 func (t *testFileInfo) IsDir() bool        { return false }
-func (t *testFileInfo) Sys() any            { return nil }
+func (t *testFileInfo) Sys() any           { return nil }
 
 func TestFileHash(t *testing.T) {
 	tmpDir := t.TempDir()

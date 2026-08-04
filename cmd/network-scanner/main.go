@@ -13,17 +13,17 @@ import (
 
 // SecurityHeaderCheck checks a URL for missing security headers
 type SecurityHeaderCheck struct {
-	URL         string
-	StatusCode  int
-	Headers     http.Header
-	Issues      []string
+	URL        string
+	StatusCode int
+	Headers    http.Header
+	Issues     []string
 }
 
 // SecurityIssue represents a detected security issue
 type SecurityIssue struct {
-	URL       string
-	Issue     string
-	Severity  string
+	URL            string
+	Issue          string
+	Severity       string
 	Recommendation string
 }
 
@@ -65,9 +65,9 @@ func (s *NetworkScanner) ScanURL(ctx context.Context, targetURL string) ([]Secur
 	// Check for exposed secrets in response (basic check)
 	if core.IsSensitiveURL(targetURL) {
 		issues = append(issues, SecurityIssue{
-			URL:       targetURL,
-			Issue:     "Potentially sensitive URL pattern detected",
-			Severity:  "low",
+			URL:            targetURL,
+			Issue:          "Potentially sensitive URL pattern detected",
+			Severity:       "low",
 			Recommendation: "Verify this URL does not expose sensitive data",
 		})
 	}
@@ -84,16 +84,16 @@ func checkSecurityHeaders(targetURL string, headers http.Header) []SecurityIssue
 		"Strict-Transport-Security": "HSTS header missing - enforce HTTPS",
 		"Content-Security-Policy":   "CSP header missing - prevents XSS/injection",
 		"X-Content-Type-Options":    "X-Content-Type-Options missing",
-		"X-Frame-Options":          "X-Frame-Options missing - prevents clickjacking",
-		"X-XSS-Protection":         "X-XSS-Protection missing",
+		"X-Frame-Options":           "X-Frame-Options missing - prevents clickjacking",
+		"X-XSS-Protection":          "X-XSS-Protection missing",
 	}
 
 	for header, recommendation := range required {
 		if headers.Get(header) == "" {
 			issues = append(issues, SecurityIssue{
-				URL:       targetURL,
-				Issue:     fmt.Sprintf("Missing security header: %s", header),
-				Severity:  "medium",
+				URL:            targetURL,
+				Issue:          fmt.Sprintf("Missing security header: %s", header),
+				Severity:       "medium",
 				Recommendation: recommendation,
 			})
 		}
@@ -102,9 +102,9 @@ func checkSecurityHeaders(targetURL string, headers http.Header) []SecurityIssue
 	// Check for sensitive headers exposure
 	if headers.Get("Authorization") != "" {
 		issues = append(issues, SecurityIssue{
-			URL:       targetURL,
-			Issue:     "Authorization header present in response",
-			Severity:  "high",
+			URL:            targetURL,
+			Issue:          "Authorization header present in response",
+			Severity:       "high",
 			Recommendation: "Ensure authorization is properly scoped",
 		})
 	}
@@ -120,9 +120,9 @@ func (s *NetworkScanner) ScanTargets(ctx context.Context, targets []string) map[
 		issues, err := s.ScanURL(ctx, target)
 		if err != nil {
 			results[target] = []SecurityIssue{{
-				URL:       target,
-				Issue:     fmt.Sprintf("Scan failed: %v", err),
-				Severity:  "error",
+				URL:      target,
+				Issue:    fmt.Sprintf("Scan failed: %v", err),
+				Severity: "error",
 			}}
 			continue
 		}

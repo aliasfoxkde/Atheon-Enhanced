@@ -1,3 +1,4 @@
+// Package main provides the Atheon daemon service.
 package main
 
 import (
@@ -9,7 +10,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"sync"
 	"syscall"
 	"time"
 )
@@ -34,7 +34,6 @@ type ScanResponse struct {
 // Daemon is the Atheon daemon service
 type Daemon struct {
 	config DaemonConfig
-	mu     sync.Mutex
 }
 
 // NewDaemon creates a new daemon instance
@@ -62,7 +61,7 @@ func (d *Daemon) Start(ctx context.Context) error {
 	defer func() { _ = os.Remove(d.config.SocketPath) }()
 
 	// Set socket permissions
-	if err := os.Chmod(d.config.SocketPath, 0660); err != nil {
+	if err := os.Chmod(d.config.SocketPath, 0600); err != nil {
 		return fmt.Errorf("failed to set socket permissions: %w", err)
 	}
 

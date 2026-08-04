@@ -215,7 +215,7 @@ func (c *ScanCache) Save(cachePath string) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(cachePath, data, 0600)
+	return os.WriteFile(cachePath, data, 0o600)
 }
 
 // ShouldScan checks if a file should be scanned based on the cache
@@ -365,7 +365,7 @@ func (s *Scanner) ScanDirIncremental(root string) ([]string, error) {
 	// Save updated cache if SkipUnchanged is enabled
 	if s.Options.SkipUnchanged {
 		cacheDir := GetCacheDir()
-		if err := os.MkdirAll(cacheDir, 0750); err != nil {
+		if err := os.MkdirAll(cacheDir, 0o750); err != nil {
 			fmt.Fprintf(os.Stderr, "warning: failed to create cache dir: %v\n", err)
 		} else if err := cache.Save(cachePath); err != nil {
 			fmt.Fprintf(os.Stderr, "warning: failed to save cache: %v\n", err)

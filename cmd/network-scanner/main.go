@@ -1,3 +1,4 @@
+// Package main provides the Atheon network security scanner.
 package main
 
 import (
@@ -38,7 +39,10 @@ func NewNetworkScanner() *NetworkScanner {
 		client: &http.Client{
 			Timeout: 15 * time.Second,
 			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: false},
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: false,
+					MinVersion:         tls.VersionTLS12,
+				},
 			},
 		},
 	}

@@ -55,7 +55,8 @@ type ProofObligation struct {
 }
 
 // BuildCFG builds a control flow graph for a function.
-func BuildCFG(funcDecl *ast.FuncDecl) *CFG {
+// fset is required to get accurate line numbers for findings.
+func BuildCFG(funcDecl *ast.FuncDecl, fset *token.FileSet) *CFG {
 	cfg := &CFG{
 		FuncName: funcDecl.Name.Name,
 		Blocks:   []*CFGBlock{},
@@ -89,7 +90,7 @@ func BuildCFG(funcDecl *ast.FuncDecl) *CFG {
 	}
 
 	// Track resource acquisitions and transactions
-	trackResourceAcquisitions(funcDecl.Body, cfg)
+	trackResourceAcquisitions(funcDecl.Body, cfg, fset)
 
 	return cfg
 }
@@ -181,12 +182,17 @@ func terminates(block *CFGBlock) bool {
 }
 
 // trackResourceAcquisitions finds resource acquisitions and transactions in a function.
-func trackResourceAcquisitions(stmt ast.Stmt, cfg *CFG) {
+// fset is required to get accurate line numbers.
+func trackResourceAcquisitions(stmt ast.Stmt, cfg *CFG, fset *token.FileSet) {
 	ast.Inspect(stmt, func(n ast.Node) bool {
 		switch call := n.(type) {
 		case *ast.CallExpr:
 			name := getCallName(call)
 			methodName := getMethodName(call)
+			line := 0
+			if fset != nil {
+				line = fset.Position(call.Pos()).Line
+			}
 
 			// Check for lock acquisitions (Lock, RLock, WLock take no args)
 			for _, acquireFunc := range []string{"Lock", "RLock", "WLock"} {
@@ -195,7 +201,7 @@ func trackResourceAcquisitions(stmt ast.Stmt, cfg *CFG) {
 						AcquiredAt:  call.Pos(),
 						AcquiredBy:  acquireFunc,
 						MustRelease: getReleaseFunc(acquireFunc),
-						Line:        0,
+						Line:        line,
 					})
 				}
 			}
@@ -206,7 +212,7 @@ func trackResourceAcquisitions(stmt ast.Stmt, cfg *CFG) {
 					AcquiredAt:  call.Pos(),
 					AcquiredBy:  "Open",
 					MustRelease: "Close",
-					Line:        0,
+					Line:        line,
 				})
 			}
 
@@ -217,7 +223,7 @@ func trackResourceAcquisitions(stmt ast.Stmt, cfg *CFG) {
 						BeginAt: call.Pos(),
 						BeginBy: beginFunc,
 						MustEnd: "Commit/Rollback",
-						Line:    0,
+						Line:    line,
 					})
 				}
 			}
@@ -383,7 +389,7 @@ func DetectLockNotReleased(fset *token.FileSet, file *ast.File) []CFGFinding {
 			continue
 		}
 
-		cfg := BuildCFG(funcDecl)
+		cfg := BuildCFG(funcDecl, fset)
 		obligations := CheckObligations(cfg)
 
 		for _, ob := range obligations {
@@ -412,7 +418,7 @@ func DetectResourceLeak(fset *token.FileSet, file *ast.File) []CFGFinding {
 			continue
 		}
 
-		cfg := BuildCFG(funcDecl)
+		cfg := BuildCFG(funcDecl, fset)
 
 		for _, acq := range cfg.Acquired {
 			if acq.AcquiredBy == "Open" && !hasReleaseCall(cfg, acq) {
@@ -440,7 +446,7 @@ func DetectTransactionBug(fset *token.FileSet, file *ast.File) []CFGFinding {
 			continue
 		}
 
-		cfg := BuildCFG(funcDecl)
+		cfg := BuildCFG(funcDecl, fset)
 
 		for _, tx := range cfg.Transactions {
 			if !hasEndCall(cfg, tx) {

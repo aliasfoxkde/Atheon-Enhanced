@@ -236,7 +236,7 @@ func simpleFunc(x int) int {
 
 	for _, decl := range file.Decls {
 		if funcDecl, ok := decl.(*ast.FuncDecl); ok {
-			cfg := BuildCFG(funcDecl)
+			cfg := BuildCFG(funcDecl, fset)
 			if cfg == nil {
 				t.Error("expected BuildCFG to return non-nil CFG")
 			}
@@ -294,7 +294,7 @@ func switchFunc(x int) int {
 
 	for _, decl := range file.Decls {
 		if funcDecl, ok := decl.(*ast.FuncDecl); ok {
-			cfg := BuildCFG(funcDecl)
+			cfg := BuildCFG(funcDecl, fset)
 			if cfg == nil {
 				t.Fatal("expected BuildCFG to return non-nil CFG")
 			}
@@ -331,7 +331,7 @@ func complexNested(x int) int {
 
 	for _, decl := range file.Decls {
 		if funcDecl, ok := decl.(*ast.FuncDecl); ok {
-			cfg := BuildCFG(funcDecl)
+			cfg := BuildCFG(funcDecl, fset)
 			if cfg == nil {
 				t.Fatal("expected BuildCFG to return non-nil CFG")
 			}
@@ -364,7 +364,7 @@ func withLock(mu sync.Mutex) {
 
 	for _, decl := range file.Decls {
 		if funcDecl, ok := decl.(*ast.FuncDecl); ok {
-			cfg := BuildCFG(funcDecl)
+			cfg := BuildCFG(funcDecl, fset)
 			if cfg == nil {
 				t.Fatal("expected BuildCFG to return non-nil CFG")
 			}
@@ -397,7 +397,7 @@ func withLock(mu sync.Mutex) {
 
 	for _, decl := range file.Decls {
 		if funcDecl, ok := decl.(*ast.FuncDecl); ok {
-			cfg := BuildCFG(funcDecl)
+			cfg := BuildCFG(funcDecl, fset)
 			if cfg == nil {
 				t.Fatal("expected BuildCFG to return non-nil CFG")
 			}
@@ -434,7 +434,7 @@ func badLock(mu sync.Mutex) {
 
 	for _, decl := range file.Decls {
 		if funcDecl, ok := decl.(*ast.FuncDecl); ok {
-			cfg := BuildCFG(funcDecl)
+			cfg := BuildCFG(funcDecl, fset)
 			if cfg == nil {
 				t.Fatal("expected BuildCFG to return non-nil CFG")
 			}
@@ -467,7 +467,7 @@ func badTx(db interface{}) {
 
 	for _, decl := range file.Decls {
 		if funcDecl, ok := decl.(*ast.FuncDecl); ok {
-			cfg := BuildCFG(funcDecl)
+			cfg := BuildCFG(funcDecl, fset)
 			if cfg == nil {
 				t.Fatal("expected BuildCFG to return non-nil CFG")
 			}
@@ -515,7 +515,7 @@ func main() {}
 
 	for _, decl := range file.Decls {
 		if funcDecl, ok := decl.(*ast.FuncDecl); ok {
-			cfg := BuildCFG(funcDecl)
+			cfg := BuildCFG(funcDecl, fset)
 			if cfg == nil {
 				t.Fatal("expected BuildCFG to return non-nil CFG")
 			}

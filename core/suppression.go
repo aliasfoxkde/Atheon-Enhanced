@@ -162,7 +162,7 @@ func CreateBaselineFile(findings []Finding, path string) error {
 		return err
 	}
 
-	return os.WriteFile(path, data, 0o644) //nolint:gosec // Baseline files need to be readable by owner; 0o644 is standard for user config files
+	return os.WriteFile(path, data, 0o600) // Baseline files contain finding metadata; owner-only read/write
 }
 
 // normalizePath normalizes a file path for comparison.

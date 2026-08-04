@@ -32,7 +32,6 @@ func NewTaintTracker() *TaintTracker {
 	return &TaintTracker{
 		sources: map[string]bool{
 			"os.Getenv":      true,
-			"os.environ":     true,
 			"input":          true,
 			"sys.stdin":      true,
 			"request.form":   true,

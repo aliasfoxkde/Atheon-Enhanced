@@ -273,7 +273,7 @@ func ScanDir(ctx context.Context, root string, opts ScanOpts) ([]Finding, *Stats
 	scanned := make([]bool, len(paths))
 	scanErrors := make([]error, len(paths))
 	var wg sync.WaitGroup
-	var errMu sync.Mutex
+	var resMu sync.Mutex // Protects results, sizes, scanned, scanErrors
 	// I/O-bound file reads saturate well below CPU count; cap at 2× CPUs with
 	// a minimum of 4 and a ceiling of 64 to avoid overwhelming shared runners.
 	workers := min(max(runtime.NumCPU()*2, 4), 64)
@@ -285,7 +285,6 @@ func ScanDir(ctx context.Context, root string, opts ScanOpts) ([]Finding, *Stats
 		case sem <- struct{}{}:
 		case <-ctx.Done():
 			wg.Done()
-			wg.Wait()
 			return nil, nil, ctx.Err()
 		}
 		go func(i int, p string) {
@@ -296,9 +295,9 @@ func ScanDir(ctx context.Context, root string, opts ScanOpts) ([]Finding, *Stats
 			}
 			data, err := readFileCapped(p, maxBytes)
 			if err != nil {
-				errMu.Lock()
+				resMu.Lock()
 				scanErrors[i] = err
-				errMu.Unlock()
+				resMu.Unlock()
 				return
 			}
 			// Content sniff: the extension allowlist misses extensionless
@@ -308,9 +307,9 @@ func ScanDir(ctx context.Context, root string, opts ScanOpts) ([]Finding, *Stats
 			// to keep the scan cheap; full-file binary detection would
 			// double the I/O.
 			if len(data) > 0 && bytes.IndexByte(data[:min(len(data), scanBinarySniffBytes)], 0) >= 0 {
-				errMu.Lock()
+				resMu.Lock()
 				scanErrors[i] = fmt.Errorf("skipping binary file (NUL byte in first %d bytes): %s", scanBinarySniffBytes, p)
-				errMu.Unlock()
+				resMu.Unlock()
 				return
 			}
 			// UTF-16 BOM detection: files encoded as UTF-16 (common on Windows
@@ -320,21 +319,23 @@ func ScanDir(ctx context.Context, root string, opts ScanOpts) ([]Finding, *Stats
 			// standard BOMs: FE FF (big-endian) and FF FE (little-endian).
 			if len(data) >= 2 {
 				if data[0] == 0xFE && data[1] == 0xFF {
-					errMu.Lock()
+					resMu.Lock()
 					scanErrors[i] = fmt.Errorf("skipping binary file (UTF-16 BE BOM): %s", p)
-					errMu.Unlock()
+					resMu.Unlock()
 					return
 				}
 				if data[0] == 0xFF && data[1] == 0xFE {
-					errMu.Lock()
+					resMu.Lock()
 					scanErrors[i] = fmt.Errorf("skipping binary file (UTF-16 LE BOM): %s", p)
-					errMu.Unlock()
+					resMu.Unlock()
 					return
 				}
 			}
+			resMu.Lock()
 			results[i] = scanLines(ctx, string(data), p)
 			sizes[i] = int64(len(data))
 			scanned[i] = true
+			resMu.Unlock()
 		}(i, p)
 	}
 	wg.Wait()

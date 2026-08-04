@@ -89,6 +89,12 @@ func WriteFileWithFile(path string, data []byte, perm os.FileMode, fileCreator f
 	if err := os.Chmod(tmpName, perm); err != nil {
 		return fmt.Errorf("atomic write: chmod: %w", err)
 	}
+	// Symlink attack mitigation: check if target path exists and is a symlink
+	// A malicious symlink at the target could cause us to overwrite an unintended file
+	if info, err := os.Lstat(path); err == nil && info.Mode()&os.ModeSymlink != 0 {
+		_ = os.Remove(tmpName)
+		return fmt.Errorf("atomic write: target path %q is a symlink, refusing to overwrite", path)
+	}
 	if err := os.Rename(tmpName, path); err != nil {
 		return fmt.Errorf("atomic write: rename: %w", err)
 	}

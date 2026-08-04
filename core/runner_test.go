@@ -153,7 +153,7 @@ func TestScanString(t *testing.T) {
 	findings := ScanString(context.Background(), testContent, "test-source")
 
 	if len(findings) == 0 {
-		t.Error("expected to find AWS key pattern")
+		t.Fatal("expected to find AWS key pattern")
 	}
 
 	if findings[0].Pattern != "aws-access-key" {

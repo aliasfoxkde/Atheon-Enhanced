@@ -83,6 +83,8 @@ jobs:
                 (.file | test("^LICENSE$"))                or
                 (.file | test("^\\.claude/"))             or
                 (.file | test("\\.claude\\.jsonl$"))       or
+                (.file | test("\\.html$"))                or
+                (.file | test("\\.profraw$"))              or
                 # False positive: 169.254.x.x link-local IPv4 addresses in bundle comments
                 ((.file | test("core/bundle\\.go")) and (.match | test("\\*\\*\\*\\*")))
               ) | not)]}' > scan-secrets.json

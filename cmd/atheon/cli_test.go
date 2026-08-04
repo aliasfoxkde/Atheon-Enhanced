@@ -376,13 +376,16 @@ func TestUpdateCommand(t *testing.T) {
 			os.Remove(bundlePath) //nolint:errcheck
 		}
 	}()
-	// Reload the embedded bundle after this test so subsequent tests in the
-	// same binary see a full pattern set (DownloadBundle replaces allPatterns).
-	defer core.ReloadBundle()
 
 	if err := core.DownloadBundle(context.Background(), false); err != nil {
 		t.Fatalf("DownloadBundle failed: %v", err)
 	}
+
+	// Restore the embedded bundle immediately so subsequent tests in the
+	// same binary see a full pattern set. Using defer here would be too late
+	// - other tests that run after this one (but before this function returns)
+	// would see an empty pattern set.
+	core.RestoreBundle()
 }
 
 func TestHelpText(t *testing.T) {

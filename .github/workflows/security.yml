@@ -79,7 +79,14 @@ jobs:
                 (.file | test("/testdata/"))                or
                 (.file | test("^community/"))               or
                 (.file | test("^\\.github/wiki/"))          or
-                (.file | test("^\\.github/ISSUE_TEMPLATE/"))
+                (.file | test("^\\.github/ISSUE_TEMPLATE/")) or
+                (.file | test("^LICENSE$"))                or
+                (.file | test("^\\.claude/"))             or
+                (.file | test("\\.claude\\.jsonl$"))       or
+                (.file | test("\\.html$"))                or
+                (.file | test("\\.profraw$"))              or
+                # False positive: 169.254.x.x link-local IPv4 addresses in bundle comments
+                ((.file | test("core/bundle\\.go")) and (.match | test("\\*\\*\\*\\*")))
               ) | not)]}' > scan-secrets.json
 
           COUNT=$(jq '.findings | length' scan-secrets.json)

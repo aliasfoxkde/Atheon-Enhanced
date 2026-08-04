@@ -9,11 +9,11 @@ import (
 	"testing"
 )
 
-// atomicBoolTrue returns an atomic.Bool set to true.
-func atomicBoolTrue() atomic.Bool {
+// atomicBoolTrue returns a pointer to an atomic.Bool set to true.
+func atomicBoolTrue() *atomic.Bool {
 	var b atomic.Bool
 	b.Store(true)
-	return b
+	return &b
 }
 
 // captureHandler is a slog.Handler that records every emitted record
@@ -80,7 +80,7 @@ func TestCombinedRegexCompileErrorLogged(t *testing.T) {
 		name:     "wave8-bad-pattern",
 		match:    "[a-",
 		category: "wave8-test-cat",
-		enabled:  atomicBoolTrue(),
+		enabled:  *atomicBoolTrue(),
 		severity: "low",
 	}}
 	rebuildActiveScanners()

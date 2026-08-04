@@ -331,8 +331,8 @@ func (s *Scanner) ScanDirIncremental(root string) ([]string, error) {
 
 		fileInfo, err := d.Info()
 		if err != nil {
-			// Skip files where we can't get info - continue walking
-			//nolint:nilerr
+			// Skip files where we can't stat - continue walking other files
+			//nolint:nilerr // err is intentionally ignored; skipping inaccessible files is safe
 			return nil
 		}
 

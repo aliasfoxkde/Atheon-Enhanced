@@ -33,7 +33,7 @@
 ### **Enhanced aliasfoxkde/Atheon (Atheon-Enhanced)** - Feature-Rich Testing Build
 - **Purpose**: Experimental "nightly build" testing the limits of pattern matching
 - **Focus**: Performance optimizations, advanced features, comprehensive pattern coverage
-- **Patterns**: 406 patterns across 39 categories (community-driven, comprehensive coverage)
+- **Patterns**: 406 patterns across 29 categories (community-driven, comprehensive coverage)
 - **Update cadence**: Frequent updates with latest features and enhancements
 - **Best for**: Power users, CI/CD integration, comprehensive security scanning
 
@@ -158,7 +158,7 @@ atheon ./my-project
 atheon --categories=secrets,pii ./my-project
 
 # Use configuration profile
-atheon --profile config/profiles/pipeline.json ./my-project
+atheon --config config/profiles/pipeline.json ./my-project
 
 # List all patterns with status
 atheon list
@@ -214,11 +214,23 @@ if errors.Is(err, core.ErrPatternNotFound) {
 
 ### **Advanced Usage**
 ```bash
-# Use configuration profile
-atheon --profile config/profiles/pipeline.json ./my-project
+# Use configuration profile (or ~/.atheon/config.json by default)
+atheon --config config/profiles/pipeline.json ./my-project
 
 # Scan with all patterns (including disabled ones)
 atheon --all ./test-project
+
+# Scan only changed lines from a diff (PR workflows)
+atheon --diff=changes.diff ./my-project
+
+# Filter findings by severity threshold
+atheon --severity-threshold=high ./my-project
+
+# Quiet mode - suppress all output except findings (CI friendly)
+atheon --quiet ./my-project
+
+# Write output to file
+atheon --output-file=findings.json ./my-project
 
 # JSON output for automation
 atheon --json ./my-project > findings.json
@@ -372,11 +384,15 @@ chmod +x .git/hooks/pre-commit
 
 ### **Using Configuration Profiles**
 ```bash
-# Copy profile to config directory
+# Copy profile to config directory (loaded automatically as ~/.atheon/config.json)
 cp config/profiles/production.json ~/.atheon/config.json
 
-# Or use per-scan
-atheon --profile config/profiles/pipeline.json ./my-project
+# Or use per-scan (CLI flag overrides default config)
+atheon --config config/profiles/pipeline.json ./my-project
+
+# Generate shell completion scripts
+atheon --completion=bash > atheon_completion.sh
+source atheon_completion.sh
 ```
 
 </details>
@@ -428,7 +444,7 @@ atheon --profile config/profiles/pipeline.json ./my-project
 - ✅ **Performance Benchmarks**: Track improvements over time
 
 ### **Expanded Pattern Library**
-- ✅ **274 patterns** across 19 categories
+- ✅ **406 patterns** across 29 categories
 - ✅ **New categories**: Accessibility, Performance, Web Development, API Integration, Security Hardening, Cloud-Native, PWA, Data Visualization
 - ✅ **Enhanced coverage**: Modern web development, security best practices, performance optimization
 - ✅ **AI Detection Patterns**: AI-generated code identification, template detection, safety bypasses
@@ -605,7 +621,7 @@ gh pr create --base main --head feat/my-feature
 ### **`main` Branch** (Production Build)
 - **Purpose**: Production-ready with all enhancements
 - **Usage**: User-facing installation, production deployment
-- **Patterns**: 274 patterns across 19 categories
+- **Patterns**: 406 patterns across 29 categories
 - **Installation**: `go install github.com/aliasfoxkde/Atheon@latest`
 
 </details>
@@ -709,7 +725,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - ✅ MCP integration with advanced features
 
 ### **Use Enhanced aliasfoxkde/Atheon (Atheon-Enhanced) when you want**:
-- ✅ 406 patterns across 39 categories (comprehensive coverage)
+- ✅ 406 patterns across 29 categories (comprehensive coverage)
 - ✅ 2-3x performance improvements
 - ✅ 10x memory reduction for large files
 - ✅ MCP integration with advanced features

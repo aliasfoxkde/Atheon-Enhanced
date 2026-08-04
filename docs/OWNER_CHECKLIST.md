@@ -294,7 +294,7 @@ Security: fork PRs are blocked by `if: github.event.pull_request.head.repo.full_
 
 ## Pattern Library Roadmap
 
-Current count: 274 patterns across all categories (verified 2026-06-24).
+Current count: 406 patterns across 29 categories (verified 2026-08-03).
 
 | Category | Actual count | Growth opportunity |
 |----------|-------------|-------------------|

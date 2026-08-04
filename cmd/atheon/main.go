@@ -8,13 +8,23 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"syscall"
 
 	"github.com/aliasfoxkde/Atheon/core"
 	"github.com/aliasfoxkde/Atheon/internal/errors"
 )
+
+// severityOrder maps severity names to their rank for threshold filtering.
+var severityOrder = map[string]int{
+	"critical": 4,
+	"high":     3,
+	"medium":   2,
+	"low":      1,
+}
 
 // version is injected at build time via ldflags
 var version = "dev"
@@ -23,6 +33,78 @@ var version = "dev"
 // 100 MiB is sufficient for realistic inputs; a 1 GiB file should not be
 // piped into a SAST scanner.
 const maxStdinBytes = 100 << 20 // 100 MiB
+
+// ConfigProfile represents a configuration profile loaded from JSON.
+type ConfigProfile struct {
+	Name                 string   `json:"name"`
+	Description          string   `json:"description"`
+	EnabledCategories    []string `json:"enabled_categories"`
+	StrictMode           string   `json:"strict_mode"`
+	PerformanceMode      string   `json:"performance_mode"`
+	ExitOnFindings       bool     `json:"exit_on_findings"`
+	MaxFileSizeMB        int      `json:"max_file_size_mb"`
+	BinaryFileDetection  bool     `json:"binary_file_detection"`
+	GitignoreRespect     bool     `json:"gitignore_respect"`
+	OutputFormat         string   `json:"output_format"`
+	TimeoutSeconds       int      `json:"timeout_seconds"`
+	DebugMode            bool     `json:"debug_mode"`
+	ShowStats            bool     `json:"show_stats"`
+	ShowCoverage         bool     `json:"show_coverage"`
+	EnableAllPatterns    bool     `json:"enable_all_patterns"`
+	ExperimentalFeatures bool     `json:"experimental_features"`
+	VerboseOutput        bool     `json:"verbose_output"`
+	PatternValidation    bool     `json:"pattern_validation"`
+	SelfScanMode         bool     `json:"self_scan_mode"`
+}
+
+// defaultConfigPath returns the default user config path (~/.atheon/config.json).
+func defaultConfigPath() string {
+	if home, err := os.UserHomeDir(); err == nil {
+		return filepath.Join(home, ".atheon", "config.json")
+	}
+	return ""
+}
+
+// loadUserConfig loads configuration from the given path. If path is empty,
+// it loads from the default user config location (~/.atheon/config.json).
+// Returns nil if the config file does not exist (config is optional).
+// CLI flag settings that are set override config file settings.
+func loadUserConfig(configPath string) (*ConfigProfile, error) {
+	path := configPath
+	if path == "" {
+		path = defaultConfigPath()
+	}
+	if path == "" {
+		return nil, nil
+	}
+	// #nosec G304 -- path is validated above to be non-empty
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil // config is optional
+		}
+		return nil, fmt.Errorf("reading config file %s: %w", path, err)
+	}
+	var cfg ConfigProfile
+	if err := json.Unmarshal(data, &cfg); err != nil {
+		return nil, fmt.Errorf("parsing config file %s: %w", path, err)
+	}
+	return &cfg, nil
+}
+
+// parseConfigFlag extracts --config=<path> from args and returns the config
+// path (if provided) and the remaining arguments. Settings from --config flag
+// override ~/.atheon/config.json settings.
+func parseConfigFlag(args []string) (configPath string, rest []string) {
+	for _, a := range args {
+		if strings.HasPrefix(a, "--config=") {
+			configPath = strings.TrimPrefix(a, "--config=")
+		} else {
+			rest = append(rest, a)
+		}
+	}
+	return
+}
 
 func main() {
 	configureLogging()
@@ -88,6 +170,29 @@ func run(ctx context.Context, args []string) int {
 	if len(args) > 0 && args[0] == "--version" {
 		fmt.Printf("atheon %s\n", version)
 		return 0
+	}
+
+	// Parse global flags that can appear anywhere in the argument list.
+	args, quietMode, diffMode, severityThreshold, outputFile, completion := parseGlobalFlags(args)
+
+	// Handle shell completion request.
+	if completion {
+		runShellCompletion(os.Args)
+		return 0
+	}
+
+	// Set up output redirection if --output-file is specified.
+	outputWriter := setupOutputFile(outputFile)
+	if outputWriter != nil {
+		defer func() { _ = outputWriter.Close() }()
+	}
+
+	// Load user config from ~/.atheon/config.json (optional). The --config
+	// flag path overrides the default location. Config is loaded early so
+	// subsequent scanning operations can use configured defaults.
+	configPath, args := parseConfigFlag(args)
+	if _, err := loadUserConfig(configPath); err != nil {
+		fmt.Fprintf(os.Stderr, "warning: %v\n", err)
 	}
 
 	cats, args, enableAll := parseCategories(args)
@@ -158,7 +263,7 @@ func run(ctx context.Context, args []string) int {
 
 	case "--env":
 		findings := core.ScanEnv(ctx)
-		printFindings(findings, nil, jsonOutput, sarifOutput)
+		printFindings(findings, nil, jsonOutput, sarifOutput, quietMode, severityThreshold)
 		if len(findings) > 0 {
 			return 1
 		}
@@ -171,7 +276,7 @@ func run(ctx context.Context, args []string) int {
 			return 1
 		}
 		findings := core.ScanString(ctx, string(data), "stdin")
-		printFindings(findings, nil, jsonOutput, sarifOutput)
+		printFindings(findings, nil, jsonOutput, sarifOutput, quietMode, severityThreshold)
 		if len(findings) > 0 {
 			return 1
 		}
@@ -187,14 +292,14 @@ func run(ctx context.Context, args []string) int {
 			fmt.Fprintln(os.Stderr, "error:", errors.SafeError(err))
 			return 1
 		}
-		printFindings(findings, stats, jsonOutput, sarifOutput)
+		printFindings(findings, stats, jsonOutput, sarifOutput, quietMode, severityThreshold)
 		if len(findings) > 0 || scanErrorsPresent(stats) {
 			return 1
 		}
 		return 0
 
 	default:
-		baselinePath, args := parseBaseline(args)
+		baselinePath, diffPath, args := parsePathArgs(args)
 		path := args[0]
 		info, err := os.Stat(path)
 		if err != nil {
@@ -212,6 +317,10 @@ func run(ctx context.Context, args []string) int {
 			fmt.Fprintln(os.Stderr, "error:", errors.SafeError(err))
 			return 1
 		}
+		// Apply diff mode filtering if specified (scan only changed lines from diff).
+		if diffMode && diffPath != "" {
+			findings = filterDiffFindings(findings, diffPath)
+		}
 		// Apply baseline suppression if specified
 		if baselinePath != "" {
 			bm, err := core.NewBaselineMatcher(baselinePath)
@@ -221,7 +330,7 @@ func run(ctx context.Context, args []string) int {
 			}
 			findings = bm.FilterFindings(findings)
 		}
-		printFindings(findings, stats, jsonOutput, sarifOutput)
+		printFindings(findings, stats, jsonOutput, sarifOutput, quietMode, severityThreshold)
 		if len(findings) > 0 || scanErrorsPresent(stats) {
 			return 1
 		}
@@ -260,6 +369,238 @@ func parseBaseline(args []string) (baselinePath string, rest []string) {
 	return
 }
 
+// parsePathArgs extracts --baseline and --diff path flags from args.
+func parsePathArgs(args []string) (baselinePath, diffPath string, rest []string) {
+	for _, a := range args {
+		if strings.HasPrefix(a, "--baseline=") {
+			baselinePath = strings.TrimPrefix(a, "--baseline=")
+		} else if strings.HasPrefix(a, "--diff=") {
+			diffPath = strings.TrimPrefix(a, "--diff=")
+		} else {
+			rest = append(rest, a)
+		}
+	}
+	return
+}
+
+// parseGlobalFlags extracts global flags that can appear anywhere in args.
+// Returns the filtered args and the parsed flag values.
+func parseGlobalFlags(args []string) (rest []string, quietMode, diffMode bool, severityThreshold, outputFile string, completion bool) {
+	for _, a := range args {
+		switch {
+		case a == "--quiet" || a == "-q":
+			quietMode = true
+		case a == "--diff":
+			diffMode = true
+		case strings.HasPrefix(a, "--severity-threshold="):
+			severityThreshold = strings.TrimPrefix(a, "--severity-threshold=")
+		case strings.HasPrefix(a, "--output-file="):
+			outputFile = strings.TrimPrefix(a, "--output-file=")
+		case strings.HasPrefix(a, "--completion="), a == "--completion", a == "--shell-complete":
+			completion = true
+		default:
+			rest = append(rest, a)
+		}
+	}
+	return
+}
+
+// filterDiffFindings filters findings to only those in changed lines from a diff.
+// It parses the unified diff format and returns findings whose file:line
+// intersects with the added line ranges.
+func filterDiffFindings(findings []core.Finding, diffPath string) []core.Finding {
+	// #nosec G304 -- diffPath comes from --diff flag, not user input
+	diffData, err := os.ReadFile(diffPath)
+	if err != nil {
+		slog.Warn("could not read diff file, returning all findings", "path", diffPath, "err", err)
+		return findings
+	}
+	changedRanges := parseUnifiedDiff(string(diffData))
+	var filtered []core.Finding
+	for _, f := range findings {
+		if ranges, ok := changedRanges[f.File]; ok {
+			for _, r := range ranges {
+				if f.Line >= r.start && f.Line <= r.end {
+					filtered = append(filtered, f)
+					break
+				}
+			}
+		}
+	}
+	return filtered
+}
+
+// diffRange represents a range of changed lines in a file from a unified diff.
+type diffRange struct {
+	start int
+	end   int
+}
+
+// parseUnifiedDiff parses a unified diff and returns a map of file paths
+// to their changed line ranges (both additions and modifications).
+func parseUnifiedDiff(diff string) map[string][]diffRange {
+	ranges := make(map[string][]diffRange)
+	var currentFile string
+	var hunks []diffRange
+
+	lines := strings.Split(diff, "\n")
+	for i := 0; i < len(lines); i++ {
+		line := lines[i]
+		if strings.HasPrefix(line, "--- ") || strings.HasPrefix(line, "diff ") {
+			// Save previous file's ranges if any
+			if currentFile != "" && len(hunks) > 0 {
+				ranges[currentFile] = hunks
+			}
+			// Extract filename from --- a/path or diff a/path b/path
+			if strings.HasPrefix(line, "--- ") {
+				parts := strings.Fields(line)
+				if len(parts) >= 2 {
+					path := strings.TrimPrefix(parts[1], "a/")
+					currentFile = path
+				}
+			} else if strings.HasPrefix(line, "diff ") {
+				parts := strings.Fields(line)
+				if len(parts) >= 4 {
+					currentFile = parts[3]
+				}
+			}
+			hunks = nil
+		} else if strings.HasPrefix(line, "@@") {
+			// Parse hunk header: @@ -start,count +start,count @@
+			// Extract the "+" part's start line
+			parts := strings.Fields(line)
+			for _, p := range parts {
+				if strings.HasPrefix(p, "+") && !strings.HasPrefix(p, "++") {
+					rangeStr := strings.TrimPrefix(p, "+")
+					// Handle comma-separated count
+					r := strings.Split(rangeStr, ",")
+					start, _ := strconv.Atoi(r[0])
+					count := 1
+					if len(r) > 1 {
+						count, _ = strconv.Atoi(r[1])
+					}
+					if count == 0 {
+						count = 1
+					}
+					hunks = append(hunks, diffRange{start: start, end: start + count - 1})
+				}
+			}
+		}
+	}
+	// Save last file's ranges
+	if currentFile != "" && len(hunks) > 0 {
+		ranges[currentFile] = hunks
+	}
+	return ranges
+}
+
+// setupOutputFile opens the specified output file for writing.
+// Returns a wrapper that redirects stdout to the file.
+// Returns nil if no output file is specified.
+func setupOutputFile(path string) io.WriteCloser {
+	if path == "" {
+		return nil
+	}
+	// #nosec G304 -- path is validated to be non-empty above
+	f, err := os.Create(path)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: cannot create output file %s: %s\n", path, err)
+		return nil
+	}
+	// Redirect stdout to the file
+	os.Stdout = f
+	return f
+}
+
+// runShellCompletion generates shell completion script based on the shell name.
+func runShellCompletion(args []string) {
+	shell := os.Getenv("SHELL")
+	if shell == "" {
+		shell = "bash"
+	}
+	// Determine shell from the last argument if provided via --completion=bash|zsh|fish
+	for _, a := range args[1:] {
+		if strings.HasPrefix(a, "--completion=") {
+			shell = strings.TrimPrefix(a, "--completion=")
+			break
+		}
+	}
+	switch {
+	case strings.Contains(shell, "zsh"):
+		printZshCompletion()
+	case strings.Contains(shell, "fish"):
+		printFishCompletion()
+	default:
+		printBashCompletion()
+	}
+}
+
+func printBashCompletion() {
+	fmt.Print(`# atheon bash completion
+_atheon() {
+    local cur opts
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    opts="--json --sarif --quiet -q --diff --severity-threshold= --output-file= --completion --shell-complete --help --version --env --stdin --file --all --categories= --baseline= --no-follow-symlinks"
+    if [[ ${cur} == --* ]]; then
+        COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+    fi
+}
+complete -F _atheon atheon
+`)
+}
+
+func printZshCompletion() {
+	fmt.Print(`# atheon zsh completion
+_atheon() {
+    local -a opts
+    opts=(
+        '--json[output JSON format]'
+        '--sarif[output SARIF format]'
+        '--quiet[suppress all output except findings]'
+        '-q[suppress all output except findings]'
+        '--diff[scan only changed lines from diff]'
+        '--severity-threshold=[severity threshold for filtering (critical|high|medium|low)]'
+        '--output-file=[write output to file]'
+        '--completion[generate shell completion]'
+        '--shell-complete[generate shell completion]'
+        '--help[show help]'
+        '--version[show version]'
+        '--env[scan environment variables]'
+        '--stdin[scan from stdin]'
+        '--file[scan single file]'
+        '--all[enable all patterns]'
+        '--categories=[comma-separated categories]'
+        '--baseline=[baseline file path]'
+        '--no-follow-symlinks[do not follow symlinks]'
+    )
+    _describe 'opts' opts
+}
+_atheon
+`)
+}
+
+func printFishCompletion() {
+	fmt.Print(`# atheon fish completion
+complete -c atheon -l json -d "Output JSON format"
+complete -c atheon -l sarif -d "Output SARIF format"
+complete -c atheon -l quiet -l q -d "Suppress all output except findings"
+complete -c atheon -l diff -d "Scan only changed lines from diff"
+complete -c atheon -l severity-threshold -d "Severity threshold for filtering (critical|high|medium|low)" -r
+complete -c atheon -l output-file -d "Write output to file" -r
+complete -c atheon -l completion -l shell-complete -d "Generate shell completion"
+complete -c atheon -l help -d "Show help"
+complete -c atheon -l version -d "Show version"
+complete -c atheon -l env -d "Scan environment variables"
+complete -c atheon -l stdin -d "Scan from stdin"
+complete -c atheon -l file -d "Scan single file" -r
+complete -c atheon -l all -d "Enable all patterns"
+complete -c atheon -l categories -d "Comma-separated categories" -r
+complete -c atheon -l baseline -d "Baseline file path" -r
+complete -c atheon -l no-follow-symlinks -d "Do not follow symlinks"
+`)
+}
+
 // scanOpts extracts directory-scan flags from the post-path argument
 // tail and translates them into a core.ScanOpts. CLI defaults keep the
 // historical behaviour (follow symlinks, package-level maxFileSize) so
@@ -276,7 +617,12 @@ func scanOpts(rest []string) core.ScanOpts {
 	return opts
 }
 
-func printFindings(findings []core.Finding, stats *core.Stats, jsonOutput, sarifOutput bool) {
+func printFindings(findings []core.Finding, stats *core.Stats, jsonOutput, sarifOutput, quietMode bool, severityThreshold string) {
+	// Filter findings by severity threshold if specified.
+	if severityThreshold != "" {
+		findings = filterBySeverity(findings, severityThreshold)
+	}
+
 	riskScore := core.NewRiskScore(findings)
 	if jsonOutput {
 		printJSONFindings(findings, riskScore)
@@ -287,7 +633,9 @@ func printFindings(findings []core.Finding, stats *core.Stats, jsonOutput, sarif
 		return
 	}
 	if len(findings) == 0 {
-		fmt.Println("no findings.")
+		if !quietMode {
+			fmt.Println("no findings.")
+		}
 	} else {
 		for _, f := range findings {
 			loc := f.File
@@ -299,9 +647,11 @@ func printFindings(findings []core.Finding, stats *core.Stats, jsonOutput, sarif
 				fmt.Println(" ", redact(f.Content))
 			}
 		}
-		fmt.Printf("\n%d finding(s)\n", len(findings))
+		if !quietMode {
+			fmt.Printf("\n%d finding(s)\n", len(findings))
+		}
 	}
-	if stats != nil && stats.Files > 0 {
+	if !quietMode && stats != nil && stats.Files > 0 {
 		fmt.Printf("scanned %d file(s)  %s  %dms\n",
 			stats.Files, formatBytes(stats.Bytes), stats.ElapsedMs)
 	}
@@ -309,12 +659,27 @@ func printFindings(findings []core.Finding, stats *core.Stats, jsonOutput, sarif
 	// unreadable files) is visible — a scan that "succeeds" with half the
 	// tree skipped should not return exit 0 without warning. JSON/SARIF
 	// paths stay clean (errors don't pollute the structured stream).
-	if !jsonOutput && !sarifOutput && stats != nil && len(stats.Errors) > 0 {
+	if !jsonOutput && !sarifOutput && !quietMode && stats != nil && len(stats.Errors) > 0 {
 		fmt.Fprintf(os.Stderr, "\n%d file(s) could not be read:\n", len(stats.Errors))
 		for _, e := range stats.Errors {
 			fmt.Fprintf(os.Stderr, "  %s\n", errors.SafeError(e))
 		}
 	}
+}
+
+// filterBySeverity filters findings to only include those at or above the threshold.
+func filterBySeverity(findings []core.Finding, threshold string) []core.Finding {
+	thresholdRank, ok := severityOrder[strings.ToLower(threshold)]
+	if !ok {
+		return findings // Unknown severity, return all
+	}
+	var filtered []core.Finding
+	for _, f := range findings {
+		if rank, ok := severityOrder[strings.ToLower(f.Severity)]; ok && rank >= thresholdRank {
+			filtered = append(filtered, f)
+		}
+	}
+	return filtered
 }
 
 // scanErrorsPresent reports whether a scan silently dropped files. The
@@ -410,7 +775,7 @@ func printSARIFFindings(findings []core.Finding, riskScore *core.RiskScore) {
 	}
 }
 
-// sarifSeverityScore maps an Atheon severity to the CVSS-like 0.0–10.0 score
+// sarifSeverityScore maps an Atheon severity to the CVSS-like 0.0-10.0 score
 // that GitHub code-scanning consumes via security-severity. The mapping is
 // deliberately coarse — pattern authors shouldn't think in CVSS — but the
 // scores land on the boundaries GitHub uses for its severity buckets.
@@ -694,25 +1059,30 @@ func printHelp() {
 	fmt.Print(`atheon - pattern matching engine
 
 usage:
-  atheon <path>                       scan a directory or file
-  atheon <path> --no-follow-symlinks  scan a directory without following symlinks
-  atheon --file <path>                scan a single file explicitly
-  atheon --env                        scan environment variables
-  atheon - / --stdin                  scan from stdin
-  atheon --json <path>                print findings as JSON (must be first flag)
-  atheon --sarif <path>              print findings as SARIF 2.1.0 (must be first flag)
-  atheon --categories=<c1,c2> <path>  scan specific categories only
-  atheon --all <path>                 scan all patterns including disabled ones
-  atheon list                         list all patterns with enabled/disabled status
-  atheon list --enabled               list only enabled patterns
-  atheon list --disabled              list only disabled patterns
-  atheon list --category=<cat>        list patterns in a specific category
-  atheon list categories              list available category names
-  atheon enable <pattern>             enable a pattern by name
-  atheon disable <pattern>            disable a pattern by name
-  atheon update                       download latest patterns bundle
-  atheon --version                    show version
-  atheon --help                       show this message
+  atheon <path>                          scan a directory or file
+  atheon <path> --no-follow-symlinks     scan a directory without following symlinks
+  atheon --file <path>                   scan a single file explicitly
+  atheon --env                           scan environment variables
+  atheon - / --stdin                     scan from stdin
+  atheon --json <path>                   print findings as JSON (must be first flag)
+  atheon --sarif <path>                  print findings as SARIF 2.1.0 (must be first flag)
+  atheon --quiet / -q                    suppress all output except findings (CI mode)
+  atheon --diff --diff=<file>            scan only changed lines from diff file
+  atheon --severity-threshold=<level>    show findings at or above severity (critical|high|medium|low)
+  atheon --output-file=<path>            write output to file instead of stdout
+  atheon --categories=<c1,c2> <path>      scan specific categories only
+  atheon --all <path>                    scan all patterns including disabled ones
+  atheon list                            list all patterns with enabled/disabled status
+  atheon list --enabled                  list only enabled patterns
+  atheon list --disabled                 list only disabled patterns
+  atheon list --category=<cat>           list patterns in a specific category
+  atheon list categories                 list available category names
+  atheon enable <pattern>                enable a pattern by name
+  atheon disable <pattern>               disable a pattern by name
+  atheon update                          download latest patterns bundle
+  atheon --version                       show version
+  atheon --help                          show this message
+  atheon --completion[=bash|zsh|fish]   generate shell completion script
 `)
 }
 

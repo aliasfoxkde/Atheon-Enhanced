@@ -14,7 +14,7 @@ This document describes the branching strategy for the Atheon-Enhanced project. 
 
 **Characteristics**:
 - ✅ All validated PRs merged
-- ✅ 274 patterns across 19 categories
+- ✅ 406 patterns across 29 categories
 - ✅ MCP server (`atheon-mcp`)
 - ✅ Severity wired end-to-end into SARIF
 - ✅ Fuzz-tested bundle loader
@@ -53,7 +53,7 @@ go install github.com/aliasfoxkde/Atheon@latest
 **Purpose**: Comprehensive testing with ALL patterns enabled.
 
 **Characteristics**:
-- All 274 patterns enabled
+- All 406 patterns enabled
 - Experimental features active
 - Self-scanning validation enabled
 - Performance benchmarking enabled
@@ -118,7 +118,7 @@ The CI grep check in `.github/workflows/ci.yml` verifies that any new profile un
 
 ### `main`
 - **Profile**: `config/profiles/production.json`
-- **Patterns**: All 274 patterns, per-category enablement
+- **Patterns**: All 406 patterns, per-category enablement
 - **Testing**: Multi-version Go matrix + integration tests
 - **Features**: MCP server, SARIF severity, fuzz coverage
 
@@ -129,7 +129,7 @@ The CI grep check in `.github/workflows/ci.yml` verifies that any new profile un
 
 ### `dev/full-feature`
 - **Profile**: `config/profiles/development.json`
-- **Patterns**: All 274 enabled regardless of category
+- **Patterns**: All 406 enabled regardless of category
 - **Testing**: Comprehensive + self-scanning
 
 ---
@@ -139,7 +139,7 @@ The CI grep check in `.github/workflows/ci.yml` verifies that any new profile un
 | Feature | stable/clean | main | dev/full-feature |
 |---------|--------------|------|------------------|
 | Upstream Sync | ✅ Manual | ⚠️ Opportunistic | ❌ None |
-| Pattern Count | Upstream default | 274 | 274 (all enabled) |
+| Pattern Count | Upstream default | 406 | 406 (all enabled) |
 | MCP Integration | ❌ None | ✅ Yes | ✅ Yes |
 | Severity Wiring | ❌ None | ✅ Yes | ✅ Yes |
 | Fuzz Coverage | ❌ None | ✅ Yes | ✅ Yes |

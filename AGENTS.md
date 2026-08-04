@@ -15,7 +15,7 @@ the Atheon-Enhanced repository. It is the canonical reference for the project's 
   - `cmd/atheon/` — CLI (`atheon`)
   - `cmd/mcp/` — MCP server (`atheon-mcp`)
   - `bundler/` — compiles `community/*.yaml` → `core/patterns.bundle`
-  - `community/<category>/*.yaml` — pattern definitions (274 across 19 categories)
+  - `community/<category>/*.yaml` — pattern definitions (406 across 39 categories)
   - `docs/` — user-facing documentation
   - `.github/workflows/` — 10 GitHub Actions workflows (consolidation planned)
 - **Module path**: `github.com/aliasfoxkde/Atheon`

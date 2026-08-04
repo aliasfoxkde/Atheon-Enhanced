@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sync/atomic"
 	"testing"
 )
 
@@ -234,9 +235,10 @@ func TestPatternEdgeCases(t *testing.T) {
 					name:     "",
 					category: "test",
 					match:    "test",
-					enabled:  true,
+					enabled:  &atomic.Bool{},
 					re:       regexp.MustCompile("test"),
 				}
+				pattern.enabled.Store(true)
 				// Empty name is invalid, but we're testing the struct
 				// In real usage, bundler rejects empty names
 				if pattern.Name() == "" {
@@ -252,9 +254,10 @@ func TestPatternEdgeCases(t *testing.T) {
 					name:     "test-pattern",
 					category: "",
 					match:    "test",
-					enabled:  true,
+					enabled:  &atomic.Bool{},
 					re:       regexp.MustCompile("test"),
 				}
+				pattern.enabled.Store(true)
 				// Empty category is technically allowed but not recommended
 				if pattern.Category() == "" {
 					t.Log("Pattern with empty category (not recommended but functional)")
@@ -320,7 +323,7 @@ func TestPatternEnabledToggle(t *testing.T) {
 	foundOriginal := false
 	for _, p := range allPatterns {
 		if p.name == testName {
-			originalEnabled = p.enabled
+			originalEnabled = p.enabled.Load()
 			foundOriginal = true
 			break
 		}
@@ -354,7 +357,7 @@ func TestPatternEnabledToggle(t *testing.T) {
 	for _, p := range allPatterns {
 		if p.name == testName {
 			foundInAll = true
-			if !p.enabled {
+			if !p.enabled.Load() {
 				disabledInAll = true
 			}
 			break
@@ -377,7 +380,7 @@ func TestPatternEnabledToggle(t *testing.T) {
 	enabledInAll := false
 	for _, p := range allPatterns {
 		if p.name == testName {
-			if p.enabled {
+			if p.enabled.Load() {
 				enabledInAll = true
 			}
 			break

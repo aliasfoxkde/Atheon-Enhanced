@@ -86,7 +86,7 @@ func savePatternState(state *PatternState) error {
 func applyPatternState(state *PatternState) {
 	for _, p := range allPatterns {
 		if enabled, exists := state.Patterns[p.name]; exists {
-			p.enabled = enabled
+			p.enabled.Store(enabled)
 		}
 	}
 }
@@ -109,7 +109,7 @@ func syncPatternState() error {
 		// Snapshot our in-memory state — caller holds patternMu, so
 		// allPatterns is stable for the rest of this closure.
 		for _, p := range allPatterns {
-			onDisk.Patterns[p.name] = p.enabled
+			onDisk.Patterns[p.name] = p.enabled.Load()
 		}
 		return savePatternState(onDisk)
 	})

@@ -670,7 +670,7 @@ func containsStringConcat(n ast.Node) bool {
 	var found bool
 	ast.Inspect(n, func(node ast.Node) bool {
 		if bin, ok := node.(*ast.BinaryExpr); ok {
-			if bin.Op == '+' {
+			if bin.Op == token.ADD {
 				// Check if either side is or contains a string literal anywhere in subtree
 				if hasStringLiteral(bin.X) || hasStringLiteral(bin.Y) {
 					found = true

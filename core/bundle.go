@@ -64,14 +64,11 @@ type bundlePattern struct {
 	description string
 	reference   string
 	tags        []string
-	// enabled is mutated under patternMu (write lock for any Store, read
-	// lock for any Load via scanLines/scanEnv snapshots). We keep it as a
-	// plain bool rather than atomic.Bool so the public test surface
-	// (core/*_test.go) can still read it directly — they call into the
-	// locked helpers (Enable/Disable/SetPatternEnabled) under patternMu
-	// when they mutate it, and only read it for assertions. The mutex
-	// is the single point of synchronization.
-	enabled    bool
+	// enabled uses *atomic.Bool for lock-free reads. Writers (Enable/Disable/
+	// SetPatternEnabled) still serialize via patternMu, but readers no longer
+	// need to acquire any lock — scanLines/scanEnv snapshot activeScanners
+	// under RLock then iterate without holding it.
+	enabled    *atomic.Bool
 	severity   string
 	confidence string  // high, medium, or low
 	minEntropy float64 // Minimum entropy threshold (0 = no filtering)
@@ -83,7 +80,7 @@ func (p *bundlePattern) Category() string         { return p.category }
 func (p *bundlePattern) Description() string      { return p.description }
 func (p *bundlePattern) Reference() string        { return p.reference }
 func (p *bundlePattern) Tags() []string           { return p.tags }
-func (p *bundlePattern) Matches(line string) bool { return p.enabled && p.re.MatchString(line) }
+func (p *bundlePattern) Matches(line string) bool { return p.enabled.Load() && p.re.MatchString(line) }
 
 // matchSpan returns the [start, end) byte offsets of p's first match in
 // line, or (-1, -1) if it doesn't match or the pattern is disabled.
@@ -91,7 +88,7 @@ func (p *bundlePattern) Matches(line string) bool { return p.enabled && p.re.Mat
 // stable across pattern implementations (only bundlePattern has a
 // compiled regex to query).
 func (p *bundlePattern) matchSpan(line string) (start, end int) {
-	if !p.enabled || p.re == nil {
+	if !p.enabled.Load() || p.re == nil {
 		return -1, -1
 	}
 	loc := p.re.FindStringIndex(line)
@@ -100,8 +97,8 @@ func (p *bundlePattern) matchSpan(line string) (start, end int) {
 	}
 	return loc[0], loc[1]
 }
-func (p *bundlePattern) Enabled() bool           { return p.enabled }
-func (p *bundlePattern) SetEnabled(enabled bool) { p.enabled = enabled }
+func (p *bundlePattern) Enabled() bool           { return p.enabled.Load() }
+func (p *bundlePattern) SetEnabled(enabled bool) { p.enabled.Store(enabled) }
 
 // Severity returns the pattern's severity — one of ValidSeverities, never empty.
 // Patterns loaded without a severity field read back as DefaultSeverity.
@@ -161,15 +158,27 @@ func init() {
 	data := embeddedBundle
 	if home, err := os.UserHomeDir(); err == nil {
 		if b, err := os.ReadFile(filepath.Join(home, ".atheon", "patterns.bundle")); err == nil {
-			data = b
+			// If the disk bundle is empty or has only 0 patterns, it was likely
+			// corrupted by a parallel test's DownloadBundle call. Fall back to
+			// the embedded bundle instead.
+			if len(b) > 100 {
+				data = b
+			}
 		}
 	}
 	initializeWith(data)
 }
 
+// RestoreBundle reloads the embedded bundle into memory, undoing any
+// bundle updates performed by UpdateBundle or handleUpdateBundle. It is
+// used by tests to reset global state between test cases.
+func RestoreBundle() {
+	initializeWith(embeddedBundle)
+}
+
 // initializeWith runs the same setup as init() but accepts the bundle data
 // directly so tests can feed in corrupt data to exercise the error paths.
-func initializeWith(data []byte) {
+func initializeWith(data []byte) error {
 	// init() runs single-threaded before any user goroutine can race with us,
 	// so locking here would be redundant — and would deadlock against the
 	// package-level init order (init can't wait on a mutex some other
@@ -183,9 +192,10 @@ func initializeWith(data []byte) {
 
 	// Load pattern state after bundle is loaded
 	if err := InitializePatternState(); err != nil {
-		// Non-fatal error, just log warning
 		slog.Warn("pattern state initialization failed", "err", err)
+		return fmt.Errorf("pattern state initialization failed: %w", err)
 	}
+	return nil
 }
 
 // decodeJSONStrict decodes JSON from data into out, first validating that no
@@ -287,7 +297,8 @@ func decompress(data []byte) ([]byte, error) {
 		return nil, fmt.Errorf("gzip reader: %w", err)
 	}
 	defer r.Close()
-	return io.ReadAll(r)
+	// Limit decompression size to prevent OOM from malicious/crafted input
+	return io.ReadAll(io.LimitReader(r, maxBundleDownloadBytes))
 }
 
 func loadBundle(data []byte) error {
@@ -330,12 +341,13 @@ func loadBundleFrom(decompressed []byte) error {
 			description: def.Description,
 			reference:   def.Reference,
 			tags:        def.Tags,
-			enabled:     def.Enabled,
 			severity:    normalizeSeverity(def.Severity),
 			confidence:  normalizeConfidence(def.Confidence),
 			minEntropy:  def.MinEntropy,
 			re:          re,
+			enabled:     &atomic.Bool{},
 		}
+		bp.enabled.Store(def.Enabled)
 		allPatterns = append(allPatterns, bp)
 		registerLocked(bp)
 	}
@@ -344,14 +356,14 @@ func loadBundleFrom(decompressed []byte) error {
 	// disabled. Detect this and default everything to enabled.
 	anyEnabled := false
 	for _, p := range allPatterns {
-		if p.enabled {
+		if p.enabled.Load() {
 			anyEnabled = true
 			break
 		}
 	}
 	if !anyEnabled {
 		for _, p := range allPatterns {
-			p.enabled = true
+			p.enabled.Store(true)
 		}
 		// Old bundles predate the enabled field and look like an all-disabled
 		// bundle at decode time. The flip above restores them. Without this
@@ -927,7 +939,7 @@ func EnablePattern(name string) bool {
 		if p.name != name {
 			continue
 		}
-		p.enabled = true
+		p.enabled.Store(true)
 		rebuildRegistry()
 		rebuildActiveScanners()
 		if err := syncPatternState(); err != nil {
@@ -948,7 +960,7 @@ func DisablePattern(name string) bool {
 		if p.name != name {
 			continue
 		}
-		p.enabled = false
+		p.enabled.Store(false)
 		rebuildRegistry()
 		rebuildActiveScanners()
 		if err := syncPatternState(); err != nil {
@@ -969,7 +981,7 @@ func SetPatternEnabled(name string, enabled bool) bool {
 	defer patternMu.Unlock()
 	for _, p := range allPatterns {
 		if p.name == name {
-			p.enabled = enabled
+			p.enabled.Store(enabled)
 			rebuildActiveScanners()
 			return true
 		}
@@ -984,7 +996,7 @@ func ListDisabledPatterns() []string {
 	defer patternMu.RUnlock()
 	var disabled []string
 	for _, p := range allPatterns {
-		if !p.enabled {
+		if !p.enabled.Load() {
 			disabled = append(disabled, p.name)
 		}
 	}
@@ -998,7 +1010,7 @@ func ListEnabledPatterns() []string {
 	defer patternMu.RUnlock()
 	var enabled []string
 	for _, p := range allPatterns {
-		if p.enabled {
+		if p.enabled.Load() {
 			enabled = append(enabled, p.name)
 		}
 	}
@@ -1016,7 +1028,7 @@ func EnableAllPatterns() {
 	patternMu.Lock()
 	defer patternMu.Unlock()
 	for _, p := range allPatterns {
-		p.enabled = true
+		p.enabled.Store(true)
 	}
 	rebuildActiveScanners()
 }
@@ -1033,7 +1045,7 @@ func ReloadBundle() {
 func rebuildRegistry() {
 	registry = nil
 	for _, p := range allPatterns {
-		if p.enabled {
+		if p.enabled.Load() {
 			registerLocked(p)
 		}
 	}

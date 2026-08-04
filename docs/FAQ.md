@@ -6,13 +6,13 @@
 **A:** The recommended method is building from source:
 ```bash
 # Option 1: Build from source (recommended)
-git clone https://github.com/aliasfoxkde/Atheon.git
+git clone https://github.com/aliasfoxkde/Atheon-Enhanced.git
 cd Atheon
 go build -o atheon ./cmd/atheon
 sudo mv atheon /usr/local/bin/  # or add to your PATH
 
 # Option 2: Development version with all features
-git clone https://github.com/aliasfoxkde/Atheon.git
+git clone https://github.com/aliasfoxkde/Atheon-Enhanced.git
 cd Atheon
 git checkout dev/full-feature
 go build -o atheon ./cmd/atheon
@@ -23,7 +23,7 @@ go build -o atheon ./cmd/atheon
 
 1. **Build from source (recommended):**
 ```bash
-git clone https://github.com/aliasfoxkde/Atheon.git
+git clone https://github.com/aliasfoxkde/Atheon-Enhanced.git
 cd Atheon
 go build -o atheon ./cmd/atheon
 sudo mv atheon /usr/local/bin/  # or add to your PATH
@@ -31,7 +31,7 @@ sudo mv atheon /usr/local/bin/  # or add to your PATH
 
 2. **Use the development branch:**
 ```bash
-git clone https://github.com/aliasfoxkde/Atheon.git
+git clone https://github.com/aliasfoxkde/Atheon-Enhanced.git
 cd Atheon
 git checkout dev/full-feature
 go build -o atheon ./cmd/atheon
@@ -54,7 +54,7 @@ go version  # Should be 1.21 or higher
 ## 🎯 Project Understanding
 
 ### **Q: What's the difference between official and enhanced Atheon?**
-**A:** The official HoraDomu/Atheon is a stable production release with 57 patterns, while the enhanced aliasfoxkde/Atheon (Atheon-Enhanced) is a feature-rich testing build with 274 patterns, performance optimizations, and experimental features. See [FEATURE_COMPARISON.md](FEATURE_COMPARISON.md) for details.
+**A:** The official HoraDomu/Atheon is a stable production release with 57 patterns, while the enhanced aliasfoxkde/Atheon (Atheon-Enhanced) is a feature-rich testing build with 406 patterns, performance optimizations, and experimental features. See [FEATURE_COMPARISON.md](FEATURE_COMPARISON.md) for details.
 
 ### **Q: Is this a competing project?**
 **A:** No! This is an enhanced testing fork that:
@@ -128,7 +128,7 @@ atheon --env
 ### **Q: How many patterns does Atheon have?**
 **A:**
 - **Official HoraDomu/Atheon**: 57 patterns
-- **Enhanced aliasfoxkde/Atheon (Atheon-Enhanced)**: 274 patterns
+- **Enhanced aliasfoxkde/Atheon (Atheon-Enhanced)**: 406 patterns
 
 ### **Q: Can I add my own patterns?**
 **A:** Yes! Create a YAML file in the appropriate category:
@@ -177,7 +177,7 @@ go run ./bundler
 ### **Q: Where can I see performance benchmarks?**
 **A:**
 - [Live Demo](https://atheon-benchmark.pages.dev) - Interactive benchmarking
-- [Atheon-Benchmark Repository](https://github.com/aliasfoxkde/Atheon-Benchmark) - Performance tools
+- [Atheon-Benchmark Repository](https://github.com/aliasfoxkde/Atheon-Enhanced-Benchmark) - Performance tools
 - CI/CD workflows include performance regression detection
 
 ---
@@ -266,7 +266,7 @@ See [BRANCH_STRATEGY.md](BRANCH_STRATEGY.md) for workflow details.
 
 ### **Q: Where can I get help?**
 **A:**
-- **Issues**: [GitHub Issues](https://github.com/aliasfoxkde/Atheon/issues)
+- **Issues**: [GitHub Issues](https://github.com/aliasfoxkde/Atheon-Enhanced/issues)
 - **Documentation**: [docs/](INDEX.md)
 - **Wiki**: [GitHub Wiki](../.github/wiki/)
 - **Troubleshooting**: [Troubleshooting Guide](../.github/wiki/TROUBLESHOOTING.md)
@@ -274,12 +274,12 @@ See [BRANCH_STRATEGY.md](BRANCH_STRATEGY.md) for workflow details.
 ### **Q: How can I contact the maintainers?**
 **A:**
 - **Official project**: [dommcpro@gmail.com](mailto:dommcpro@gmail.com)
-- **Enhanced fork**: [GitHub Issues](https://github.com/aliasfoxkde/Atheon/issues)
+- **Enhanced fork**: [GitHub Issues](https://github.com/aliasfoxkde/Atheon-Enhanced/issues)
 
 ### **Q: Where can I see contributor activity?**
 **A:**
-- [Project Pulse](https://github.com/aliasfoxkde/Atheon/pulse) - Activity overview
-- [Contributors Graph](https://github.com/aliasfoxkde/Atheon/graphs/contributors) - Contributor visualization
+- [Project Pulse](https://github.com/aliasfoxkde/Atheon-Enhanced/pulse) - Activity overview
+- [Contributors Graph](https://github.com/aliasfoxkde/Atheon-Enhanced/graphs/contributors) - Contributor visualization
 - [CONTRIBUTORS.md](../CONTRIBUTORS.md) - Contributor recognition
 
 ---
@@ -303,13 +303,13 @@ See [BRANCH_STRATEGY.md](BRANCH_STRATEGY.md) for workflow details.
 ### **Q: How do I track project progress?**
 **A:**
 - [Roadmap](ROADMAP.md) - Development milestones
-- [Project Pulse](https://github.com/aliasfoxkde/Atheon/pulse) - Activity tracking
+- [Project Pulse](https://github.com/aliasfoxkde/Atheon-Enhanced-Enhanced/pulse) - Activity tracking
 - [CI/CD Dashboard](../.github/workflows/) - Quality metrics
-- [Releases](https://github.com/aliasfoxkde/Atheon/releases) - Version history
+- [Releases](https://github.com/aliasfoxkde/Atheon-Enhanced-Enhanced/releases) - Version history
 
 ---
 
-**Last Updated**: 2025-01-19
-**FAQ Version**: 1.0
+**Last Updated**: 2026-08-01
+**FAQ Version**: 1.1
 
 For more information, see the [complete documentation index](INDEX.md).

@@ -694,52 +694,140 @@ func TestClonePatterns_WithDeferStmt(t *testing.T) {
 }
 
 func TestCloneDetection_AllStatementTypes(t *testing.T) {
-	// Test code that exercises all AST statement types for stmtTokens coverage
+	// Test code that exercises ALL AST statement types for stmtTokens coverage
+	// Functions must have >= MinTokens (20) to be analyzed
+	// Each function below has 25+ tokens to ensure processing
 	code := `package main
 
-func goStatement() {
-	go func() {}()
+func processWithIfStmt(condition bool, value int) int {
+	result := value * 2
+	extra := 10
+	modifier := 5
+	if condition {
+		result = result + extra
+		result = result * 2
+	} else {
+		result = result - modifier
+		result = result / 2
+	}
+	final := result + modifier
+	return final
 }
 
-func deferStatement() {
-	defer func() {}()
+func processWithForStmt(items []int) int {
+	sum := 0
+	temp := 0
+	for i := 0; i < len(items); i++ {
+		temp = items[i]
+		sum = sum + temp
+		sum = sum * 1
+	}
+	return sum
 }
 
-func sendStatement() {
-	ch := make(chan int)
-	go func() { ch <- 1 }()
-	_ = <-ch
+func processWithRangeStmt(items []int) int {
+	sum := 0
+	temp := 0
+	for index, value := range items {
+		temp = value + index
+		sum = sum + temp
+		sum = sum * 2
+	}
+	return sum
 }
 
-func switchStatement(x int) {
-	switch x {
+func processWithSwitchStmt(value int) string {
+	result := "unknown"
+	temp := "default"
+	switch value {
 	case 1:
-		println("one")
+		result = "one"
+		temp = "first"
 	case 2:
-		println("two")
+		result = "two"
+		temp = "second"
+	case 3:
+		result = "three"
+		temp = "third"
 	default:
-		println("other")
+		result = "other"
+		temp = "default"
 	}
+	return result
 }
 
-func rangeStatement(items []int) {
-	for i, v := range items {
-		println(i, v)
-	}
+func processWithReturnStmt() int {
+	x := 10
+	y := 20
+	z := 30
+	temp := x + y + z
+	return temp
 }
 
-func incDecStatement() {
-	x := 1
+func processWithDeferStmt() int {
+	result := 0
+	temp := 1
+	defer func() {
+		result = result + temp
+		result = result * 2
+	}()
+	result = 100
+	temp = result + temp
+	return result
+}
+
+func processWithGoStmt(done chan int) {
+	temp := 42
+	go func() {
+		value := temp
+		done <- value
+	}()
+}
+
+func processWithAssignStmt() int {
+	a := 1
+	b := 2
+	c := 3
+	d := 4
+	temp := a + b
+	a, b = b, c
+	c, d = d, a
+	return temp
+}
+
+func processWithExprStmt() int {
+	x := 10
+	y := x * 2
+	z := y + x
+	println(x)
+	println(y)
+	println(z)
+	return z
+}
+
+func processWithIncDecStmt() int {
+	x := 10
+	temp := 1
 	x++
+	temp++
 	x--
+	temp--
+	return x + temp
 }
 
-func selectStatement(ch1, ch2 chan int) {
-	select {
-	case <-ch1:
-		println("ch1")
-	case <-ch2:
-		println("ch2")
+func processWithSendStmt(done chan int) {
+	temp := 100
+	value := temp * 2
+	done <- value
+}
+
+func processWithDefaultStmt(x int) {
+	if x > 10 {
+		println("large")
+	} else if x > 5 {
+		println("medium")
+	} else {
+		println("small")
 	}
 }
 

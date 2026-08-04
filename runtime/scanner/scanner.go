@@ -194,6 +194,7 @@ type CacheEntry struct {
 
 // LoadCache loads a scan cache from the given path
 func LoadCache(cachePath string) (*ScanCache, error) {
+	// #nosec G304 // cachePath is derived from a hash of the project root, not user input
 	data, err := os.ReadFile(cachePath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -214,7 +215,7 @@ func (c *ScanCache) Save(cachePath string) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(cachePath, data, 0644)
+	return os.WriteFile(cachePath, data, 0600)
 }
 
 // ShouldScan checks if a file should be scanned based on the cache
@@ -245,6 +246,7 @@ func (c *ScanCache) Update(path string, info os.FileInfo, hash string) {
 
 // FileHash computes a fast hash of a file for change detection
 func FileHash(path string) (string, error) {
+	// #nosec G304 // path is validated by scanner before calling FileHash
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return "", err
@@ -254,7 +256,7 @@ func FileHash(path string) (string, error) {
 	if len(data) > 8192 {
 		hash.Write(data[:4096])
 		hash.Write(data[len(data)-4096:])
-		hash.Write([]byte(fmt.Sprintf("%d", len(data))))
+		fmt.Fprintf(hash, "%d", len(data))
 	} else {
 		hash.Write(data)
 	}
@@ -329,6 +331,7 @@ func (s *Scanner) ScanDirIncremental(root string) ([]string, error) {
 
 		fileInfo, err := d.Info()
 		if err != nil {
+			// Skip files where we can't get info - continue walking
 			return nil
 		}
 
@@ -362,7 +365,7 @@ func (s *Scanner) ScanDirIncremental(root string) ([]string, error) {
 	// Save updated cache if SkipUnchanged is enabled
 	if s.Options.SkipUnchanged {
 		cacheDir := GetCacheDir()
-		if err := os.MkdirAll(cacheDir, 0755); err != nil {
+		if err := os.MkdirAll(cacheDir, 0750); err != nil {
 			fmt.Fprintf(os.Stderr, "warning: failed to create cache dir: %v\n", err)
 		} else if err := cache.Save(cachePath); err != nil {
 			fmt.Fprintf(os.Stderr, "warning: failed to save cache: %v\n", err)

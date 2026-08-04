@@ -38,7 +38,7 @@ func NewNetworkScanner() *NetworkScanner {
 		client: &http.Client{
 			Timeout: 15 * time.Second,
 			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: false},
 			},
 		},
 	}
@@ -48,7 +48,7 @@ func NewNetworkScanner() *NetworkScanner {
 func (s *NetworkScanner) ScanURL(ctx context.Context, targetURL string) ([]SecurityIssue, error) {
 	var issues []SecurityIssue
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, targetURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, targetURL, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("invalid URL: %w", err)
 	}

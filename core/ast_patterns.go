@@ -216,6 +216,54 @@ var builtinASTPatterns = []ASTPattern{
 		Severity:    "low",
 		Func:        detectDeadAssignment,
 	},
+	{
+		Name:        "unused-parameter",
+		Description: "Function parameter is never used in function body",
+		Severity:    "medium",
+		Func:        detectUnusedParameter,
+	},
+	{
+		Name:        "variable-shadowing",
+		Description: "Local variable shadows variable from outer scope",
+		Severity:    "low",
+		Func:        detectVariableShadowing,
+	},
+	{
+		Name:        "empty-branch",
+		Description: "If/else branch contains no statements",
+		Severity:    "low",
+		Func:        detectEmptyBranch,
+	},
+	{
+		Name:        "deeply-nested-blocks",
+		Description: "Code blocks are nested beyond recommended depth (4 levels)",
+		Severity:    "medium",
+		Func:        detectDeeplyNestedBlocks,
+	},
+	{
+		Name:        "blank-import",
+		Description: "Import is never referenced in the file",
+		Severity:    "high",
+		Func:        detectBlankImport,
+	},
+	{
+		Name:        "redundant-type-assertion",
+		Description: "Redundant type assertion - value is already known to be this type",
+		Severity:    "low",
+		Func:        detectRedundantTypeAssertion,
+	},
+	{
+		Name:        "defer-in-loop",
+		Description: "Deferred call inside a loop - defer won't execute until function returns",
+		Severity:    "high",
+		Func:        detectDeferInLoop,
+	},
+	{
+		Name:        "context-background",
+		Description: "context.Background() used in function that accepts context - should use parameter",
+		Severity:    "medium",
+		Func:        detectContextBackground,
+	},
 }
 
 // ScanFileAST performs AST-based pattern scanning on a single Go file.
@@ -2365,4 +2413,358 @@ func markIdentifiersUsed(expr ast.Expr, usedVars map[string]bool) {
 		}
 		return true
 	})
+}
+
+// detectUnusedParameter detects function parameters that are never used.
+func detectUnusedParameter(fset *token.FileSet, file *ast.File) []ASTFinding {
+	var findings []ASTFinding
+
+	for _, decl := range file.Decls {
+		funcDecl, ok := decl.(*ast.FuncDecl)
+		if !ok || funcDecl.Body == nil || funcDecl.Type.Params == nil {
+			continue
+		}
+
+		// Collect parameter names
+		paramNames := make(map[string]bool)
+		for _, param := range funcDecl.Type.Params.List {
+			for _, name := range param.Names {
+				if name.Name != "_" {
+					paramNames[name.Name] = true
+				}
+			}
+		}
+
+		// Check which parameters are used
+		usedParams := make(map[string]bool)
+		ast.Inspect(funcDecl.Body, func(n ast.Node) bool {
+			if ident, ok := n.(*ast.Ident); ok {
+				if paramNames[ident.Name] {
+					usedParams[ident.Name] = true
+				}
+			}
+			return true
+		})
+
+		// Report unused parameters
+		for _, param := range funcDecl.Type.Params.List {
+			for _, name := range param.Names {
+				if name.Name != "_" && !usedParams[name.Name] {
+					findings = append(findings, ASTFinding{
+						Line:     fset.Position(name.Pos()).Line,
+						Message:  fmt.Sprintf("Unused parameter: %s is never used in function %s", name.Name, funcDecl.Name.Name),
+						Severity: "medium",
+					})
+				}
+			}
+		}
+	}
+
+	return findings
+}
+
+// detectVariableShadowing detects when a local variable shadows a variable from outer scope.
+func detectVariableShadowing(fset *token.FileSet, file *ast.File) []ASTFinding {
+	var findings []ASTFinding
+
+	for _, decl := range file.Decls {
+		funcDecl, ok := decl.(*ast.FuncDecl)
+		if !ok || funcDecl.Body == nil {
+			continue
+		}
+
+		checkShadowingInStmt(funcDecl.Body, make(map[string]int), fset, &findings)
+	}
+
+	return findings
+}
+
+func checkShadowingInStmt(stmt ast.Stmt, scopeVars map[string]int, fset *token.FileSet, findings *[]ASTFinding) {
+	newScope := make(map[string]int)
+
+	ast.Inspect(stmt, func(n ast.Node) bool {
+		switch s := n.(type) {
+		case *ast.AssignStmt:
+			for _, lhs := range s.Lhs {
+				if ident, ok := lhs.(*ast.Ident); ok {
+					if line, exists := scopeVars[ident.Name]; exists {
+						*findings = append(*findings, ASTFinding{
+							Line:     fset.Position(ident.Pos()).Line,
+							Message:  fmt.Sprintf("Variable shadowing: %s shadows variable from line %d", ident.Name, line),
+							Severity: "low",
+						})
+					}
+					newScope[ident.Name] = fset.Position(ident.Pos()).Line
+				}
+			}
+		case *ast.GenDecl:
+			if s.Tok == token.VAR {
+				for _, spec := range s.Specs {
+					if vs, ok := spec.(*ast.ValueSpec); ok {
+						for _, name := range vs.Names {
+							if line, exists := scopeVars[name.Name]; exists {
+								*findings = append(*findings, ASTFinding{
+									Line:     fset.Position(name.Pos()).Line,
+									Message:  fmt.Sprintf("Variable shadowing: %s shadows variable from line %d", name.Name, line),
+									Severity: "low",
+								})
+							}
+							newScope[name.Name] = fset.Position(name.Pos()).Line
+						}
+					}
+				}
+			}
+		}
+		return true
+	})
+}
+
+// detectEmptyBranch detects if/else branches that have no statements.
+func detectEmptyBranch(fset *token.FileSet, file *ast.File) []ASTFinding {
+	var findings []ASTFinding
+
+	for _, decl := range file.Decls {
+		funcDecl, ok := decl.(*ast.FuncDecl)
+		if !ok || funcDecl.Body == nil {
+			continue
+		}
+
+		ast.Inspect(funcDecl.Body, func(n ast.Node) bool {
+			if ifStmt, ok := n.(*ast.IfStmt); ok {
+				if len(ifStmt.Body.List) == 0 {
+					findings = append(findings, ASTFinding{
+						Line:     fset.Position(ifStmt.Pos()).Line,
+						Message:  "Empty if branch - consider removing or adding logic",
+						Severity: "low",
+					})
+				}
+				if ifStmt.Else != nil {
+					if elseBody, ok := ifStmt.Else.(*ast.BlockStmt); ok && len(elseBody.List) == 0 {
+						findings = append(findings, ASTFinding{
+							Line:     fset.Position(ifStmt.Else.Pos()).Line,
+							Message:  "Empty else branch - consider removing or adding logic",
+							Severity: "low",
+						})
+					}
+				}
+			}
+			return true
+		})
+	}
+
+	return findings
+}
+
+// detectDeeplyNestedBlocks detects code nested beyond 4 levels.
+func detectDeeplyNestedBlocks(fset *token.FileSet, file *ast.File) []ASTFinding {
+	var findings []ASTFinding
+
+	for _, decl := range file.Decls {
+		funcDecl, ok := decl.(*ast.FuncDecl)
+		if !ok || funcDecl.Body == nil {
+			continue
+		}
+
+		checkNestingDepth(funcDecl.Body, 0, fset, &findings)
+	}
+
+	return findings
+}
+
+func checkNestingDepth(stmt ast.Stmt, depth int, fset *token.FileSet, findings *[]ASTFinding) {
+	if depth > 4 {
+		*findings = append(*findings, ASTFinding{
+			Line:     fset.Position(stmt.Pos()).Line,
+			Message:  fmt.Sprintf("Deeply nested blocks: nesting depth %d exceeds recommended max of 4", depth),
+			Severity: "medium",
+		})
+	}
+
+	ast.Inspect(stmt, func(n ast.Node) bool {
+		switch s := n.(type) {
+		case *ast.IfStmt:
+			checkNestingDepth(s.Body, depth+1, fset, findings)
+			if s.Else != nil {
+				checkNestingDepth(s.Else, depth+1, fset, findings)
+			}
+		case *ast.ForStmt:
+			checkNestingDepth(s.Body, depth+1, fset, findings)
+		case *ast.RangeStmt:
+			checkNestingDepth(s.Body, depth+1, fset, findings)
+		case *ast.SwitchStmt:
+			checkNestingDepth(s.Body, depth+1, fset, findings)
+		}
+		return true
+	})
+}
+
+// detectBlankImport detects imports that are never referenced.
+func detectBlankImport(fset *token.FileSet, file *ast.File) []ASTFinding {
+	var findings []ASTFinding
+
+	// Build set of used imports
+	usedImports := make(map[string]bool)
+	ast.Inspect(file, func(n ast.Node) bool {
+		if sel, ok := n.(*ast.SelectorExpr); ok {
+			if ident, ok := sel.X.(*ast.Ident); ok {
+				usedImports[ident.Name] = true
+			}
+		}
+		return true
+	})
+
+	// Check for unused imports
+	for _, decl := range file.Decls {
+		genDecl, ok := decl.(*ast.GenDecl)
+		if !ok || genDecl.Tok != token.IMPORT {
+			continue
+		}
+
+		for _, spec := range genDecl.Specs {
+			importSpec := spec.(*ast.ImportSpec)
+			if importSpec.Name != nil && importSpec.Name.Name == "_" {
+				findings = append(findings, ASTFinding{
+					Line:     fset.Position(importSpec.Pos()).Line,
+					Message:  "Blank import: import is aliased with underscore and cannot be used",
+					Severity: "high",
+				})
+			} else if importSpec.Path != nil {
+				pkg := importSpec.Path.Value
+				pkg = pkg[1 : len(pkg)-1] // remove quotes
+				if !usedImports[pkg] && !strings.Contains(pkg, "_") {
+					findings = append(findings, ASTFinding{
+						Line:     fset.Position(importSpec.Pos()).Line,
+						Message:  fmt.Sprintf("Unused import: %s is imported but never referenced", pkg),
+						Severity: "high",
+					})
+				}
+			}
+		}
+	}
+
+	return findings
+}
+
+// detectRedundantTypeAssertion detects when a type assertion is redundant.
+func detectRedundantTypeAssertion(fset *token.FileSet, file *ast.File) []ASTFinding {
+	var findings []ASTFinding
+
+	for _, decl := range file.Decls {
+		funcDecl, ok := decl.(*ast.FuncDecl)
+		if !ok || funcDecl.Body == nil {
+			continue
+		}
+
+		ast.Inspect(funcDecl.Body, func(n ast.Node) bool {
+			if typeAssert, ok := n.(*ast.TypeAssertExpr); ok {
+				// Type assertion in switch case is not redundant
+				if _, ok := n.(*ast.CaseClause); !ok {
+					findings = append(findings, ASTFinding{
+						Line:     fset.Position(typeAssert.Pos()).Line,
+						Message:  "Redundant type assertion: consider using a switch type assertion",
+						Severity: "low",
+					})
+				}
+			}
+			return true
+		})
+	}
+
+	return findings
+}
+
+// detectDeferInLoop detects when defer is used inside a loop.
+func detectDeferInLoop(fset *token.FileSet, file *ast.File) []ASTFinding {
+	var findings []ASTFinding
+
+	for _, decl := range file.Decls {
+		funcDecl, ok := decl.(*ast.FuncDecl)
+		if !ok || funcDecl.Body == nil {
+			continue
+		}
+
+		checkDeferInLoop(funcDecl.Body, fset, &findings)
+	}
+
+	return findings
+}
+
+func checkDeferInLoop(stmt ast.Stmt, fset *token.FileSet, findings *[]ASTFinding) {
+	ast.Inspect(stmt, func(n ast.Node) bool {
+		switch n.(type) {
+		case *ast.ForStmt, *ast.RangeStmt:
+			// Check if there's a defer inside
+			ast.Inspect(n, func(inner ast.Node) bool {
+				if deferStmt, ok := inner.(*ast.DeferStmt); ok {
+					*findings = append(*findings, ASTFinding{
+						Line:     fset.Position(deferStmt.Pos()).Line,
+						Message:  "Defer in loop: defer will not execute until function returns - consider moving outside loop",
+						Severity: "high",
+					})
+					return false
+				}
+				return true
+			})
+		}
+		return true
+	})
+}
+
+// detectContextBackground detects when context.Background() is used inappropriately.
+func detectContextBackground(fset *token.FileSet, file *ast.File) []ASTFinding {
+	var findings []ASTFinding
+
+	for _, decl := range file.Decls {
+		funcDecl, ok := decl.(*ast.FuncDecl)
+		if !ok || funcDecl.Body == nil {
+			continue
+		}
+
+		// Check if function accepts context as parameter
+		hasContextParam := false
+		if funcDecl.Type.Params != nil {
+			for _, param := range funcDecl.Type.Params.List {
+				if isContextType(param.Type) {
+					hasContextParam = true
+					break
+				}
+			}
+		}
+
+		if !hasContextParam {
+			continue
+		}
+
+		// Look for context.Background() calls
+		ast.Inspect(funcDecl.Body, func(n ast.Node) bool {
+			if call, ok := n.(*ast.CallExpr); ok {
+				if sel, ok := call.Fun.(*ast.SelectorExpr); ok {
+					if ident, ok := sel.X.(*ast.Ident); ok {
+						if ident.Name == "context" && sel.Sel.Name == "Background" {
+							findings = append(findings, ASTFinding{
+								Line:     fset.Position(call.Pos()).Line,
+								Message:  "Inappropriate context.Background(): function accepts context parameter - use it instead",
+								Severity: "medium",
+							})
+						}
+					}
+				}
+			}
+			return true
+		})
+	}
+
+	return findings
+}
+
+func isContextType(expr ast.Expr) bool {
+	if ident, ok := expr.(*ast.Ident); ok {
+		return ident.Name == "Context"
+	}
+	if sel, ok := expr.(*ast.SelectorExpr); ok {
+		if ident, ok := sel.X.(*ast.Ident); ok {
+			return ident.Name == "context" && sel.Sel.Name == "Context"
+		}
+	}
+	return false
 }

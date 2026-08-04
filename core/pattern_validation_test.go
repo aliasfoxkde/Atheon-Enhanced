@@ -235,7 +235,7 @@ func TestPatternEdgeCases(t *testing.T) {
 					name:     "",
 					category: "test",
 					match:    "test",
-					enabled:  atomic.Bool{},
+					enabled:  &atomic.Bool{},
 					re:       regexp.MustCompile("test"),
 				}
 				pattern.enabled.Store(true)
@@ -254,7 +254,7 @@ func TestPatternEdgeCases(t *testing.T) {
 					name:     "test-pattern",
 					category: "",
 					match:    "test",
-					enabled:  atomic.Bool{},
+					enabled:  &atomic.Bool{},
 					re:       regexp.MustCompile("test"),
 				}
 				pattern.enabled.Store(true)

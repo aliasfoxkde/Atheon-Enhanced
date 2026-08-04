@@ -363,6 +363,12 @@ func TestUpdateCommand(t *testing.T) {
 	home, _ := os.UserHomeDir()
 	bundlePath := filepath.Join(home, ".atheon", "patterns.bundle")
 	origBundle, origErr := os.ReadFile(bundlePath)
+
+	restore := core.SetBundleDownloadURLForTest(srv.URL + "/")
+	defer restore()
+	// Restore the original bundle file BEFORE ReloadBundle reads it.
+	// Go defers run in LIFO order, so this must come after the
+	// SetBundleDownloadURLForTest defer but before ReloadBundle.
 	defer func() {
 		if origErr == nil {
 			os.WriteFile(bundlePath, origBundle, 0o600) //nolint:errcheck
@@ -370,12 +376,6 @@ func TestUpdateCommand(t *testing.T) {
 			os.Remove(bundlePath) //nolint:errcheck
 		}
 	}()
-
-	// Snapshot allPatterns before DownloadBundle modifies it. This must be
-	// restored before TestUpdateCommand returns so subsequent tests in the
-	// same binary see a full pattern set.
-	restore := core.SetBundleDownloadURLForTest(srv.URL + "/")
-	defer restore()
 
 	if err := core.DownloadBundle(context.Background(), false); err != nil {
 		t.Fatalf("DownloadBundle failed: %v", err)

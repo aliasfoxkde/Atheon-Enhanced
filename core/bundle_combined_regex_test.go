@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-// atomicBoolTrue returns a pointer to an atomic.Bool set to true.
+// atomicBoolTrue returns a *atomic.Bool set to true.
 func atomicBoolTrue() *atomic.Bool {
 	var b atomic.Bool
 	b.Store(true)
@@ -80,7 +80,7 @@ func TestCombinedRegexCompileErrorLogged(t *testing.T) {
 		name:     "wave8-bad-pattern",
 		match:    "[a-",
 		category: "wave8-test-cat",
-		enabled:  *atomicBoolTrue(),
+		enabled:  atomicBoolTrue(),
 		severity: "low",
 	}}
 	rebuildActiveScanners()

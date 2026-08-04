@@ -16,11 +16,12 @@ Tracks completed work across development phases.
 ## Current Status
 
 - **All CI tests passing**
-- **366 patterns across 23 categories**
+- **406 patterns across 29 categories**
 - **9 AST behavioral patterns** (exec, eval, getattr, execution chains)
 - **Prompt injection detection** (ignore, override, jailbreak)
 - **MCP security patterns** (hidden instructions, exfil, malicious defaults)
 - **AI skill security** (credential exfil, remote eval, destructive actions)
+- **PI_INTEGRATION Architecture Phases 1-6 complete**
 
 ## Recent Completions (Wave 14)
 

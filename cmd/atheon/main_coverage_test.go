@@ -950,7 +950,7 @@ func TestFilterDiffFindings_NoMatches(t *testing.T) {
 	}
 
 	findings := []core.Finding{
-		{Pattern: "p", File: "f.txt", Line: 1},  // Not in diff
+		{Pattern: "p", File: "f.txt", Line: 1}, // Not in diff
 	}
 	result := filterDiffFindings(findings, diffPath)
 	if len(result) != 0 {

@@ -5,7 +5,7 @@ title: Atheon-Enhanced
 
 # Atheon-Enhanced
 
-Pattern-matching engine for secrets, PII, and code quality. 274 patterns, SARIF output, MCP server for AI assistant integration.
+Pattern-matching engine for secrets, PII, and code quality. 406 patterns across 29 categories, SARIF output, MCP server for AI assistant integration.
 
 [![CI](https://github.com/aliasfoxkde/Atheon-Enhanced/actions/workflows/ci.yml/badge.svg)](https://github.com/aliasfoxkde/Atheon-Enhanced/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/aliasfoxkde/Atheon-Enhanced/graph/badge.svg)](https://codecov.io/gh/aliasfoxkde/Atheon-Enhanced)

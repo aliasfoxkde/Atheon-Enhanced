@@ -8,6 +8,33 @@ import (
 
 // Tests for clone detection - these need duplicate code to trigger clone detection
 
+func TestNewCloneDetector_WithConfig(t *testing.T) {
+	// Test with explicit config - covers line 71
+	config := &CloneDetectionConfig{
+		MinSimilarity: 0.8,
+		MinTokens:     10,
+		MaxDepth:      5,
+	}
+	detector := NewCloneDetector(config)
+	if detector == nil {
+		t.Fatal("expected non-nil detector")
+	}
+	if detector.config != config {
+		t.Error("expected config to be set")
+	}
+}
+
+func TestNewCloneDetector_NilConfig(t *testing.T) {
+	// Test with nil config - uses default
+	detector := NewCloneDetector(nil)
+	if detector == nil {
+		t.Fatal("expected non-nil detector")
+	}
+	if detector.config == nil {
+		t.Error("expected config to be set to default")
+	}
+}
+
 func TestClonePatterns(t *testing.T) {
 	// Create duplicate functions to trigger clone detection
 	code := `package main
@@ -655,6 +682,71 @@ func TestClonePatterns_WithDeferStmt(t *testing.T) {
 `
 	tmpDir := t.TempDir()
 	tmpFile := filepath.Join(tmpDir, "clone_defer.go")
+	if err := os.WriteFile(tmpFile, []byte(code), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	findings, err := ScanFileAST(tmpFile, builtinASTPatterns)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = findings
+}
+
+func TestCloneDetection_AllStatementTypes(t *testing.T) {
+	// Test code that exercises all AST statement types for stmtTokens coverage
+	code := `package main
+
+func goStatement() {
+	go func() {}()
+}
+
+func deferStatement() {
+	defer func() {}()
+}
+
+func sendStatement() {
+	ch := make(chan int)
+	go func() { ch <- 1 }()
+	_ = <-ch
+}
+
+func switchStatement(x int) {
+	switch x {
+	case 1:
+		println("one")
+	case 2:
+		println("two")
+	default:
+		println("other")
+	}
+}
+
+func rangeStatement(items []int) {
+	for i, v := range items {
+		println(i, v)
+	}
+}
+
+func incDecStatement() {
+	x := 1
+	x++
+	x--
+}
+
+func selectStatement(ch1, ch2 chan int) {
+	select {
+	case <-ch1:
+		println("ch1")
+	case <-ch2:
+		println("ch2")
+	}
+}
+
+func main() {}
+`
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "clone_all_stmts.go")
 	if err := os.WriteFile(tmpFile, []byte(code), 0644); err != nil {
 		t.Fatal(err)
 	}

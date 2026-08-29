@@ -188,6 +188,9 @@ jobs:
     name: Test (Go ${{ matrix.go-version }})
     needs: lint
     runs-on: ubuntu-latest
+    # Bound the complete job, including toolchain setup and dependency
+    # installation; the command-level timeout alone cannot stop a hung setup.
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:

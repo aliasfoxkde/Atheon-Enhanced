@@ -26,46 +26,52 @@ jobs:
       - name: Check CI status checks have passed
         id: check
         run: |
-          # Wait up to 15 min for all required status checks to complete (CI takes ~6 min)
+          # Wait for the branch-protection check-runs themselves. The legacy
+          # commit-status endpoint does not include GitHub Actions check-runs,
+          # and mergeable_state remains `blocked` while required checks settle.
+          # Native `gh pr merge --auto` is the final server-side guard.
           for i in $(seq 1 30); do
-            # Get the head commit SHA for this PR
             pr_head_sha=$(gh api repos/${REPO}/pulls/${PR_NUMBER} --jq '.head.sha')
-
-            # Get combined status from the commit
-            status_result=$(gh api repos/${REPO}/commits/${pr_head_sha}/status --jq '.state')
-            echo "Attempt $i/30: commit status=${status_result}"
-
-            # Get mergeable_state to check for conflicts
+            mergeable=$(gh api repos/${REPO}/pulls/${PR_NUMBER} --jq '.mergeable')
             mergeable_state=$(gh api repos/${REPO}/pulls/${PR_NUMBER} --jq '.mergeable_state')
-            echo "Attempt $i/30: mergeable_state=${mergeable_state}"
+            echo "Attempt $i/30: mergeable=${mergeable}, mergeable_state=${mergeable_state}"
 
-            # All required checks must pass (status=success) AND no conflicts (mergeable_state=clean)
-            if [ "${status_result}" = "success" ] && [ "${mergeable_state}" = "clean" ]; then
-              echo "All CI checks passed and PR is clean — proceeding with auto-merge"
-              exit 0
-            fi
-
-            # If status is failed or mergeable_state is dirty, fail immediately
-            if [ "${status_result}" = "failure" ]; then
-              echo "CI checks have FAILED — refusing to auto-merge"
-              exit 1
-            fi
-
-            if [ "${mergeable_state}" = "dirty" ]; then
+            if [ "${mergeable}" = "false" ] || [ "${mergeable_state}" = "dirty" ]; then
               echo "PR has merge conflicts — refusing to auto-merge"
               exit 1
             fi
 
-            echo "CI not yet passed or PR not yet mergeable — waiting 30s..."
+            check_runs=$(gh api "repos/${REPO}/commits/${pr_head_sha}/check-runs")
+            pending=0
+            failed=0
+            while IFS= read -r required_context; do
+              [ -n "${required_context}" ] || continue
+              # Branch protection stores workflow-prefixed contexts such as
+              # `CI / Test (Go 1.24)`; check-runs expose `Test (Go 1.24)`.
+              check_name="${required_context#* / }"
+              result=$(jq -r --arg name "${check_name}" \
+                '[.check_runs[] | select(.name == $name)] | sort_by(.completed_at) | last | if .status == "completed" and .conclusion == "success" then "success" elif .status == "completed" then ("failed:" + (.conclusion // "unknown")) else "pending" end' <<<"${check_runs}")
+              echo "  ${required_context}: ${result}"
+              case "${result}" in
+                success) ;;
+                pending) pending=1 ;;
+                *) failed=1 ;;
+              esac
+            done < <(gh api "repos/${REPO}/branches/main/protection/required_status_checks" --jq '.contexts[]')
+
+            if [ "${failed}" -eq 1 ]; then
+              echo "A required check failed — refusing to auto-merge"
+              exit 1
+            fi
+            if [ "${pending}" -eq 0 ]; then
+              echo "All required check-runs passed; native auto-merge will enforce final policy"
+              exit 0
+            fi
+
+            echo "Required check-runs are still pending — waiting 30s..."
             sleep $((20 + RANDOM % 21))
           done
-          # Timeout after 30 tries (~15 min). CI may have passed but PR is still
-          # blocked (mergeable_state != clean). This indicates a configuration
-          # issue (branch protection, ruleset, required checks mismatch).
-          # DO NOT proceed — requires human investigation.
-          echo "TIMEOUT: CI passed but PR is still blocked (mergeable_state=${mergeable_state})"
-          echo "This indicates a branch protection or ruleset configuration issue."
-          echo "Manual intervention required."
+          echo "TIMEOUT: required check-runs did not all complete within 15 minutes"
           exit 1
 
       - name: Enable auto-merge

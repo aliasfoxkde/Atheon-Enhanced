@@ -184,6 +184,17 @@ func TestFalsePositiveGuard(t *testing.T) {
 	}
 }
 
+// TestTyposquatDoesNotMatchSubstrings protects the package-name rule from
+// reporting ordinary prose and identifiers that merely contain a typo token.
+func TestTyposquatDoesNotMatchSubstrings(t *testing.T) {
+	clean := "Create a new Council.\nfunc expressConfig() {}\n"
+	for _, finding := range ScanString(context.Background(), clean, "clean-source.go") {
+		if finding.Pattern == "typosquat-common-package-names" {
+			t.Fatalf("typosquat rule matched non-package text: %+v", finding)
+		}
+	}
+}
+
 // findingPatterns flattens a finding slice to pattern names so test
 // failure messages stay readable.
 func findingPatterns(findings []Finding) []string {

@@ -3,6 +3,8 @@ category: supply-chain
 severity: high
 cwe: "CWE-1395"
 description: "Detects package names that are common typosquatting targets"
-match: (react|reate|reacct|reacy|vue\.js|vuejs|vuue|anguar|angualr|angulr|lodahs|lodh|lodash|jguary|jquer|jqeury|expres|expressjs|flask|falsk)
+# Match package-like tokens, not substrings inside ordinary identifiers or
+# prose (for example, "Create" contains the typo token "reate").
+match: '\b(react|reate|reacct|reacy|vue\.js|vuejs|vuue|anguar|angualr|angulr|lodahs|lodh|lodash|jguary|jquer|jqeury|expres|expressjs|flask|falsk)\b'
 remediation: "Verify package name is spelled correctly."
 enabled: true

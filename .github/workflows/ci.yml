@@ -188,6 +188,7 @@ jobs:
     name: Test (Go ${{ matrix.go-version }})
     needs: lint
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -372,17 +373,22 @@ jobs:
       - name: Check bundle freshness vs source
         run: |
           SOURCE_COUNT=$(./scripts/pattern-count.sh --total)
-          # CLI default list shows ALL patterns; --enabled shows only enabled
+          # The runtime safety guard may intentionally exclude a source pattern
+          # whose regex is potentially slow. Compare the generated artifact to
+          # the tracked artifact instead of assuming every source definition is
+          # runtime-enabled.
           BUNDLE_COUNT=$(./atheon list --enabled | tail -1 | grep -oE '[0-9]+' | head -1)
           echo "YAML source: ${SOURCE_COUNT} patterns"
           echo "Bundle (enabled): ${BUNDLE_COUNT} patterns"
-          # All 406 patterns are now enabled
-          EXPECTED_BUNDLE=409
-          if [ "${BUNDLE_COUNT}" -ne "${EXPECTED_BUNDLE}" ]; then
-            echo "❌ Drift: bundle has ${BUNDLE_COUNT} enabled patterns but expected ${EXPECTED_BUNDLE}."
+          if [ "${BUNDLE_COUNT}" -lt 250 ] || [ "${BUNDLE_COUNT}" -gt "${SOURCE_COUNT}" ]; then
+            echo "❌ Invalid bundle: expected 250-${SOURCE_COUNT} enabled patterns, got ${BUNDLE_COUNT}."
             exit 1
           fi
-          echo "✅ Bundle matches source"
+          if ! git diff --exit-code -- core/patterns.bundle; then
+            echo "❌ Drift: generated core/patterns.bundle differs from the tracked artifact."
+            exit 1
+          fi
+          echo "✅ Bundle artifact matches source (runtime safety exclusions, if any, are expected)"
 
       - name: Validate configuration profiles
         run: |
@@ -415,6 +421,7 @@ jobs:
     name: Performance Benchmarks
     needs: [test, build]
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Checkout code
@@ -429,7 +436,8 @@ jobs:
 
       - name: Run benchmarks
         run: |
-          go test -bench=. -benchmem -benchtime=3s ./core/ 2>&1 | tee benchmark-results.txt
+          timeout --signal=TERM --kill-after=30s 10m \
+            go test -bench=. -benchmem -benchtime=3s ./core/ 2>&1 | tee benchmark-results.txt
 
       - name: Upload benchmark results
         if: always()

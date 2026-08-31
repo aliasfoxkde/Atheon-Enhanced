@@ -188,6 +188,7 @@ jobs:
     name: Test (Go ${{ matrix.go-version }})
     needs: lint
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -420,6 +421,7 @@ jobs:
     name: Performance Benchmarks
     needs: [test, build]
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Checkout code
@@ -434,7 +436,8 @@ jobs:
 
       - name: Run benchmarks
         run: |
-          go test -bench=. -benchmem -benchtime=3s ./core/ 2>&1 | tee benchmark-results.txt
+          timeout --signal=TERM --kill-after=30s 10m \
+            go test -bench=. -benchmem -benchtime=3s ./core/ 2>&1 | tee benchmark-results.txt
 
       - name: Upload benchmark results
         if: always()

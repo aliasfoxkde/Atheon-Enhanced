@@ -379,8 +379,8 @@ jobs:
           BUNDLE_COUNT=$(./atheon list --enabled | tail -1 | grep -oE '[0-9]+' | head -1)
           echo "YAML source: ${SOURCE_COUNT} patterns"
           echo "Bundle (enabled): ${BUNDLE_COUNT} patterns"
-          if [ "${BUNDLE_COUNT}" -gt "${SOURCE_COUNT}" ]; then
-            echo "❌ Invalid bundle: ${BUNDLE_COUNT} enabled patterns exceeds ${SOURCE_COUNT} source patterns."
+          if [ "${BUNDLE_COUNT}" -lt 250 ] || [ "${BUNDLE_COUNT}" -gt "${SOURCE_COUNT}" ]; then
+            echo "❌ Invalid bundle: expected 250-${SOURCE_COUNT} enabled patterns, got ${BUNDLE_COUNT}."
             exit 1
           fi
           if ! git diff --exit-code -- core/patterns.bundle; then

@@ -309,7 +309,7 @@ jobs:
           .\atheon.exe list categories
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: binaries-${{ matrix.os }}
           path: |
@@ -433,7 +433,7 @@ jobs:
 
       - name: Upload benchmark results
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: benchmark-results
           path: benchmark-results.txt
@@ -469,13 +469,13 @@ jobs:
           go test ./... -p 1 -v -coverprofile=coverage.out 2>&1 | go-junit-report -set-exit-code > report.xml
 
       - name: Publish test results
-        uses: EnricoMi/publish-unit-test-result-action@d0a4676d0e0b938bc201470d88276b7c74c712b3 # v2.9.0
+        uses: EnricoMi/publish-unit-test-result-action@7622c5bf3d112a72ab4fa3951c2aa5723d8ab92d # v2.9.0
         if: always()
         with:
           files: report.xml
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           files: ./coverage.out
           flags: unittests
